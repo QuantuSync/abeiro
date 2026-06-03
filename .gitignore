@@ -42,3 +42,8 @@ Thumbs.db
 
 # Capturas generadas por scripts de verificación
 scripts/_*.png
+
+# Herramientas de asistencia (no forman parte del proyecto)
+.claude/
+CLAUDE.md
+CLAUDE_*.md

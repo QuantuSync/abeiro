@@ -83,7 +83,8 @@ abeiro/
 │  └─ vulnerabilidad.ts   # categorías, paleta y expresión de color
 ├─ data/
 │  └─ nucleos.json        # GeoJSON de núcleos (DATOS DE PRUEBA)
-└─ CLAUDE_abeiro.md       # documento maestro del proyecto
+└─ scripts/
+   └─ verificar-mapa.mjs  # verificación headless (Playwright)
 ```
 
 ## El Índice de Vulnerabilidad

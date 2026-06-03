@@ -122,9 +122,9 @@
         "id": "pradorramisquedo",
         "nombre": "Pradorramisquedo",
         "concello": "Larouco",
-        "iv": 89,
+        "iv": 82,
         "poblacion": 15,
-        "pct_mayores_65": 0.61,
+        "pct_mayores_65": 0.416,
         "pct_hogares_uniper_mayores": 44,
         "dispersion": "muy alta",
         "distancia_servicios_km": 22.6,
@@ -137,9 +137,9 @@
         "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
         "ige_nome": "PRADORRAMISQUEDO",
         "ige_codmun": "32086",
-        "dato_edad_real": false,
+        "dato_edad_real": true,
         "edad_proxy_concello": true,
-        "fuente_edad": "estimación provisional (concello sin Padrón de edad disponible)"
+        "fuente_edad": "Padrón IGE 2022 (proxy concello: 32086 Viana do Bolo)"
       },
       "geometry": {
         "type": "Point",

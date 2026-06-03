@@ -39,3 +39,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Capturas generadas por scripts de verificación
+scripts/_*.png

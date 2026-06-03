@@ -30,11 +30,14 @@ export interface NucleoProps {
   vias_salida_por_tipo?: Record<string, number>;
   dato_capacidad_real?: boolean;
   fuente_capacidad?: string;
-  // Peligro biofísico (pendiente real + combustible aproximado).
+  // Peligro biofísico (pendiente real + combustible OSM modulado por NDMI).
   pendiente_grados?: number;
   cota_m?: number;
   combustibilidad?: number;
+  combustibilidad_osm?: number;
   combustible_dominante?: string;
+  combustible_fuente?: string;
+  ndmi?: number;
   dato_pendiente_real?: boolean;
   dato_combustible_aprox?: boolean;
   combustible_sin_dato?: boolean;
@@ -170,6 +173,8 @@ export default function PanelInfo({
                 real="aprox"
                 texto={nucleo.combustible_sin_dato
                   ? "pendiente real · combustible sin dato"
+                  : nucleo.combustible_fuente === "OSM + NDMI Sentinel-2"
+                  ? "pendiente real · combustible OSM + NDMI Sentinel-2"
                   : "pendiente real · combustible aprox."}
               />
             ) : (
@@ -190,6 +195,17 @@ export default function PanelInfo({
               <>
                 <strong>{cubiertaLegible(nucleo.combustible_dominante)}</strong>
                 {nucleo.combustibilidad != null && <span> ({nucleo.combustibilidad})</span>}
+                {nucleo.combustibilidad_osm != null
+                  && nucleo.combustibilidad_osm !== nucleo.combustibilidad && (
+                    <span className="ponderado" title="Combustibilidad de cubierta OSM antes de modular por NDMI">
+                      {" "}← OSM {nucleo.combustibilidad_osm}
+                    </span>
+                  )}
+                {nucleo.ndmi != null && (
+                  <span className="ponderado" title="NDMI Sentinel-2 (humedad de vegetación, verano 2025): más bajo = más seco">
+                    {" · "}NDMI {nucleo.ndmi}
+                  </span>
+                )}
               </>
             )}
           </div>

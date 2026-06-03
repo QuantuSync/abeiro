@@ -279,7 +279,6 @@ export default function PanelInfo({
                   <span className="dif-label">Dificultad de evacuación</span>
                   <span className="dif-cat" style={{ color: ce.color }}>Evacuación {ce.etiqueta.toLowerCase()}</span>
                 </div>
-                <Origen real="aprox" texto="OSM · routing local" />
               </div>
             );
           })()}

@@ -10,6 +10,7 @@ import afectacionData from "@/data/nucleos_afectacion_fisica.json";
 import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
 import Leyenda from "@/components/Leyenda";
 import PanelInfo, { type NucleoProps } from "@/components/PanelInfo";
+import PanelValidacion from "@/components/PanelValidacion";
 
 // Capa de afectación física (validación EMSR837): se une por id a cada núcleo
 // SOLO para visualización; no forma parte del Índice de Vulnerabilidad.
@@ -53,6 +54,7 @@ export default function MapaVulnerabilidad() {
   const contenedor = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const [seleccionado, setSeleccionado] = useState<NucleoProps | null>(null);
+  const [mostrarValidacion, setMostrarValidacion] = useState(false);
 
   useEffect(() => {
     if (!contenedor.current || mapRef.current) return;
@@ -217,9 +219,17 @@ export default function MapaVulnerabilidad() {
     <div className="mapa-wrap">
       <div ref={contenedor} className="mapa" />
       <Leyenda />
+      <button
+        className="btn-validacion"
+        onClick={() => setMostrarValidacion((v) => !v)}
+        aria-pressed={mostrarValidacion}
+      >
+        Validación 2025 ▸
+      </button>
       {seleccionado && (
         <PanelInfo nucleo={seleccionado} onClose={() => setSeleccionado(null)} />
       )}
+      {mostrarValidacion && <PanelValidacion onClose={() => setMostrarValidacion(false)} />}
     </div>
   );
 }

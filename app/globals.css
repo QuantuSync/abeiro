@@ -409,6 +409,144 @@ body {
   margin: 0.6rem 0 0;
 }
 
+/* ---- Botón y panel de validación ---- */
+.btn-validacion {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 6;
+  background: #11261d;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--sombra);
+}
+.btn-validacion:hover {
+  background: #1d3d2e;
+}
+
+.validacion {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 7;
+  width: 460px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  background: var(--panel-bg);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  box-shadow: var(--sombra);
+  padding: 1rem 1.1rem 1.1rem;
+}
+.validacion .cerrar {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--texto-suave);
+}
+.validacion h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.validacion .sub {
+  margin: 0.15rem 0 0.7rem;
+  font-size: 0.84rem;
+  color: var(--texto-suave);
+}
+.aviso-fuerte {
+  font-size: 0.76rem;
+  line-height: 1.4;
+  background: #fdf3e0;
+  border: 1px solid #f0d9a8;
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+  margin: 0 0 0.8rem;
+  color: #5e4710;
+}
+.tabla-val {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.tabla-val th,
+.tabla-val td {
+  text-align: left;
+  padding: 0.32rem 0.4rem;
+  border-bottom: 1px solid var(--borde);
+}
+.tabla-val th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--texto-suave);
+}
+.tabla-val .num {
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+.tabla-val .iv {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tabla-val .iv .punto {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+.tabla-val .cat,
+.tabla-val .fecha {
+  color: var(--texto-suave);
+}
+.tabla-val tr.afectado {
+  background: #fbf3f1;
+}
+.tabla-val tr.afectado.dentro td {
+  font-weight: 600;
+}
+.badge-af {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.badge-af.dentro {
+  background: #7a1f12;
+  color: #fff;
+}
+.badge-af.borde {
+  background: #f3dcd6;
+  color: #7a1f12;
+  border: 1px solid #d9a99d;
+}
+.badge-no {
+  font-size: 0.68rem;
+  color: var(--texto-suave);
+}
+.lectura {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--texto);
+  margin: 0.8rem 0 0;
+}
+
 /* MapLibre: ajustes menores */
 .maplibregl-ctrl-attrib {
   font-size: 0.68rem;

@@ -8,7 +8,7 @@ export interface NucleoProps {
   concello: string;
   iv: number;
   poblacion: number;
-  pct_mayores_65: number;
+  pct_mayores_65: number; // fracción 0-1
   pct_hogares_uniper_mayores: number;
   dispersion: string;
   distancia_servicios_km: number;
@@ -17,6 +17,13 @@ export interface NucleoProps {
   num_accesos: number;
   cobertura_movil: string;
   notas: string;
+  // Procedencia del dato (Fase 1).
+  dato_poblacion_real?: boolean;
+  dato_edad_real?: boolean;
+  edad_proxy_concello?: boolean;
+  fuente_poblacion?: string;
+  fuente_edad?: string;
+  ige_nome?: string;
 }
 
 function Barra({ valor, color }: { valor: number; color: string }) {
@@ -25,6 +32,11 @@ function Barra({ valor, color }: { valor: number; color: string }) {
       <div className="barra-fill" style={{ width: `${valor}%`, backgroundColor: color }} />
     </div>
   );
+}
+
+// Etiqueta de procedencia del dato: real (verde) o estimación (gris).
+function Origen({ real, texto }: { real: boolean; texto: string }) {
+  return <span className={`origen ${real ? "real" : "estim"}`} title={texto}>{texto}</span>;
 }
 
 export default function PanelInfo({
@@ -61,12 +73,24 @@ export default function PanelInfo({
 
       <dl className="datos">
         <div>
-          <dt>Población</dt>
+          <dt>
+            Población{" "}
+            <Origen
+              real={!!nucleo.dato_poblacion_real}
+              texto={nucleo.dato_poblacion_real ? "real · Nomenclátor 2025" : "estimación"}
+            />
+          </dt>
           <dd>{nucleo.poblacion.toLocaleString("es-ES")} hab.</dd>
         </div>
         <div>
-          <dt>Mayores de 65</dt>
-          <dd>{nucleo.pct_mayores_65}%</dd>
+          <dt>
+            Mayores de 65{" "}
+            <Origen
+              real={!!nucleo.dato_edad_real}
+              texto={nucleo.dato_edad_real ? "real · Padrón 2022 (proxy concello)" : "estimación"}
+            />
+          </dt>
+          <dd>{Math.round(nucleo.pct_mayores_65 * 100)}%</dd>
         </div>
         <div>
           <dt>Hogares unipersonales (mayores)</dt>
@@ -107,7 +131,18 @@ export default function PanelInfo({
 
       <p className="disclaimer">
         Abeiro informa, no sustituye a los servicios oficiales de emergencia. Salidas
-        probabilísticas. <strong>Datos de prueba (Fase 0).</strong>
+        probabilísticas.{" "}
+        {nucleo.dato_poblacion_real ? (
+          <>
+            Población real del IGE (Nomenclátor 2025
+            {nucleo.ige_nome ? `, "${nucleo.ige_nome}"` : ""}).{" "}
+            {nucleo.dato_edad_real
+              ? "% de mayores real (Padrón 2022, proxy de concello)."
+              : "% de mayores y resto de componentes: estimación provisional."}
+          </>
+        ) : (
+          <strong>Datos de prueba.</strong>
+        )}
       </p>
     </aside>
   );

@@ -96,6 +96,23 @@ export default function MapaVulnerabilidad() {
         },
       });
 
+      // Anillo distintivo para núcleos que YA usan dato de edad real (Fase 1).
+      map.addLayer({
+        id: "nucleos-dato-real",
+        type: "circle",
+        source: "nucleos",
+        filter: ["==", ["get", "dato_edad_real"], true],
+        paint: {
+          "circle-radius": [
+            "interpolate", ["linear"], ["get", "iv"],
+            0, 11, 100, 22,
+          ],
+          "circle-color": "rgba(0,0,0,0)",
+          "circle-stroke-width": 2.5,
+          "circle-stroke-color": "#1a7d45",
+        },
+      });
+
       // Etiqueta con el nombre del núcleo.
       map.addLayer({
         id: "nucleos-etiqueta",

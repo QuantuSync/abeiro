@@ -17,7 +17,13 @@ export default function Leyenda() {
           </li>
         ))}
       </ul>
-      <p className="aviso">Datos de prueba (Fase 0). No usar para decisiones reales.</p>
+      <p className="dato-real-nota">
+        <span className="anillo" /> Núcleo con dato de edad real (IGE)
+      </p>
+      <p className="aviso">
+        Población real (Nomenclátor IGE 2025). Edad real solo donde hay Padrón por
+        concello; el resto, estimación provisional. No usar para decisiones reales.
+      </p>
     </div>
   );
 }

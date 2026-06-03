@@ -1,12 +1,19 @@
 {
   "type": "FeatureCollection",
   "name": "nucleos_valdeorras_larouco",
-  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
   "metadata": {
     "descripcion": "DATOS DE PRUEBA (inventados pero coherentes) para la Fase 0 de ABEIRO. NO son datos reales. Núcleos de la comarca piloto de Valdeorras / zona de Larouco (Ourense).",
     "indice": "Índice de Vulnerabilidad (0-100). Combina peligro biofísico, sensibilidad social (envejecimiento, aislamiento, dispersión) y capacidad de respuesta (accesos, cobertura).",
     "fuente": "Generado para Fase 0. Sustituir por fuentes abiertas en Fase 1.",
-    "privacidad": "Solo indicadores agregados y no identificativos. Ninguna identidad nominal."
+    "privacidad": "Solo indicadores agregados y no identificativos. Ninguna identidad nominal.",
+    "fase": "Fase 1 (parcial): población real (Nomenclátor IGE 2025) integrada; % de mayores de 65 real (Padrón IGE 2022) donde el concello está disponible.",
+    "edad_nota": "El % de mayores de 65 es proxy a nivel concello (2022); la población es real por aldea (2025). pct_mayores_65 es una fracción 0-1."
   },
   "features": [
     {
@@ -16,8 +23,8 @@
         "nombre": "Larouco",
         "concello": "Larouco",
         "iv": 78,
-        "poblacion": 312,
-        "pct_mayores_65": 41,
+        "poblacion": 350,
+        "pct_mayores_65": 0.41,
         "pct_hogares_uniper_mayores": 28,
         "dispersion": "media",
         "distancia_servicios_km": 12.4,
@@ -25,9 +32,22 @@
         "capacidad_respuesta": 38,
         "num_accesos": 2,
         "cobertura_movil": "parcial",
-        "notas": "Capital municipal. Envejecimiento alto y accesos limitados por carretera de montaña."
+        "notas": "Capital municipal. Envejecimiento alto y accesos limitados por carretera de montaña.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "LAROUCO",
+        "ige_codmun": "32038",
+        "dato_edad_real": false,
+        "edad_proxy_concello": true,
+        "fuente_edad": "estimación provisional (concello sin Padrón de edad en datos)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.1836, 42.5831] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.1836,
+          42.5831
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -36,8 +56,8 @@
         "nombre": "Seadur",
         "concello": "Larouco",
         "iv": 84,
-        "poblacion": 96,
-        "pct_mayores_65": 53,
+        "poblacion": 59,
+        "pct_mayores_65": 0.53,
         "pct_hogares_uniper_mayores": 37,
         "dispersion": "alta",
         "distancia_servicios_km": 15.1,
@@ -45,9 +65,22 @@
         "capacidad_respuesta": 27,
         "num_accesos": 1,
         "cobertura_movil": "deficiente",
-        "notas": "Un solo acceso viario y vegetación densa en la interfaz. Población muy envejecida."
+        "notas": "Un solo acceso viario y vegetación densa en la interfaz. Población muy envejecida.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "SEADUR",
+        "ige_codmun": "32038",
+        "dato_edad_real": false,
+        "edad_proxy_concello": true,
+        "fuente_edad": "estimación provisional (concello sin Padrón de edad en datos)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.1612, 42.5972] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.1612,
+          42.5972
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -56,8 +89,8 @@
         "nombre": "Freixido",
         "concello": "Larouco",
         "iv": 71,
-        "poblacion": 58,
-        "pct_mayores_65": 49,
+        "poblacion": 39,
+        "pct_mayores_65": 0.49,
         "pct_hogares_uniper_mayores": 33,
         "dispersion": "alta",
         "distancia_servicios_km": 17.8,
@@ -65,9 +98,22 @@
         "capacidad_respuesta": 31,
         "num_accesos": 1,
         "cobertura_movil": "deficiente",
-        "notas": "Aldea dispersa en ladera; combustible continuo hasta las primeras casas."
+        "notas": "Aldea dispersa en ladera; combustible continuo hasta las primeras casas.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "FREIXIDO",
+        "ige_codmun": "32038",
+        "dato_edad_real": false,
+        "edad_proxy_concello": true,
+        "fuente_edad": "estimación provisional (concello sin Padrón de edad en datos)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.2048, 42.6038] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.2048,
+          42.6038
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -76,8 +122,8 @@
         "nombre": "Pradorramisquedo",
         "concello": "Larouco",
         "iv": 89,
-        "poblacion": 34,
-        "pct_mayores_65": 61,
+        "poblacion": 15,
+        "pct_mayores_65": 0.61,
         "pct_hogares_uniper_mayores": 44,
         "dispersion": "muy alta",
         "distancia_servicios_km": 22.6,
@@ -85,9 +131,22 @@
         "capacidad_respuesta": 19,
         "num_accesos": 1,
         "cobertura_movil": "nula",
-        "notas": "Núcleo aislado de alta montaña. El caso más crítico de la comarca piloto."
+        "notas": "Núcleo aislado de alta montaña. El caso más crítico de la comarca piloto.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "PRADORRAMISQUEDO",
+        "ige_codmun": "32086",
+        "dato_edad_real": false,
+        "edad_proxy_concello": true,
+        "fuente_edad": "estimación provisional (concello sin Padrón de edad en datos)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.2331, 42.6211] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.2331,
+          42.6211
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -96,8 +155,8 @@
         "nombre": "Portomourisco",
         "concello": "Petín",
         "iv": 52,
-        "poblacion": 187,
-        "pct_mayores_65": 34,
+        "poblacion": 35,
+        "pct_mayores_65": 0.34,
         "pct_hogares_uniper_mayores": 21,
         "dispersion": "media",
         "distancia_servicios_km": 6.2,
@@ -105,9 +164,22 @@
         "capacidad_respuesta": 49,
         "num_accesos": 2,
         "cobertura_movil": "parcial",
-        "notas": "Mejor conectado al valle; riesgo medio por proximidad a masa forestal."
+        "notas": "Mejor conectado al valle; riesgo medio por proximidad a masa forestal.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "PORTOMOURISCO",
+        "ige_codmun": "32060",
+        "dato_edad_real": false,
+        "edad_proxy_concello": true,
+        "fuente_edad": "estimación provisional (concello sin Padrón de edad en datos)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.1158, 42.4309] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.1158,
+          42.4309
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -116,8 +188,8 @@
         "nombre": "Petín",
         "concello": "Petín",
         "iv": 44,
-        "poblacion": 421,
-        "pct_mayores_65": 29,
+        "poblacion": 597,
+        "pct_mayores_65": 0.29,
         "pct_hogares_uniper_mayores": 18,
         "dispersion": "baja",
         "distancia_servicios_km": 3.1,
@@ -125,9 +197,22 @@
         "capacidad_respuesta": 58,
         "num_accesos": 3,
         "cobertura_movil": "buena",
-        "notas": "Núcleo de valle con buenos accesos y servicios cercanos."
+        "notas": "Núcleo de valle con buenos accesos y servicios cercanos.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "PETÍN",
+        "ige_codmun": "32060",
+        "dato_edad_real": false,
+        "edad_proxy_concello": true,
+        "fuente_edad": "estimación provisional (concello sin Padrón de edad en datos)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.1042, 42.4006] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.1042,
+          42.4006
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -136,8 +221,8 @@
         "nombre": "A Rúa",
         "concello": "A Rúa",
         "iv": 31,
-        "poblacion": 4180,
-        "pct_mayores_65": 24,
+        "poblacion": 4119,
+        "pct_mayores_65": 0.24,
         "pct_hogares_uniper_mayores": 14,
         "dispersion": "baja",
         "distancia_servicios_km": 0.6,
@@ -145,9 +230,22 @@
         "capacidad_respuesta": 71,
         "num_accesos": 4,
         "cobertura_movil": "buena",
-        "notas": "Villa principal del tramo. Servicios de emergencia y centro de salud propios."
+        "notas": "Villa principal del tramo. Servicios de emergencia y centro de salud propios.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "RÚA DE VALDEORRAS, A",
+        "ige_codmun": "32072",
+        "dato_edad_real": false,
+        "edad_proxy_concello": true,
+        "fuente_edad": "estimación provisional (concello sin Padrón de edad en datos)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.1117, 42.3922] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.1117,
+          42.3922
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -156,8 +254,8 @@
         "nombre": "O Barco de Valdeorras",
         "concello": "O Barco de Valdeorras",
         "iv": 26,
-        "poblacion": 10980,
-        "pct_mayores_65": 22,
+        "poblacion": 11101,
+        "pct_mayores_65": 0.22,
         "pct_hogares_uniper_mayores": 12,
         "dispersion": "muy baja",
         "distancia_servicios_km": 0.3,
@@ -165,9 +263,22 @@
         "capacidad_respuesta": 79,
         "num_accesos": 5,
         "cobertura_movil": "buena",
-        "notas": "Capital de comarca. Máxima capacidad de respuesta; riesgo humano bajo."
+        "notas": "Capital de comarca. Máxima capacidad de respuesta; riesgo humano bajo.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "BARCO, O",
+        "ige_codmun": "32009",
+        "dato_edad_real": false,
+        "edad_proxy_concello": true,
+        "fuente_edad": "estimación provisional (concello sin Padrón de edad en datos)"
       },
-      "geometry": { "type": "Point", "coordinates": [-6.9831, 42.4164] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.9831,
+          42.4164
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -176,8 +287,8 @@
         "nombre": "Vilardesilva",
         "concello": "Rubiá",
         "iv": 67,
-        "poblacion": 71,
-        "pct_mayores_65": 47,
+        "poblacion": 30,
+        "pct_mayores_65": 0.47,
         "pct_hogares_uniper_mayores": 31,
         "dispersion": "alta",
         "distancia_servicios_km": 14.3,
@@ -185,9 +296,22 @@
         "capacidad_respuesta": 33,
         "num_accesos": 1,
         "cobertura_movil": "deficiente",
-        "notas": "Ladera de solana con matorral; acceso único y población envejecida."
+        "notas": "Ladera de solana con matorral; acceso único y población envejecida.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "VILAR DE SILVA",
+        "ige_codmun": "32073",
+        "dato_edad_real": false,
+        "edad_proxy_concello": true,
+        "fuente_edad": "estimación provisional (concello sin Padrón de edad en datos)"
       },
-      "geometry": { "type": "Point", "coordinates": [-6.9389, 42.4671] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.9389,
+          42.4671
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -196,8 +320,8 @@
         "nombre": "Casaio",
         "concello": "Carballeda de Valdeorras",
         "iv": 75,
-        "poblacion": 142,
-        "pct_mayores_65": 45,
+        "poblacion": 249,
+        "pct_mayores_65": 0.45,
         "pct_hogares_uniper_mayores": 29,
         "dispersion": "alta",
         "distancia_servicios_km": 19.2,
@@ -205,9 +329,22 @@
         "capacidad_respuesta": 28,
         "num_accesos": 1,
         "cobertura_movil": "deficiente",
-        "notas": "Bajo el macizo de Pena Trevinca; gran masa forestal y acceso de montaña."
+        "notas": "Bajo el macizo de Pena Trevinca; gran masa forestal y acceso de montaña.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "CASAIO",
+        "ige_codmun": "32017",
+        "dato_edad_real": false,
+        "edad_proxy_concello": true,
+        "fuente_edad": "estimación provisional (concello sin Padrón de edad en datos)"
       },
-      "geometry": { "type": "Point", "coordinates": [-6.8472, 42.4889] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.8472,
+          42.4889
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -216,8 +353,8 @@
         "nombre": "A Medua",
         "concello": "Carballeda de Valdeorras",
         "iv": 62,
-        "poblacion": 49,
-        "pct_mayores_65": 51,
+        "poblacion": 25,
+        "pct_mayores_65": 0.51,
         "pct_hogares_uniper_mayores": 35,
         "dispersion": "muy alta",
         "distancia_servicios_km": 11.7,
@@ -225,9 +362,22 @@
         "capacidad_respuesta": 36,
         "num_accesos": 1,
         "cobertura_movil": "parcial",
-        "notas": "Entorno de Las Médulas gallegas; núcleo pequeño y muy disperso."
+        "notas": "Entorno de Las Médulas gallegas; núcleo pequeño y muy disperso.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "MEDUA, A",
+        "ige_codmun": "32017",
+        "dato_edad_real": false,
+        "edad_proxy_concello": true,
+        "fuente_edad": "estimación provisional (concello sin Padrón de edad en datos)"
       },
-      "geometry": { "type": "Point", "coordinates": [-6.8061, 42.4538] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.8061,
+          42.4538
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -235,9 +385,9 @@
         "id": "vilamartin",
         "nombre": "Vilamartín de Valdeorras",
         "concello": "Vilamartín de Valdeorras",
-        "iv": 39,
-        "poblacion": 698,
-        "pct_mayores_65": 28,
+        "iv": 43,
+        "poblacion": 648,
+        "pct_mayores_65": 0.4055,
         "pct_hogares_uniper_mayores": 17,
         "dispersion": "baja",
         "distancia_servicios_km": 2.4,
@@ -245,9 +395,22 @@
         "capacidad_respuesta": 62,
         "num_accesos": 3,
         "cobertura_movil": "buena",
-        "notas": "Núcleo de fondo de valle, bien comunicado por la N-120."
+        "notas": "Núcleo de fondo de valle, bien comunicado por la N-120.",
+        "dato_poblacion_real": true,
+        "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
+        "ige_nome": "VILAMARTÍN",
+        "ige_codmun": "32088",
+        "dato_edad_real": true,
+        "edad_proxy_concello": true,
+        "fuente_edad": "Padrón IGE 2022 (proxy concello: 32088 Vilamartín de Valdeorras)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.0494, 42.4256] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.0494,
+          42.4256
+        ]
+      }
     }
   ]
 }

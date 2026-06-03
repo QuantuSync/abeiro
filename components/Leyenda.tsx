@@ -1,35 +1,54 @@
 "use client";
 
 import { CATEGORIAS_IV } from "@/lib/vulnerabilidad";
+import { CATEGORIAS_EVAC } from "@/lib/evacuacion";
 
-export default function Leyenda() {
+export type Lente = "vulnerabilidad" | "evacuacion";
+
+export default function Leyenda({ lente }: { lente: Lente }) {
+  const evac = lente === "evacuacion";
+  const cats = evac ? CATEGORIAS_EVAC : CATEGORIAS_IV;
+
   return (
-    <div className="leyenda" aria-label="Leyenda del Índice de Vulnerabilidad">
-      <h3>Índice de Vulnerabilidad</h3>
+    <div className="leyenda" aria-label={evac ? "Leyenda de dificultad de evacuación" : "Leyenda del Índice de Vulnerabilidad"}>
+      <h3>{evac ? "Dificultad de evacuación" : "Índice de Vulnerabilidad"}</h3>
       <ul>
-        {CATEGORIAS_IV.map((c) => (
+        {cats.map((c) => (
           <li key={c.id}>
             <span className="swatch" style={{ backgroundColor: c.color }} />
             <span className="etiqueta">{c.etiqueta}</span>
             <span className="rango">
-              {c.min}{c.id === "muy-alta" ? "–100" : `–${c.max}`}
+              {c.min}{c.max === 100 ? "–100" : `–${c.max}`}
             </span>
           </li>
         ))}
       </ul>
-      <p className="dato-real-nota">
-        <span className="anillo" /> Núcleo con dato de edad real (IGE)
-      </p>
-      <p className="dato-real-nota">
-        <span className="quemado" /> Perímetro quemado 2025 (Copernicus EMS)
-      </p>
-      <p className="dato-real-nota">
-        <span className="ruta-ln" /> Ruta de evacuación (OSM) · <span className="destino-pt" /> destino seguro
-      </p>
-      <p className="aviso">
-        Población real (Nomenclátor IGE 2025). Edad real solo donde hay Padrón por
-        concello; el resto, estimación provisional. No usar para decisiones reales.
-      </p>
+
+      {evac ? (
+        <>
+          <p className="dato-real-nota">
+            <span className="ruta-ln" /> Ruta de evacuación · <span className="destino-pt" /> destino seguro
+          </p>
+          <p className="aviso">
+            Dificultad = tiempo + redundancia (1 ruta = crítico) + % de pista. Deriva solo de
+            la capa de evacuación; es una lente distinta del Índice de Vulnerabilidad. Capa
+            estática: no considera aún el fuego.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="dato-real-nota">
+            <span className="anillo" /> Núcleo con dato de edad real (IGE)
+          </p>
+          <p className="dato-real-nota">
+            <span className="quemado" /> Perímetro quemado 2025 (Copernicus EMS)
+          </p>
+          <p className="aviso">
+            Población real (Nomenclátor IGE 2025). Edad real solo donde hay Padrón por
+            concello; el resto, estimación provisional. No usar para decisiones reales.
+          </p>
+        </>
+      )}
     </div>
   );
 }

@@ -9,7 +9,8 @@ import nucleosData from "@/data/nucleos.json";
 import afectacionData from "@/data/nucleos_afectacion_fisica.json";
 import evacuacionData from "@/data/evacuacion.json";
 import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
-import Leyenda from "@/components/Leyenda";
+import { EXPRESION_COLOR_EVAC, dificultadEvac } from "@/lib/evacuacion";
+import Leyenda, { type Lente } from "@/components/Leyenda";
 import PanelInfo, { type NucleoProps } from "@/components/PanelInfo";
 import PanelValidacion from "@/components/PanelValidacion";
 
@@ -20,15 +21,22 @@ const evacuacion = (evacuacionData as { nucleos: Record<string, Partial<NucleoPr
 const nucleosBase = nucleosData as unknown as FeatureCollection<Point, NucleoProps>;
 const nucleos: FeatureCollection<Point, NucleoProps> = {
   ...nucleosBase,
-  features: nucleosBase.features.map((f) => ({
-    ...f,
-    properties: {
+  features: nucleosBase.features.map((f) => {
+    const props: NucleoProps = {
       ...f.properties,
       ...(afectacion[f.properties.id] || {}),
       ...(evacuacion[f.properties.id] || {}),
-    },
-  })),
+    };
+    // Dificultad de evacuación (métrica derivada, independiente del IV).
+    const d = dificultadEvac(props);
+    if (d != null) props.dificultad_evac = d;
+    return { ...f, properties: props };
+  }),
 };
+
+// Capas que solo se muestran en cada lente.
+const CAPAS_VULN = ["nucleos-dato-real", "nucleos-afectado", "perimetro-fill", "perimetro-line"];
+const CAPAS_EVAC = ["rutas-evacuacion", "destinos-seguros"];
 
 // Estilo de basemap sin clave de API: teselas raster de OpenStreetMap.
 // En fases posteriores se sustituirá por PMTiles propio (vector, estático).
@@ -61,6 +69,7 @@ export default function MapaVulnerabilidad() {
   const mapRef = useRef<MapLibreMap | null>(null);
   const [seleccionado, setSeleccionado] = useState<NucleoProps | null>(null);
   const [mostrarValidacion, setMostrarValidacion] = useState(false);
+  const [lente, setLente] = useState<Lente>("vulnerabilidad");
 
   useEffect(() => {
     if (!contenedor.current || mapRef.current) return;
@@ -253,10 +262,49 @@ export default function MapaVulnerabilidad() {
     }
   }, [seleccionado]);
 
+  // Aplica la lente activa: recolorea los núcleos y muestra/oculta capas.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const aplicar = () => {
+      if (!map.getLayer("nucleos-punto")) return;
+      const evac = lente === "evacuacion";
+      map.setPaintProperty("nucleos-punto", "circle-color",
+        (evac ? EXPRESION_COLOR_EVAC : EXPRESION_COLOR_IV) as maplibregl.ExpressionSpecification);
+      for (const id of CAPAS_VULN) {
+        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", evac ? "none" : "visible");
+      }
+      for (const id of CAPAS_EVAC) {
+        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", evac ? "visible" : "none");
+      }
+    };
+    if (map.isStyleLoaded()) aplicar();
+    else map.once("load", aplicar);
+  }, [lente]);
+
   return (
     <div className="mapa-wrap">
       <div ref={contenedor} className="mapa" />
-      <Leyenda />
+
+      {/* Selector de lente: dos visualizaciones independientes del mismo mapa. */}
+      <div className="selector-lente" role="group" aria-label="Capa del mapa">
+        <button
+          className={lente === "vulnerabilidad" ? "activo" : ""}
+          onClick={() => setLente("vulnerabilidad")}
+          aria-pressed={lente === "vulnerabilidad"}
+        >
+          Vulnerabilidad
+        </button>
+        <button
+          className={lente === "evacuacion" ? "activo" : ""}
+          onClick={() => setLente("evacuacion")}
+          aria-pressed={lente === "evacuacion"}
+        >
+          Evacuación
+        </button>
+      </div>
+
+      <Leyenda lente={lente} />
       <button
         className="btn-validacion"
         onClick={() => setMostrarValidacion((v) => !v)}

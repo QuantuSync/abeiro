@@ -1,6 +1,7 @@
 "use client";
 
 import { categoriaPorIV } from "@/lib/vulnerabilidad";
+import { categoriaEvac } from "@/lib/evacuacion";
 
 export interface NucleoProps {
   id: string;
@@ -56,6 +57,7 @@ export interface NucleoProps {
   rutas_alternativas?: number | null;
   fiabilidad?: number;
   pct_track?: number;
+  dificultad_evac?: number;
 }
 
 // Traduce la etiqueta OSM de cubierta dominante a algo legible.
@@ -105,6 +107,8 @@ export default function PanelInfo({
         <h2>{nucleo.nombre}</h2>
         <p className="concello">Concello de {nucleo.concello}</p>
       </header>
+
+      <div className="bloque-titulo bt-vuln">Vulnerabilidad</div>
 
       <div className="iv-bloque" style={{ borderColor: cat.color }}>
         <div className="iv-num" style={{ color: cat.color }}>
@@ -233,17 +237,29 @@ export default function PanelInfo({
         </div>
       </div>
 
+      {(nucleo.es_destino || nucleo.destino_nombre) && (
+        <div className="bloque-titulo bt-evac">Evacuación</div>
+      )}
+
       {nucleo.es_destino ? (
         <div className="evacuacion destino">
-          <div className="evac-head">Evacuación</div>
           <div className="evac-destino">★ Destino seguro (cabecera comarcal con servicios)</div>
         </div>
       ) : nucleo.destino_nombre ? (
         <div className="evacuacion">
-          <div className="evac-head">
-            Evacuación{" "}
-            <Origen real="aprox" texto="OpenStreetMap · routing local" />
-          </div>
+          {nucleo.dificultad_evac != null && (() => {
+            const ce = categoriaEvac(nucleo.dificultad_evac);
+            return (
+              <div className="dif-bloque" style={{ borderColor: ce.color }}>
+                <div className="dif-num" style={{ color: ce.color }}>{nucleo.dificultad_evac}</div>
+                <div className="dif-meta">
+                  <span className="dif-label">Dificultad de evacuación</span>
+                  <span className="dif-cat" style={{ color: ce.color }}>Evacuación {ce.etiqueta.toLowerCase()}</span>
+                </div>
+                <Origen real="aprox" texto="OSM · routing local" />
+              </div>
+            );
+          })()}
           <div className="evac-destino">
             Destino seguro más cercano: <strong>{nucleo.destino_nombre}</strong>
           </div>

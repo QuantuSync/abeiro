@@ -231,6 +231,26 @@ En el mapa, las rutas se dibujan en verde (fiable) → naranja (depende de pista
 destinos seguros marcados en azul; el panel muestra destino, distancia, tiempo, redundancia
 y % de pista.
 
+## Dos lentes del mapa (vulnerabilidad y evacuación NO se funden)
+
+La interfaz tiene un **selector** que alterna entre dos visualizaciones independientes del
+mismo mapa. Son cosas distintas y **no se combinan en un único número**:
+
+- **Vulnerabilidad:** colorea por el Índice de Vulnerabilidad (verde→rojo). Muestra el
+  anillo de edad real y el perímetro quemado 2025.
+- **Evacuación:** colorea por la **dificultad de evacuación** (azul=fácil → rojo=difícil,
+  paleta distinta a propósito) y dibuja las rutas. La dificultad (`lib/evacuacion.ts`) deriva
+  **solo** de la capa de evacuación:
+  `dificultad = 0.35·tiempo + 0.45·redundancia + 0.20·pista` (0–100, pesos provisionales),
+  con `tiempo = min(100, tiempo_min/45·100)`, `redundancia` = 1 ruta → 100 (crítico), 2 → 40,
+  3 → 15, ≥4 → 0, y `pista = min(100, %pista·2.5)`. La redundancia pesa más: una sola salida
+  es el mayor riesgo. **No recalcula ni toca el IV.**
+
+El **panel** de cada núcleo muestra **siempre las dos lecturas separadas**, en bloques
+«Vulnerabilidad» y «Evacuación», para que se vea que un núcleo puede ser medio en una y
+crítico en la otra (p. ej. **Vilamartín**: IV 56 *media*, evacuación 64 *difícil*; o
+**Pradorramisquedo**: alto en ambas). La **leyenda** cambia según la lente activa.
+
 ## Privacidad (RGPD)
 
 La identidad nominal de personas vulnerables queda **fuera** del sistema. Solo se usan

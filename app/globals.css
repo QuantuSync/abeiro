@@ -462,6 +462,88 @@ body {
   margin: 0.6rem 0 0;
 }
 
+/* ---- Selector de lente ---- */
+.selector-lente {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  background: var(--panel-bg);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  box-shadow: var(--sombra);
+  padding: 3px;
+  gap: 2px;
+}
+.selector-lente button {
+  border: none;
+  background: transparent;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 1.1rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.selector-lente button.activo {
+  background: #11261d;
+  color: #fff;
+}
+
+/* ---- Títulos de bloque en el panel ---- */
+.bloque-titulo {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0.7rem 0 0.3rem;
+  padding-bottom: 0.2rem;
+  border-bottom: 2px solid;
+}
+.bt-vuln {
+  color: var(--acento);
+  border-color: #cfe3d7;
+}
+.bt-evac {
+  color: #0b6e99;
+  border-color: #cfe0e8;
+}
+
+/* Bloque de dificultad de evacuación (paralelo al de IV) */
+.dif-bloque {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border: 2px solid;
+  border-radius: 10px;
+  background: #fafafa;
+}
+.dif-num {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.dif-meta {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.dif-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+}
+.dif-cat {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
 /* ---- Botón y panel de validación ---- */
 .btn-validacion {
   position: absolute;

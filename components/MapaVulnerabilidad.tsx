@@ -16,7 +16,9 @@ const nucleos = nucleosData as unknown as FeatureCollection<Point, NucleoProps>;
 // En fases posteriores se sustituirá por PMTiles propio (vector, estático).
 const ESTILO_BASE: maplibregl.StyleSpecification = {
   version: 8,
-  glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+  // Glyphs (fuentes para etiquetas symbol). Debe servir PBF válido: el endpoint
+  // de openmaptiles devolvía HTML y provocaba el error "Unimplemented type: 4".
+  glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   sources: {
     osm: {
       type: "raster",
@@ -54,6 +56,8 @@ export default function MapaVulnerabilidad() {
       attributionControl: { compact: true },
     });
     mapRef.current = map;
+    // Aid de depuración/verificación: acceso a la instancia desde la consola.
+    (window as unknown as { __abeiroMap?: MapLibreMap }).__abeiroMap = map;
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");

@@ -129,22 +129,27 @@ La componente de **peligro biofísico** combina pendiente real y combustible apr
 - **Pendiente (dato REAL):** del **DEM europeo EU-DEM 25 m** (vía opentopodata). Se muestrea
   la cota en el centro y en 4 vecinos a 90 m y se calcula la pendiente por diferencias
   centradas. Más pendiente → propagación más rápida. Cache: `data/pendiente_dem.json`.
-- **Combustible (APROXIMACIÓN provisional):** combina *cuánto* material hay y *cómo de seco*
-  está:
-  - **Cubierta (OSM):** cubierta dominante del entorno (800 m) a partir de **OSM
-    `landuse`/`natural`**, ponderada por área → combustibilidad (matorral 90, arbolado 80,
-    pastos 45, cultivo 25, artificial/roca/agua ~5). Cache: `data/combustible_osm.json`.
-  - **Humedad (NDMI Sentinel-2):** el NDMI medio (1 km, verano 2025) de **Sentinel-2**
-    (`COPERNICUS/S2_SR_HARMONIZED`, vía Google Earth Engine) **modula** la combustibilidad
-    de cubierta: factor multiplicativo `1 ± 0.30` según el NDMI invertido y normalizado al
-    rango observado entre núcleos (NDMI bajo = seco → sube; alto = húmedo → baja). Al ser
-    multiplicativo, *poca vegetación = bajo peligro* se conserva (p. ej. A Rúa, NDMI bajo
-    pero urbano, sigue bajo). Cache: `data/ndmi_sentinel2.json`.
+- **Combustible (APROXIMACIÓN, basado en SATÉLITE):** se mide con **Sentinel-2**
+  (`COPERNICUS/S2_SR_HARMONIZED`, vía Google Earth Engine, verano 2025), combinando *cuánto*
+  material hay y *cómo de seco* está:
+  - **Biomasa (NDVI):** el NDVI medio (1 km) mide directamente la **cantidad** de vegetación.
+    `biomasa = NDVI_normalizado([0.348, 0.750]) × 100`. Cache: `data/ndvi_sentinel2.json`.
+  - **Inflamabilidad (NDMI):** el NDMI medio (1 km) modula por **humedad**:
+    `combustibilidad = biomasa × (1 ± 0.30)`, con el factor según el NDMI invertido y
+    normalizado al rango observado `[0.013, 0.269]` (seco → ×1.30; húmedo → ×0.70). Cache:
+    `data/ndmi_sentinel2.json`.
+  - Al ser multiplicativo: mucha biomasa + seca = máximo; mucha + húmeda = media; **poca
+    biomasa = baja** esté seca o no → los núcleos urbanos (A Rúa, O Barco) quedan con
+    combustible bajo pese a su NDMI seco.
+  - **El NDVI sustituye a la cubierta OSM** como medida de cantidad de vegetación (el satélite
+    la mide; OSM solo la etiquetaba, y mezclarlos sería doble conteo). La **cubierta OSM
+    (`data/combustible_osm.json`) queda solo como respaldo** para núcleos sin satélite.
   - **No es** el mapa de combustible calibrado (fotoguía + LiDAR), que es una fase aparte;
-    pero mejora sustancialmente la cubierta OSM sola.
-- `peligro_biofisico = 0.40·score_pendiente + 0.60·combustibilidad_refinada` (pesos
-  provisionales). Vilamartín no tiene cubierta OSM (hueco) → peligro solo-pendiente; el NDMI
-  no es aplicable sin cubierta de base.
+    pero ahora se basa en **medición directa de satélite** (cantidad y humedad de vegetación),
+    no en etiquetas de cubierta.
+- `peligro_biofisico = 0.40·score_pendiente + 0.60·combustibilidad` (pesos provisionales).
+  Con satélite, los 12 núcleos tienen combustible real (incluido Vilamartín, que no tenía
+  cubierta OSM).
 
 Los ficheros del IGE vienen en **ISO-8859-1**. El procesador parte de `data/nucleos.base.json`
 (línea base reproducible, con las componentes aún estimadas), los lee como `latin1`,

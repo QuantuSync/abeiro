@@ -30,13 +30,15 @@ export interface NucleoProps {
   vias_salida_por_tipo?: Record<string, number>;
   dato_capacidad_real?: boolean;
   fuente_capacidad?: string;
-  // Peligro biofísico (pendiente real + combustible OSM modulado por NDMI).
+  // Peligro biofísico (pendiente real + combustible Sentinel-2 NDVI+NDMI).
   pendiente_grados?: number;
   cota_m?: number;
   combustibilidad?: number;
-  combustibilidad_osm?: number;
+  cobertura_osm?: number;
+  biomasa_ndvi?: number;
   combustible_dominante?: string;
   combustible_fuente?: string;
+  ndvi?: number;
   ndmi?: number;
   dato_pendiente_real?: boolean;
   dato_combustible_aprox?: boolean;
@@ -173,9 +175,9 @@ export default function PanelInfo({
                 real="aprox"
                 texto={nucleo.combustible_sin_dato
                   ? "pendiente real · combustible sin dato"
-                  : nucleo.combustible_fuente === "OSM + NDMI Sentinel-2"
-                  ? "pendiente real · combustible OSM + NDMI Sentinel-2"
-                  : "pendiente real · combustible aprox."}
+                  : nucleo.combustible_fuente === "Sentinel-2 NDVI+NDMI"
+                  ? "pendiente real · combustible Sentinel-2 NDVI+NDMI"
+                  : `pendiente real · combustible ${nucleo.combustible_fuente || "aprox."}`}
               />
             ) : (
               <Origen real={false} texto="estimación" />
@@ -190,20 +192,23 @@ export default function PanelInfo({
             {nucleo.cota_m != null && <span> · {nucleo.cota_m} m</span>}
             {" · "}combustible{" "}
             {nucleo.combustible_sin_dato ? (
-              <strong>sin dato OSM</strong>
+              <strong>sin dato</strong>
             ) : (
               <>
-                <strong>{cubiertaLegible(nucleo.combustible_dominante)}</strong>
-                {nucleo.combustibilidad != null && <span> ({nucleo.combustibilidad})</span>}
-                {nucleo.combustibilidad_osm != null
-                  && nucleo.combustibilidad_osm !== nucleo.combustibilidad && (
-                    <span className="ponderado" title="Combustibilidad de cubierta OSM antes de modular por NDMI">
-                      {" "}← OSM {nucleo.combustibilidad_osm}
-                    </span>
-                  )}
+                <strong>{nucleo.combustibilidad}</strong>
+                {nucleo.ndvi != null && (
+                  <span className="ponderado" title="NDVI Sentinel-2 (biomasa/densidad de vegetación, verano 2025): más alto = más material">
+                    {" · "}NDVI {nucleo.ndvi}
+                  </span>
+                )}
                 {nucleo.ndmi != null && (
-                  <span className="ponderado" title="NDMI Sentinel-2 (humedad de vegetación, verano 2025): más bajo = más seco">
+                  <span className="ponderado" title="NDMI Sentinel-2 (humedad de vegetación): más bajo = más seco = más inflamable">
                     {" · "}NDMI {nucleo.ndmi}
+                  </span>
+                )}
+                {nucleo.combustible_dominante && (
+                  <span className="ponderado" title="Cubierta dominante OSM (referencia; el combustible se mide ya por satélite)">
+                    {" · "}cubierta {cubiertaLegible(nucleo.combustible_dominante)}
                   </span>
                 )}
               </>

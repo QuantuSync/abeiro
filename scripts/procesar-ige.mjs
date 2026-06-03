@@ -56,21 +56,43 @@ function peligroBiofisico(grados, combustibilidad) {
   return Math.round(PESO_PENDIENTE * sp + PESO_COMBUST * combustibilidad);
 }
 
-// Refinamiento del combustible con NDMI (Sentinel-2): MODULACIÓN MULTIPLICATIVA
-// de la combustibilidad de cubierta (OSM) por un factor derivado del NDMI
-// invertido y normalizado al rango observado entre los núcleos.
-//   - NDMI bajo  (vegetación seca) -> factor > 1 (sube el peligro)
-//   - NDMI alto  (vegetación húmeda) -> factor < 1 (baja el peligro)
-// Al ser multiplicativo, "poca vegetación = bajo peligro" se conserva (un valor
-// bajo de cubierta sigue siendo bajo); "densa y seca = máximo; densa y húmeda =
-// menos". AMP = amplitud máxima del ajuste (±30%), provisional.
+// AMP = amplitud máxima de la modulación por humedad (NDMI), ±30%, provisional.
 const NDMI_AMP = 0.30;
-function combustibleRefinado(combOSM, ndmi, ndmiMin, ndmiMax) {
+
+// Factor de inflamabilidad por humedad (NDMI invertido, normalizado al rango
+// observado): NDMI bajo (seco) -> >1; alto (húmedo) -> <1.
+function factorNDMI(ndmi, ndmiMin, ndmiMax) {
   const norm = ndmiMax > ndmiMin
     ? Math.max(0, Math.min(1, (ndmi - ndmiMin) / (ndmiMax - ndmiMin)))
     : 0.5;
-  const factor = 1 + NDMI_AMP * (1 - 2 * norm); // norm 0(seco)->1+AMP ; 1(húmedo)->1-AMP
-  return { factor, refinado: Math.max(0, Math.min(100, Math.round(combOSM * factor))) };
+  return 1 + NDMI_AMP * (1 - 2 * norm); // 0(seco)->1+AMP ; 1(húmedo)->1-AMP
+}
+
+// COMBUSTIBLE BASADO EN SATÉLITE (Sentinel-2). El NDVI mide CUÁNTA biomasa hay
+// (cantidad de material) y el NDMI modula la INFLAMABILIDAD (cómo de seco está):
+//   biomasa      = NDVI normalizado al rango observado * 100      (0-100)
+//   combustible  = biomasa * factorNDMI                            (0-100)
+// => Mucha biomasa + seca = máximo; mucha biomasa + húmeda = media; poca biomasa
+//    = baja esté seca o no (multiplicativo: 0 de biomasa -> 0). Esto mantiene a
+//    los núcleos urbanos (NDVI bajo) con combustible bajo pese a NDMI seco.
+function combustibleSatelite(ndvi, ndmi, ndviMin, ndviMax, ndmiMin, ndmiMax) {
+  const biomasaNorm = ndviMax > ndviMin
+    ? Math.max(0, Math.min(1, (ndvi - ndviMin) / (ndviMax - ndviMin)))
+    : 0.5;
+  const biomasa = biomasaNorm * 100;
+  const factor = factorNDMI(ndmi, ndmiMin, ndmiMax);
+  return {
+    biomasa: Math.round(biomasa),
+    factor,
+    combustibilidad: Math.max(0, Math.min(100, Math.round(biomasa * factor))),
+  };
+}
+
+// RESPALDO: combustible por cubierta OSM modulada por NDMI (solo para núcleos
+// sin dato de satélite).
+function combustibleOSM(combOSM, ndmi, ndmiMin, ndmiMax) {
+  const factor = factorNDMI(ndmi, ndmiMin, ndmiMax);
+  return { factor, combustibilidad: Math.max(0, Math.min(100, Math.round(combOSM * factor))) };
 }
 
 // Peso por CLASE de vía al contar salidas. Una pista forestal no es una vía de
@@ -178,13 +200,17 @@ const cargaCache = (f) => existsSync(join(DATA, f))
   ? JSON.parse(readFileSync(join(DATA, f), "utf8")).nucleos || {} : {};
 const accesos = cargaCache("accesos_osm.json");     // capacidad de respuesta
 const pendiente = cargaCache("pendiente_dem.json"); // peligro: pendiente (real)
-const combustible = cargaCache("combustible_osm.json"); // peligro: combustible cubierta (OSM)
+const combustible = cargaCache("combustible_osm.json"); // peligro: cubierta (OSM, respaldo)
 const ndmi = cargaCache("ndmi_sentinel2.json");     // peligro: humedad vegetación (Sentinel-2)
+const ndvi = cargaCache("ndvi_sentinel2.json");     // peligro: biomasa vegetación (Sentinel-2)
 
-// Rango observado de NDMI entre los núcleos (para normalizar el refinamiento).
-const ndmiVals = Object.values(ndmi).map((x) => x.ndmi).filter((v) => v != null);
-const NDMI_MIN = ndmiVals.length ? Math.min(...ndmiVals) : 0;
-const NDMI_MAX = ndmiVals.length ? Math.max(...ndmiVals) : 1;
+// Rangos observados (para normalizar al conjunto de núcleos).
+const rango = (obj, k) => {
+  const v = Object.values(obj).map((x) => x[k]).filter((n) => n != null);
+  return v.length ? [Math.min(...v), Math.max(...v)] : [0, 1];
+};
+const [NDMI_MIN, NDMI_MAX] = rango(ndmi, "ndmi");
+const [NDVI_MIN, NDVI_MAX] = rango(ndvi, "ndvi");
 
 const informe = [];
 
@@ -246,50 +272,53 @@ for (const feat of base.features) {
     p.dato_capacidad_real = false;
   }
 
-  // --- componente PELIGRO BIOFÍSICO (pendiente real + combustible OSM+NDMI) ---
-  const pe = pendiente[p.id], co = combustible[p.id], nm = ndmi[p.id];
+  // --- componente PELIGRO BIOFÍSICO (pendiente real + combustible SATÉLITE) ---
+  const pe = pendiente[p.id], co = combustible[p.id], nm = ndmi[p.id], nv = ndvi[p.id];
   let deltaPeligro = 0;
-  let combOSM = co?.combustibilidad ?? null; // combustibilidad de cubierta (OSM)
-  let pelOSM = null; // peligro solo con cubierta OSM (sin NDMI), para el informe
+  const cobOSM = co?.combustibilidad ?? null; // cubierta OSM (solo respaldo/referencia)
   if (pe && pe.pendiente_grados != null) {
     p.pendiente_grados = pe.pendiente_grados;
     p.cota_m = pe.cota_m;
     p.dato_pendiente_real = true; // pendiente: DATO REAL (DEM)
     let pelReal;
-    if (combOSM != null) {
-      p.combustible_dominante = co.dominante;
+    if (nv && nv.ndvi != null && nm && nm.ndmi != null) {
+      // PRINCIPAL: combustible medido por satélite (NDVI = biomasa, NDMI = humedad).
+      const sat = combustibleSatelite(nv.ndvi, nm.ndmi, NDVI_MIN, NDVI_MAX, NDMI_MIN, NDMI_MAX);
+      p.combustibilidad = sat.combustibilidad;
+      p.ndvi = nv.ndvi;
+      p.ndmi = nm.ndmi;
+      p.biomasa_ndvi = sat.biomasa;
+      p.ndmi_factor = Number(sat.factor.toFixed(3));
+      p.combustible_dominante = cobOSM != null ? co.dominante : null; // referencia OSM
+      if (cobOSM != null) p.cobertura_osm = cobOSM;
       p.dato_combustible_aprox = true;
-      pelOSM = peligroBiofisico(pe.pendiente_grados, combOSM);
-      if (nm && nm.ndmi != null) {
-        // Refina la cubierta OSM con la humedad de la vegetación (NDMI Sentinel-2).
-        const { factor, refinado } = combustibleRefinado(combOSM, nm.ndmi, NDMI_MIN, NDMI_MAX);
-        p.combustibilidad_osm = combOSM;     // cubierta sin modular (referencia)
-        p.combustibilidad = refinado;        // combustibilidad refinada (la que cuenta)
-        p.ndmi = nm.ndmi;
-        p.ndmi_factor = Number(factor.toFixed(3));
-        p.combustible_fuente = "OSM + NDMI Sentinel-2";
-        p.fuente_peligro = "Pendiente: EU-DEM 25 m (real). Combustible: cubierta OSM modulada "
-          + "por humedad de vegetación NDMI Sentinel-2 (verano 2025). Aproximación; aún no es "
-          + "el mapa de combustible calibrado (fotoguía + LiDAR).";
-        pelReal = peligroBiofisico(pe.pendiente_grados, refinado);
-      } else {
-        p.combustibilidad = combOSM;
-        p.combustible_fuente = "OSM";
-        p.fuente_peligro = "Pendiente: EU-DEM 25 m (real). Combustible: OSM landuse/natural "
-          + "(aproximación provisional, no mapa de combustible calibrado).";
-        pelReal = pelOSM;
-      }
+      p.combustible_sin_dato = false;
+      p.combustible_fuente = "Sentinel-2 NDVI+NDMI";
+      p.fuente_peligro = "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) "
+        + "modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el "
+        + "mapa de combustible calibrado (fotoguía + LiDAR).";
+      pelReal = peligroBiofisico(pe.pendiente_grados, sat.combustibilidad);
+    } else if (cobOSM != null) {
+      // RESPALDO: sin satélite, cubierta OSM (modulada por NDMI si lo hubiera).
+      const factor = nm?.ndmi != null ? factorNDMI(nm.ndmi, NDMI_MIN, NDMI_MAX) : 1;
+      p.combustibilidad = Math.max(0, Math.min(100, Math.round(cobOSM * factor)));
+      p.combustible_dominante = co.dominante;
+      p.cobertura_osm = cobOSM;
+      if (nm?.ndmi != null) p.ndmi = nm.ndmi;
+      p.dato_combustible_aprox = true;
+      p.combustible_sin_dato = false;
+      p.combustible_fuente = nm?.ndmi != null ? "OSM + NDMI (respaldo)" : "OSM (respaldo)";
+      p.fuente_peligro = "Pendiente: EU-DEM 25 m (real). Combustible: cubierta OSM (respaldo, "
+        + "sin NDVI de satélite en este núcleo).";
+      pelReal = peligroBiofisico(pe.pendiente_grados, p.combustibilidad);
     } else {
-      // Hueco de cartografía OSM: sin landuse/natural en el entorno. Peligro a
-      // partir de la PENDIENTE sola (real); el combustible queda sin dato.
+      // Ni satélite ni cubierta OSM: peligro solo a partir de la pendiente.
       p.combustible_dominante = null;
       p.dato_combustible_aprox = false;
       p.combustible_sin_dato = true;
       p.combustible_fuente = null;
       pelReal = scorePendiente(pe.pendiente_grados);
-      pelOSM = pelReal;
-      p.fuente_peligro = "Pendiente: EU-DEM 25 m (real). Combustible: sin dato OSM "
-        + "(hueco de cartografía); peligro derivado solo de la pendiente.";
+      p.fuente_peligro = "Pendiente: EU-DEM 25 m (real). Combustible: sin dato; solo pendiente.";
     }
     p.peligro_biofisico = pelReal;
     deltaPeligro = PESO_PELIGRO * (pelReal - pel0); // más peligro -> más vulnerabilidad
@@ -300,19 +329,14 @@ for (const feat of base.features) {
 
   p.iv = Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial + deltaCap + deltaPeligro)));
 
-  // IV "antes del NDMI" (combustible solo cubierta OSM), para el informe.
-  const ivOSM = pelOSM != null
-    ? Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial + deltaCap + PESO_PELIGRO * (pelOSM - pel0))))
-    : p.iv;
-
   informe.push({
     nucleo: p.nombre,
+    ndvi: nv?.ndvi ?? "—",
     ndmi: nm?.ndmi ?? "—",
-    combOSM: combOSM ?? "—",
-    combRef: combOSM != null ? p.combustibilidad : "—",
-    pelOSM: pelOSM ?? "—",
+    biomasa: p.biomasa_ndvi ?? "—",
+    comb: p.combustibilidad ?? "—",
+    fuente: p.combustible_fuente ?? "—",
     pel: p.peligro_biofisico,
-    ivOSM,
     iv: p.iv,
   });
 }
@@ -327,34 +351,36 @@ base.metadata = {
   capacidad_nota: "capacidad_respuesta se deriva de las vías de salida OSM PONDERADAS "
     + "por clase (primary/secondary/tertiary=1.0; unclassified/residential=0.5; track=0.2).",
   peligro_nota: "peligro_biofisico = " + PESO_PENDIENTE + "*score_pendiente + " + PESO_COMBUST
-    + "*combustibilidad. Pendiente: EU-DEM 25 m (REAL). Combustible: cubierta OSM landuse/natural "
-    + "MODULADA por humedad de vegetación NDMI Sentinel-2 (verano 2025), factor multiplicativo "
-    + "1±" + NDMI_AMP + " segun NDMI invertido y normalizado al rango observado [" + NDMI_MIN + ","
-    + NDMI_MAX + "]. APROXIMACIÓN; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+    + "*combustibilidad. Pendiente: EU-DEM 25 m (REAL). Combustible: SATÉLITE Sentinel-2 — "
+    + "biomasa = NDVI normalizado al rango observado [" + NDVI_MIN + "," + NDVI_MAX + "] *100; "
+    + "combustibilidad = biomasa * (1±" + NDMI_AMP + ") segun NDMI invertido normalizado a ["
+    + NDMI_MIN + "," + NDMI_MAX + "]. El NDVI sustituye a la cubierta OSM como medida de cantidad "
+    + "de vegetación (OSM queda solo de respaldo). APROXIMACIÓN; aún no es el mapa calibrado "
+    + "(fotoguía + LiDAR), pero se basa en medición directa de satélite, no en etiquetas.",
   pesos_iv: { peligro_biofisico: PESO_PELIGRO, sensibilidad_social: PESO_SOCIAL, capacidad_respuesta: PESO_CAP },
   pesos_via: PESOS_VIA,
   ndmi_amplitud: NDMI_AMP,
   ndmi_rango_observado: [NDMI_MIN, NDMI_MAX],
+  ndvi_rango_observado: [NDVI_MIN, NDVI_MAX],
   fuente_edad_concellos: "data/padron_edad_concellos.csv",
   fuente_accesos: "data/accesos_osm.json (OpenStreetMap, ODbL).",
-  fuente_peligro: "data/pendiente_dem.json (EU-DEM 25 m) + data/combustible_osm.json (OSM, ODbL) "
-    + "+ data/ndmi_sentinel2.json (Sentinel-2 S2_SR_HARMONIZED, Earth Engine).",
+  fuente_peligro: "data/pendiente_dem.json (EU-DEM 25 m) + data/ndvi_sentinel2.json + "
+    + "data/ndmi_sentinel2.json (Sentinel-2 S2_SR_HARMONIZED, Earth Engine); "
+    + "data/combustible_osm.json (OSM, ODbL) solo como respaldo.",
 };
 
 writeFileSync(join(DATA, "nucleos.json"), JSON.stringify(base, null, 2) + "\n", "utf8");
 
-// Informe: efecto del NDMI sobre combustible, peligro e IV.
-console.log(`NDMI rango observado: [${NDMI_MIN}, ${NDMI_MAX}] | amplitud ±${NDMI_AMP}`);
-console.log("--- Combustible OSM -> refinado(NDMI), peligro e IV (antes->después del NDMI) ---");
-console.log(`${"núcleo".padEnd(26)} NDMI   combOSM->ref  peligro(osm->ref)  IV(osm->ref)`);
+// Informe: combustible basado en satélite (NDVI=biomasa, NDMI=humedad).
+console.log(`NDVI rango [${NDVI_MIN}, ${NDVI_MAX}] | NDMI rango [${NDMI_MIN}, ${NDMI_MAX}] | amplitud ±${NDMI_AMP}`);
+console.log("--- Combustible SATÉLITE por núcleo ---");
+console.log(`${"núcleo".padEnd(26)} NDVI   NDMI   biomasa  comb  peligro  IV   fuente`);
 for (const r of informe) {
   console.log(
-    `${r.nucleo.padEnd(26)} ${String(r.ndmi).padStart(5)}  ${String(r.combOSM).padStart(3)} -> ${String(r.combRef).padStart(3)}      `
-    + `${String(r.pelOSM).padStart(3)} -> ${String(r.pel).padStart(3)}        `
-    + `${String(r.ivOSM).padStart(3)} -> ${String(r.iv).padStart(3)}`
+    `${r.nucleo.padEnd(26)} ${String(r.ndvi).padStart(5)}  ${String(r.ndmi).padStart(5)}  `
+    + `${String(r.biomasa).padStart(5)}  ${String(r.comb).padStart(4)}  ${String(r.pel).padStart(5)}  `
+    + `${String(r.iv).padStart(3)}   ${r.fuente}`
   );
 }
-const conNdmi = informe.filter((r) => r.ndmi !== "—" && r.combOSM !== "—").length;
-console.log(`\nCombustible refinado con NDMI: ${conNdmi}/12`);
-const sinRef = informe.filter((r) => r.combOSM === "—").map((r) => r.nucleo);
-if (sinRef.length) console.log("Sin cubierta OSM (peligro solo-pendiente, NDMI no aplicable):", sinRef.join(", "));
+const conSat = informe.filter((r) => r.fuente === "Sentinel-2 NDVI+NDMI").length;
+console.log(`\nCombustible por satélite (NDVI+NDMI): ${conSat}/12`);

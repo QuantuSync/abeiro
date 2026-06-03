@@ -7,20 +7,26 @@ import type { FeatureCollection, Point } from "geojson";
 
 import nucleosData from "@/data/nucleos.json";
 import afectacionData from "@/data/nucleos_afectacion_fisica.json";
+import evacuacionData from "@/data/evacuacion.json";
 import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
 import Leyenda from "@/components/Leyenda";
 import PanelInfo, { type NucleoProps } from "@/components/PanelInfo";
 import PanelValidacion from "@/components/PanelValidacion";
 
-// Capa de afectación física (validación EMSR837): se une por id a cada núcleo
-// SOLO para visualización; no forma parte del Índice de Vulnerabilidad.
+// Capas de afectación física (EMSR837) y de evacuación: se unen por id a cada
+// núcleo SOLO para visualización; no forman parte del Índice de Vulnerabilidad.
 const afectacion = (afectacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
+const evacuacion = (evacuacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
 const nucleosBase = nucleosData as unknown as FeatureCollection<Point, NucleoProps>;
 const nucleos: FeatureCollection<Point, NucleoProps> = {
   ...nucleosBase,
   features: nucleosBase.features.map((f) => ({
     ...f,
-    properties: { ...f.properties, ...(afectacion[f.properties.id] || {}) },
+    properties: {
+      ...f.properties,
+      ...(afectacion[f.properties.id] || {}),
+      ...(evacuacion[f.properties.id] || {}),
+    },
   })),
 };
 
@@ -92,7 +98,39 @@ export default function MapaVulnerabilidad() {
         paint: { "line-color": "#7a1f12", "line-width": 1, "line-opacity": 0.55 },
       });
 
+      // Rutas de evacuación (capa independiente). Color por % de pista forestal:
+      // verde = ruta fiable (asfalto), naranja = depende de pista (poco fiable).
+      map.addSource("rutas", { type: "geojson", data: "/rutas_evacuacion.geojson" });
+      map.addLayer({
+        id: "rutas-evacuacion",
+        type: "line",
+        source: "rutas",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-width": 3,
+          "line-opacity": 0.85,
+          "line-color": [
+            "step", ["get", "pct_track"],
+            "#1f6f4a", 15, "#d8a200", 30, "#c2521e",
+          ],
+        },
+      });
+
       map.addSource("nucleos", { type: "geojson", data: nucleos });
+
+      // Destinos seguros (cabeceras comarcales): marcador de estrella/diamante.
+      map.addLayer({
+        id: "destinos-seguros",
+        type: "circle",
+        source: "nucleos",
+        filter: ["==", ["get", "es_destino"], true],
+        paint: {
+          "circle-radius": 9,
+          "circle-color": "#0b6e99",
+          "circle-stroke-width": 2.5,
+          "circle-stroke-color": "#ffffff",
+        },
+      });
 
       // Halo blanco para destacar el punto sobre el basemap.
       map.addLayer({

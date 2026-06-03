@@ -1,0 +1,238 @@
+{
+  "metadata": {
+    "descripcion": "Capa de evacuación estática: ruta por carretera de cada núcleo al destino seguro más cercano. Capa independiente; NO es parte del IV.",
+    "destinos_seguros": [
+      "A Rúa",
+      "O Barco de Valdeorras"
+    ],
+    "fuente": "OpenStreetMap (extracto bbox Valdeorras, descargado una vez vía Overpass; ODbL). Routing local con networkx.",
+    "metodo": "Grafo viario ponderado por tipo (velocidad y fiabilidad). Ruta más rápida; rutas_alternativas = nº de rutas independientes (edge-disjoint) a un destino. fiabilidad = media de fiabilidad por longitud (1=asfalto, 0.3=pista); pct_track = % del recorrido por pista forestal.",
+    "velocidades_kmh": {
+      "motorway": 100,
+      "trunk": 90,
+      "primary": 80,
+      "secondary": 70,
+      "tertiary": 60,
+      "unclassified": 45,
+      "residential": 30,
+      "living_street": 20,
+      "service": 25,
+      "track": 18,
+      "road": 45
+    },
+    "fiabilidad_por_tipo": {
+      "motorway": 1.0,
+      "trunk": 1.0,
+      "primary": 1.0,
+      "secondary": 1.0,
+      "tertiary": 1.0,
+      "unclassified": 0.7,
+      "residential": 0.7,
+      "living_street": 0.6,
+      "service": 0.6,
+      "track": 0.3,
+      "road": 0.6
+    },
+    "limitacion": "Evacuación ESTÁTICA: no considera el fuego (qué rutas quedan cortadas) ni el tráfico ni la hora. Primer paso verificable."
+  },
+  "nucleos": {
+    "larouco": {
+      "nombre": "Larouco",
+      "es_destino": false,
+      "destino": "a-rua",
+      "destino_nombre": "A Rúa",
+      "dist_km": 43.7,
+      "tiempo_min": 38.4,
+      "rutas_alternativas": 2,
+      "fiabilidad": 0.97,
+      "pct_track": 3,
+      "por_tipo_km": {
+        "trunk": 20.86,
+        "secondary": 19.3,
+        "track": 1.51,
+        "tertiary": 1.25,
+        "residential": 0.8
+      }
+    },
+    "seadur": {
+      "nombre": "Seadur",
+      "es_destino": false,
+      "destino": "a-rua",
+      "destino_nombre": "A Rúa",
+      "dist_km": 48.8,
+      "tiempo_min": 47.8,
+      "rutas_alternativas": 2,
+      "fiabilidad": 0.94,
+      "pct_track": 7,
+      "por_tipo_km": {
+        "secondary": 22.3,
+        "trunk": 20.86,
+        "track": 3.56,
+        "tertiary": 1.25,
+        "residential": 0.83
+      }
+    },
+    "freixido": {
+      "nombre": "Freixido",
+      "es_destino": false,
+      "destino": "a-rua",
+      "destino_nombre": "A Rúa",
+      "dist_km": 46.7,
+      "tiempo_min": 46.0,
+      "rutas_alternativas": 2,
+      "fiabilidad": 0.94,
+      "pct_track": 6,
+      "por_tipo_km": {
+        "trunk": 20.86,
+        "secondary": 15.12,
+        "tertiary": 4.86,
+        "track": 2.62,
+        "residential": 1.78,
+        "unclassified": 1.45
+      }
+    },
+    "pradorramisquedo": {
+      "nombre": "Pradorramisquedo",
+      "es_destino": false,
+      "destino": "a-rua",
+      "destino_nombre": "A Rúa",
+      "dist_km": 64.6,
+      "tiempo_min": 78.6,
+      "rutas_alternativas": 1,
+      "fiabilidad": 0.89,
+      "pct_track": 15,
+      "por_tipo_km": {
+        "trunk": 20.86,
+        "tertiary": 17.02,
+        "secondary": 15.12,
+        "track": 9.37,
+        "unclassified": 1.41,
+        "residential": 0.8
+      }
+    },
+    "portomourisco": {
+      "nombre": "Portomourisco",
+      "es_destino": false,
+      "destino": "a-rua",
+      "destino_nombre": "A Rúa",
+      "dist_km": 12.3,
+      "tiempo_min": 24.4,
+      "rutas_alternativas": 2,
+      "fiabilidad": 0.71,
+      "pct_track": 39,
+      "por_tipo_km": {
+        "tertiary": 6.67,
+        "track": 4.79,
+        "residential": 0.88
+      }
+    },
+    "petin": {
+      "nombre": "Petín",
+      "es_destino": false,
+      "destino": "a-rua",
+      "destino_nombre": "A Rúa",
+      "dist_km": 1.7,
+      "tiempo_min": 2.9,
+      "rutas_alternativas": 2,
+      "fiabilidad": 0.79,
+      "pct_track": 1,
+      "por_tipo_km": {
+        "residential": 1.15,
+        "tertiary": 0.51,
+        "track": 0.02
+      }
+    },
+    "a-rua": {
+      "nombre": "A Rúa",
+      "es_destino": true,
+      "destino": "a-rua",
+      "destino_nombre": "A Rúa",
+      "dist_km": 0,
+      "tiempo_min": 0,
+      "rutas_alternativas": null,
+      "fiabilidad": 1.0,
+      "pct_track": 0
+    },
+    "o-barco": {
+      "nombre": "O Barco de Valdeorras",
+      "es_destino": true,
+      "destino": "o-barco",
+      "destino_nombre": "O Barco de Valdeorras",
+      "dist_km": 0,
+      "tiempo_min": 0,
+      "rutas_alternativas": null,
+      "fiabilidad": 1.0,
+      "pct_track": 0
+    },
+    "vilardesilva": {
+      "nombre": "Vilardesilva",
+      "es_destino": false,
+      "destino": "o-barco",
+      "destino_nombre": "O Barco de Valdeorras",
+      "dist_km": 10.3,
+      "tiempo_min": 14.6,
+      "rutas_alternativas": 2,
+      "fiabilidad": 0.81,
+      "pct_track": 26,
+      "por_tipo_km": {
+        "trunk": 6.01,
+        "track": 2.7,
+        "secondary": 1.31,
+        "residential": 0.16,
+        "tertiary": 0.12
+      }
+    },
+    "casaio": {
+      "nombre": "Casaio",
+      "es_destino": false,
+      "destino": "o-barco",
+      "destino_nombre": "O Barco de Valdeorras",
+      "dist_km": 20.4,
+      "tiempo_min": 26.3,
+      "rutas_alternativas": 1,
+      "fiabilidad": 0.83,
+      "pct_track": 19,
+      "por_tipo_km": {
+        "trunk": 12.92,
+        "track": 3.88,
+        "unclassified": 1.76,
+        "secondary": 1.24,
+        "residential": 0.65
+      }
+    },
+    "a-medua": {
+      "nombre": "A Medua",
+      "es_destino": false,
+      "destino": "o-barco",
+      "destino_nombre": "O Barco de Valdeorras",
+      "dist_km": 22.5,
+      "tiempo_min": 21.2,
+      "rutas_alternativas": 1,
+      "fiabilidad": 0.93,
+      "pct_track": 10,
+      "por_tipo_km": {
+        "trunk": 20.13,
+        "track": 2.24,
+        "residential": 0.16
+      }
+    },
+    "vilamartin": {
+      "nombre": "Vilamartín de Valdeorras",
+      "es_destino": false,
+      "destino": "a-rua",
+      "destino_nombre": "A Rúa",
+      "dist_km": 8.5,
+      "tiempo_min": 11.8,
+      "rutas_alternativas": 1,
+      "fiabilidad": 0.82,
+      "pct_track": 19,
+      "por_tipo_km": {
+        "trunk": 3.57,
+        "tertiary": 1.86,
+        "track": 1.58,
+        "unclassified": 0.94,
+        "residential": 0.5
+      }
+    }
+  }
+}

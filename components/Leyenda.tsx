@@ -23,6 +23,9 @@ export default function Leyenda() {
       <p className="dato-real-nota">
         <span className="quemado" /> Perímetro quemado 2025 (Copernicus EMS)
       </p>
+      <p className="dato-real-nota">
+        <span className="ruta-ln" /> Ruta de evacuación (OSM) · <span className="destino-pt" /> destino seguro
+      </p>
       <p className="aviso">
         Población real (Nomenclátor IGE 2025). Edad real solo donde hay Padrón por
         concello; el resto, estimación provisional. No usar para decisiones reales.

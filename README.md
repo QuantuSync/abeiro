@@ -206,6 +206,31 @@ En el mapa, el perímetro se pinta en granate y los núcleos dentro del área ll
 oscuro; el panel muestra el estado de afectación marcado como dato Copernicus EMS con su
 limitación.
 
+## Capa de evacuación estática (corazón de la misión, NO es parte del IV)
+
+No "dónde arde" sino "por dónde se sale vivo". Para cada núcleo se calcula la **ruta real de
+evacuación por carretera** hasta el **destino seguro más cercano** (cabeceras comarcales con
+servicios: **A Rúa** y **O Barco de Valdeorras**). Es una capa nueva e independiente; el IV
+no se toca.
+
+- **Método** (`scripts/evacuacion_osm.py`): se descarga **una vez** un extracto OSM de las
+  carreteras del bbox de Valdeorras (vía Overpass; cache `data/osm_valdeorras.json`,
+  gitignored) y se construye el **grafo viario en local con `networkx`** (≈258k nodos). El
+  build de la web **no** depende de llamadas en vivo: lee los resultados estáticos.
+- **Ponderación por tipo de vía:** velocidad y *fiabilidad* por clase (asfalto fiable, pista
+  forestal lenta y poco fiable: una ruta que solo va por pista **no** es salida segura). La
+  ruta elegida es la más rápida; se reporta el % por pista y una fiabilidad media 0–1.
+- **Por núcleo:** destino seguro asignado, **distancia** (km) y **tiempo** por carretera, y
+  **nº de rutas alternativas independientes** (conectividad de aristas al conjunto de
+  destinos = redundancia; 1 = sin redundancia, más vulnerable). Resultado en
+  `data/evacuacion.json`; líneas para el mapa en `public/rutas_evacuacion.geojson`.
+- **Limitación:** evacuación **estática** — todavía no considera el fuego (qué vías quedan
+  cortadas), ni el tráfico ni la hora. Es el primer paso verificable, sin motor de fuego.
+
+En el mapa, las rutas se dibujan en verde (fiable) → naranja (depende de pista), con los
+destinos seguros marcados en azul; el panel muestra destino, distancia, tiempo, redundancia
+y % de pista.
+
 ## Privacidad (RGPD)
 
 La identidad nominal de personas vulnerables queda **fuera** del sistema. Solo se usan

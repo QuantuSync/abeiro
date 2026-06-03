@@ -174,6 +174,23 @@ body {
   border: 1px solid #7a1f12;
   flex: none;
 }
+.leyenda .ruta-ln {
+  width: 16px;
+  height: 0;
+  border-top: 3px solid #1f6f4a;
+  flex: none;
+  display: inline-block;
+}
+.leyenda .destino-pt {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0b6e99;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #0b6e99;
+  flex: none;
+  display: inline-block;
+}
 .leyenda .aviso {
   margin: 0.5rem 0 0;
   font-size: 0.7rem;
@@ -350,6 +367,42 @@ body {
   border-radius: 4px;
 }
 
+.evacuacion {
+  margin: 0.8rem 0;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #cfe0e8;
+  border-radius: 8px;
+  background: #f2f8fb;
+}
+.evacuacion.destino {
+  border-color: #b6dce8;
+  background: #eaf5fa;
+}
+.evac-head {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #0b6e99;
+  margin-bottom: 0.35rem;
+}
+.evac-destino {
+  font-size: 0.86rem;
+  margin-bottom: 0.3rem;
+}
+.evac-datos {
+  margin: 0.2rem 0 0;
+}
+.evac-datos dd.alerta {
+  color: #c2521e;
+  font-weight: 700;
+}
+.evac-nota {
+  font-size: 0.7rem;
+  color: var(--texto-suave);
+  line-height: 1.3;
+  margin: 0.45rem 0 0;
+}
 .afectacion {
   margin: 0.8rem 0;
   padding: 0.6rem 0.7rem;

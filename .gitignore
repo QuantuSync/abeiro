@@ -56,3 +56,10 @@ data/_*.py
 data/effis_cap.xml
 data/*_test.json
 data/mit.xml
+
+# Extracto OSM de evacuacion (pesado, reproducible via script)
+data/osm_valdeorras.json
+
+# Python
+__pycache__/
+*.pyc

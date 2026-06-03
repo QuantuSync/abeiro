@@ -48,6 +48,14 @@ export interface NucleoProps {
   borde_500m?: boolean;
   fecha_frente?: string | null;
   dist_area_m?: number;
+  // Evacuación estática (capa independiente; NO es parte del IV).
+  es_destino?: boolean;
+  destino_nombre?: string;
+  dist_km?: number;
+  tiempo_min?: number;
+  rutas_alternativas?: number | null;
+  fiabilidad?: number;
+  pct_track?: number;
 }
 
 // Traduce la etiqueta OSM de cubierta dominante a algo legible.
@@ -224,6 +232,51 @@ export default function PanelInfo({
           <strong>{nucleo.capacidad_respuesta}</strong>
         </div>
       </div>
+
+      {nucleo.es_destino ? (
+        <div className="evacuacion destino">
+          <div className="evac-head">Evacuación</div>
+          <div className="evac-destino">★ Destino seguro (cabecera comarcal con servicios)</div>
+        </div>
+      ) : nucleo.destino_nombre ? (
+        <div className="evacuacion">
+          <div className="evac-head">
+            Evacuación{" "}
+            <Origen real="aprox" texto="OpenStreetMap · routing local" />
+          </div>
+          <div className="evac-destino">
+            Destino seguro más cercano: <strong>{nucleo.destino_nombre}</strong>
+          </div>
+          <dl className="datos evac-datos">
+            <div>
+              <dt>Distancia por carretera</dt>
+              <dd>{nucleo.dist_km} km</dd>
+            </div>
+            <div>
+              <dt>Tiempo estimado</dt>
+              <dd>{nucleo.tiempo_min} min</dd>
+            </div>
+            <div>
+              <dt>Rutas alternativas independientes</dt>
+              <dd className={nucleo.rutas_alternativas != null && nucleo.rutas_alternativas <= 1 ? "alerta" : ""}>
+                {nucleo.rutas_alternativas ?? "—"}
+                {nucleo.rutas_alternativas != null && nucleo.rutas_alternativas <= 1 && " (sin redundancia)"}
+              </dd>
+            </div>
+            <div>
+              <dt>Recorrido por pista forestal</dt>
+              <dd className={nucleo.pct_track != null && nucleo.pct_track >= 25 ? "alerta" : ""}>
+                {nucleo.pct_track}% {nucleo.pct_track != null && nucleo.pct_track >= 25 && "⚠"}
+              </dd>
+            </div>
+          </dl>
+          <p className="evac-nota">
+            Ruta más rápida por carretera (OSM, routing local; pistas penalizadas).
+            Evacuación <strong>estática</strong>: no considera aún el fuego (qué vías quedan
+            cortadas) ni el tráfico. Capa independiente, no parte del índice.
+          </p>
+        </div>
+      ) : null}
 
       {nucleo.afect_fisica !== undefined && (
         <div className="afectacion">

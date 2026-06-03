@@ -292,10 +292,23 @@ body {
   color: #1a7d45;
   border: 1px solid #b3e0c4;
 }
+.origen.aprox {
+  background: #fdf3e0;
+  color: #9a6a16;
+  border: 1px solid #f0d9a8;
+}
 .origen.estim {
   background: #f0eee9;
   color: #8a8377;
   border: 1px solid #ddd8cd;
+}
+.subfactor {
+  font-size: 0.76rem;
+  color: var(--texto-suave);
+  margin: -0.2rem 0 0.1rem;
+}
+.subfactor strong {
+  color: var(--texto);
 }
 
 .factores {

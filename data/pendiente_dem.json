@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "fuente": "EU-DEM 25 m vía opentopodata.org",
+    "offset_m": 90,
+    "metodo": "diferencias centradas centro/N-S/E-O"
+  },
+  "nucleos": {
+    "larouco": {
+      "nombre": "Larouco",
+      "cota_m": 849,
+      "pendiente_grados": 9.6,
+      "pendiente_pct": 16.9
+    },
+    "seadur": {
+      "nombre": "Seadur",
+      "cota_m": 1017,
+      "pendiente_grados": 16.9,
+      "pendiente_pct": 30.3
+    },
+    "freixido": {
+      "nombre": "Freixido",
+      "cota_m": 845,
+      "pendiente_grados": 18.8,
+      "pendiente_pct": 33.9
+    },
+    "pradorramisquedo": {
+      "nombre": "Pradorramisquedo",
+      "cota_m": 755,
+      "pendiente_grados": 27.6,
+      "pendiente_pct": 52.3
+    },
+    "portomourisco": {
+      "nombre": "Portomourisco",
+      "cota_m": 1063,
+      "pendiente_grados": 15.5,
+      "pendiente_pct": 27.7
+    },
+    "petin": {
+      "nombre": "Petín",
+      "cota_m": 324,
+      "pendiente_grados": 7.4,
+      "pendiente_pct": 12.9
+    },
+    "a-rua": {
+      "nombre": "A Rúa",
+      "cota_m": 295,
+      "pendiente_grados": 1.3,
+      "pendiente_pct": 2.2
+    },
+    "o-barco": {
+      "nombre": "O Barco de Valdeorras",
+      "cota_m": 323,
+      "pendiente_grados": 1.3,
+      "pendiente_pct": 2.3
+    },
+    "vilardesilva": {
+      "nombre": "Vilardesilva",
+      "cota_m": 762,
+      "pendiente_grados": 19.3,
+      "pendiente_pct": 35
+    },
+    "casaio": {
+      "nombre": "Casaio",
+      "cota_m": 868,
+      "pendiente_grados": 17,
+      "pendiente_pct": 30.7
+    },
+    "a-medua": {
+      "nombre": "A Medua",
+      "cota_m": 640,
+      "pendiente_grados": 27.1,
+      "pendiente_pct": 51.2
+    },
+    "vilamartin": {
+      "nombre": "Vilamartín de Valdeorras",
+      "cota_m": 377,
+      "pendiente_grados": 15.9,
+      "pendiente_pct": 28.5
+    }
+  }
+}

@@ -123,6 +123,19 @@ La componente de **capacidad de respuesta** usa la **red viaria de OpenStreetMap
   las aldeas conectadas sólo por pistas reflejan su aislamiento real (menor capacidad, mayor
   vulnerabilidad). Los pesos quedan documentados en `nucleos.json` (`metadata.pesos_via`).
 
+La componente de **peligro biofísico** combina pendiente real y combustible aproximado
+(`scripts/fetch-peligro.mjs`):
+
+- **Pendiente (dato REAL):** del **DEM europeo EU-DEM 25 m** (vía opentopodata). Se muestrea
+  la cota en el centro y en 4 vecinos a 90 m y se calcula la pendiente por diferencias
+  centradas. Más pendiente → propagación más rápida. Cache: `data/pendiente_dem.json`.
+- **Combustible (APROXIMACIÓN provisional):** cubierta dominante del entorno (800 m) a partir
+  de **OSM `landuse`/`natural`**, ponderada por área y traducida a un nivel de combustibilidad
+  (matorral 90, arbolado 80, pastos 45, cultivo 25, artificial/roca/agua ~5). Cache:
+  `data/combustible_osm.json`. **No es** el mapa de combustible calibrado (Sentinel-2 + LiDAR
+  + fotoguía de Galicia), que es una fase aparte.
+- `peligro_biofisico = 0.40·score_pendiente + 0.60·combustibilidad` (pesos provisionales).
+
 Los ficheros del IGE vienen en **ISO-8859-1**. El procesador parte de `data/nucleos.base.json`
 (línea base reproducible, con las componentes aún estimadas), los lee como `latin1`,
 normaliza nombres a UTF-8, cruza las aldeas del Nomenclátor con los núcleos del mapa
@@ -131,16 +144,17 @@ normaliza nombres a UTF-8, cruza las aldeas del Nomenclátor con los núcleos de
 / `dato_edad_real` / `dato_capacidad_real` qué componentes ya usan dato real.
 
 ```bash
-node scripts/fetch-accesos-osm.mjs --force   # (opcional) re-consulta Overpass y cachea
-node scripts/procesar-ige.mjs                # regenera data/nucleos.json desde base + IGE + OSM
+node scripts/fetch-accesos-osm.mjs --force   # (opcional) red viaria OSM -> accesos_osm.json
+node scripts/fetch-peligro.mjs --force        # (opcional) pendiente EU-DEM + combustible OSM
+node scripts/procesar-ige.mjs                 # regenera data/nucleos.json desde base + IGE + OSM + DEM
 ```
 
 En el mapa, los núcleos con **edad real** se marcan con un anillo verde; el panel de cada
-núcleo muestra la procedencia de cada dato (real / estimación).
-
-> **Cobertura actual:** 11 de los 12 núcleos del mapa tienen edad real (los 9 concellos del
-> piloto). Pradorramisquedo pertenece a **Viana do Bolo (32086)**, fuera de los 9 concellos:
-> conserva población real pero su edad queda como estimación hasta añadir ese concello al CSV.
+núcleo muestra la procedencia de cada dato: **real** (verde), **aproximación** (ámbar,
+combustible) o **estimación** (gris). El **Índice de Vulnerabilidad** combina las tres
+componentes con pesos provisionales `peligro 0.40 · social 0.35 · capacidad 0.25`
+(`metadata.pesos_iv`); su **calibración supervisada** (ROC/AUC contra el incendio de 2025)
+es una fase posterior.
 
 ### Categorías
 

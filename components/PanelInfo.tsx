@@ -30,6 +30,27 @@ export interface NucleoProps {
   vias_salida_por_tipo?: Record<string, number>;
   dato_capacidad_real?: boolean;
   fuente_capacidad?: string;
+  // Peligro biofísico (pendiente real + combustible aproximado).
+  pendiente_grados?: number;
+  cota_m?: number;
+  combustibilidad?: number;
+  combustible_dominante?: string;
+  dato_pendiente_real?: boolean;
+  dato_combustible_aprox?: boolean;
+  combustible_sin_dato?: boolean;
+}
+
+// Traduce la etiqueta OSM de cubierta dominante a algo legible.
+function cubiertaLegible(clase?: string): string {
+  if (!clase) return "—";
+  const t = clase.replace(/^(landuse|natural)=/, "");
+  const map: Record<string, string> = {
+    forest: "bosque", wood: "bosque", scrub: "matorral", heath: "matorral (toxo/xesta)",
+    grassland: "pastos", meadow: "prado", grass: "herbáceo", farmland: "cultivo",
+    orchard: "frutal", vineyard: "viñedo", residential: "urbano", bare_rock: "roca",
+    water: "agua", wetland: "humedal",
+  };
+  return map[t] || t;
 }
 
 function Barra({ valor, color }: { valor: number; color: string }) {
@@ -40,9 +61,11 @@ function Barra({ valor, color }: { valor: number; color: string }) {
   );
 }
 
-// Etiqueta de procedencia del dato: real (verde) o estimación (gris).
-function Origen({ real, texto }: { real: boolean; texto: string }) {
-  return <span className={`origen ${real ? "real" : "estim"}`} title={texto}>{texto}</span>;
+// Etiqueta de procedencia del dato: real (verde), aproximación (ámbar) o
+// estimación (gris). `real` admite boolean (compat) o el literal "aprox".
+function Origen({ real, texto }: { real: boolean | "aprox"; texto: string }) {
+  const clase = real === "aprox" ? "aprox" : real ? "real" : "estim";
+  return <span className={`origen ${clase}`} title={texto}>{texto}</span>;
 }
 
 export default function PanelInfo({
@@ -136,11 +159,36 @@ export default function PanelInfo({
       <div className="factores">
         <div className="factor">
           <span>
-            Peligro biofísico <Origen real={false} texto="estimación" />
+            Peligro biofísico{" "}
+            {nucleo.dato_pendiente_real ? (
+              <Origen
+                real="aprox"
+                texto={nucleo.combustible_sin_dato
+                  ? "pendiente real · combustible sin dato"
+                  : "pendiente real · combustible aprox."}
+              />
+            ) : (
+              <Origen real={false} texto="estimación" />
+            )}
           </span>
           <Barra valor={nucleo.peligro_biofisico} color="#d9534f" />
           <strong>{nucleo.peligro_biofisico}</strong>
         </div>
+        {nucleo.dato_pendiente_real && (
+          <div className="subfactor">
+            Pendiente <strong>{nucleo.pendiente_grados}°</strong>
+            {nucleo.cota_m != null && <span> · {nucleo.cota_m} m</span>}
+            {" · "}combustible{" "}
+            {nucleo.combustible_sin_dato ? (
+              <strong>sin dato OSM</strong>
+            ) : (
+              <>
+                <strong>{cubiertaLegible(nucleo.combustible_dominante)}</strong>
+                {nucleo.combustibilidad != null && <span> ({nucleo.combustibilidad})</span>}
+              </>
+            )}
+          </div>
+        )}
         <div className="factor">
           <span>
             Capacidad de respuesta{" "}

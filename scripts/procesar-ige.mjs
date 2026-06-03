@@ -36,8 +36,25 @@ const DATA = join(DIR, "..", "data");
 // Ficheros del Nomenclátor por concello (población real por aldea).
 const FICHEROS_CONCELLO = [5, 9, 10, 11, 12, 13, 14, 15, 16];
 
-const PESO_SOCIAL = 0.35; // peso provisional de la sensibilidad social en el IV
-const PESO_CAP = 0.25;    // peso provisional de la capacidad de respuesta en el IV
+const PESO_SOCIAL = 0.35;  // peso provisional de la sensibilidad social en el IV
+const PESO_CAP = 0.25;     // peso provisional de la capacidad de respuesta en el IV
+const PESO_PELIGRO = 0.40; // peso provisional del peligro biofísico en el IV
+
+// Peligro biofísico (0-100) = combinación de PENDIENTE (real) y COMBUSTIBLE
+// (aproximación). Pesos provisionales documentados.
+const PESO_PENDIENTE = 0.40; // contribución de la pendiente al peligro
+const PESO_COMBUST = 0.60;   // contribución de la combustibilidad al peligro
+
+// Pendiente (grados) -> subíndice 0-100. ~35° o más = máximo (propagación muy
+// acelerada). Lineal saturado, provisional.
+const scorePendiente = (grados) =>
+  Math.max(0, Math.min(100, Math.round((grados / 35) * 100)));
+
+// Peligro biofísico a partir de pendiente (grados) y combustibilidad (0-100).
+function peligroBiofisico(grados, combustibilidad) {
+  const sp = scorePendiente(grados);
+  return Math.round(PESO_PENDIENTE * sp + PESO_COMBUST * combustibilidad);
+}
 
 // Peso por CLASE de vía al contar salidas. Una pista forestal no es una vía de
 // evacuación fiable ante un incendio (puede estar cortada, sin asfaltar,
@@ -139,12 +156,12 @@ const edad = leerEdadCSV();
 const { piloto, general } = leerAldeas();
 const base = JSON.parse(readFileSync(join(DATA, "nucleos.base.json"), "utf8"));
 
-// Caché de accesos OSM (capacidad de respuesta). Opcional: si no existe, la
-// componente de capacidad se deja como en la base.
-const ACCESOS_PATH = join(DATA, "accesos_osm.json");
-const accesos = existsSync(ACCESOS_PATH)
-  ? JSON.parse(readFileSync(ACCESOS_PATH, "utf8")).nucleos || {}
-  : {};
+// Cachés opcionales. Si no existen, la componente correspondiente queda como base.
+const cargaCache = (f) => existsSync(join(DATA, f))
+  ? JSON.parse(readFileSync(join(DATA, f), "utf8")).nucleos || {} : {};
+const accesos = cargaCache("accesos_osm.json");     // capacidad de respuesta
+const pendiente = cargaCache("pendiente_dem.json"); // peligro: pendiente (real)
+const combustible = cargaCache("combustible_osm.json"); // peligro: combustible (aprox.)
 
 const informe = [];
 
@@ -153,6 +170,7 @@ for (const feat of base.features) {
   const iv0 = p.iv;
   const pct0 = (p.pct_mayores_65 > 1 ? p.pct_mayores_65 / 100 : p.pct_mayores_65); // fracción
   const cap0 = p.capacidad_respuesta; // capacidad invent. de la base (0-100)
+  const pel0 = p.peligro_biofisico;   // peligro invent. de la base (0-100)
 
   // Cruce: primero en los 9 concellos; si no, en el Nomenclátor general.
   let aldea = cruzar(p.id, p.nombre, piloto);
@@ -205,22 +223,48 @@ for (const feat of base.features) {
     p.dato_capacidad_real = false;
   }
 
-  p.iv = Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial + deltaCap)));
+  // --- componente PELIGRO BIOFÍSICO (pendiente real + combustible aprox.) ---
+  const pe = pendiente[p.id], co = combustible[p.id];
+  let deltaPeligro = 0;
+  if (pe && pe.pendiente_grados != null) {
+    p.pendiente_grados = pe.pendiente_grados;
+    p.cota_m = pe.cota_m;
+    p.dato_pendiente_real = true; // pendiente: DATO REAL (DEM)
+    let pelReal;
+    if (co && co.combustibilidad != null) {
+      p.combustibilidad = co.combustibilidad;
+      p.combustible_dominante = co.dominante;
+      p.dato_combustible_aprox = true; // combustible: APROXIMACIÓN (OSM)
+      pelReal = peligroBiofisico(pe.pendiente_grados, co.combustibilidad);
+      p.fuente_peligro = "Pendiente: EU-DEM 25 m (real). Combustible: OSM landuse/natural "
+        + "(aproximación provisional, no mapa de combustible calibrado).";
+    } else {
+      // Hueco de cartografía OSM: sin landuse/natural en el entorno. Peligro a
+      // partir de la PENDIENTE sola (real); el combustible queda sin dato.
+      p.combustible_dominante = null;
+      p.dato_combustible_aprox = false;
+      p.combustible_sin_dato = true;
+      pelReal = scorePendiente(pe.pendiente_grados);
+      p.fuente_peligro = "Pendiente: EU-DEM 25 m (real). Combustible: sin dato OSM "
+        + "(hueco de cartografía); peligro derivado solo de la pendiente.";
+    }
+    p.peligro_biofisico = pelReal;
+    deltaPeligro = PESO_PELIGRO * (pelReal - pel0); // más peligro -> más vulnerabilidad
+  } else {
+    p.dato_pendiente_real = false;
+    p.dato_combustible_aprox = false;
+  }
 
-  // IV "antes de ponderar" (capacidad con recuento bruto), solo para el informe.
-  const ivSinPonderar = ac
-    ? Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial - PESO_CAP * (capSinPonderar - cap0))))
-    : p.iv;
+  p.iv = Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial + deltaCap + deltaPeligro)));
 
   informe.push({
     nucleo: p.nombre,
-    vias: ac ? ac.vias_salida : "—",
-    viasPond: ac ? Number(salidasPonderadas(ac.por_tipo).toFixed(1)) : "—",
-    capBruta: capSinPonderar ?? "—",
-    cap: p.capacidad_respuesta,
-    ivBruto: ivSinPonderar,
-    iv: p.iv,
-    porTipo: ac ? ac.por_tipo : {},
+    pend: pe?.pendiente_grados ?? "—",
+    comb: co?.combustibilidad ?? "—",
+    domin: co?.dominante ? co.dominante.replace(/^(landuse|natural)=/, "") : "—",
+    pel0, pel: p.peligro_biofisico,
+    cap0, cap: p.capacidad_respuesta,
+    iv0, iv: p.iv,
   });
 }
 
@@ -232,27 +276,31 @@ base.metadata = {
   edad_nota: "pct_mayores_65 es fracción 0-1, proxy a nivel concello (2022); la "
     + "población es real por aldea (2025).",
   capacidad_nota: "capacidad_respuesta se deriva de las vías de salida OSM PONDERADAS "
-    + "por clase (primary/secondary/tertiary=1.0; unclassified/residential=0.5; track=0.2). "
-    + "Peligro biofísico sigue estimado.",
+    + "por clase (primary/secondary/tertiary=1.0; unclassified/residential=0.5; track=0.2).",
+  peligro_nota: "peligro_biofisico = " + PESO_PENDIENTE + "*score_pendiente + " + PESO_COMBUST
+    + "*combustibilidad. Pendiente: EU-DEM 25 m (REAL). Combustible: OSM landuse/natural "
+    + "(APROXIMACIÓN provisional, no el mapa de combustible calibrado con Sentinel-2+LiDAR).",
+  pesos_iv: { peligro_biofisico: PESO_PELIGRO, sensibilidad_social: PESO_SOCIAL, capacidad_respuesta: PESO_CAP },
   pesos_via: PESOS_VIA,
   fuente_edad_concellos: "data/padron_edad_concellos.csv",
   fuente_accesos: "data/accesos_osm.json (OpenStreetMap, ODbL).",
+  fuente_peligro: "data/pendiente_dem.json (EU-DEM 25 m) + data/combustible_osm.json (OSM, ODbL).",
 };
 
 writeFileSync(join(DATA, "nucleos.json"), JSON.stringify(base, null, 2) + "\n", "utf8");
 
 // Informe
-console.log("Concellos con edad (CSV):",
-  Object.entries(edad).map(([k, v]) => `${k}=${(v.pct * 100).toFixed(1)}%`).join("  "));
-console.log("Pesos por clase de vía:", JSON.stringify(PESOS_VIA));
-console.log("\n--- Capacidad: bruta (sin ponderar) -> ponderada, y efecto en el IV ---");
-console.log(`${"núcleo".padEnd(26)} ${"vías(brutas->pond)".padEnd(20)} cap(bruta->pond)  iv(bruto->pond)`);
+console.log("--- Peligro biofísico (pendiente real + combustible aprox.) e IV final ---");
+console.log(`${"núcleo".padEnd(26)} pend°  comb dominante      peligro(b->r)  IV(b->r)`);
 for (const r of informe) {
   console.log(
-    `${r.nucleo.padEnd(26)} ${`${r.vias} -> ${r.viasPond}`.padEnd(20)} `
-    + `${String(r.capBruta).padStart(3)} -> ${String(r.cap).padStart(3)}        `
-    + `${String(r.ivBruto).padStart(3)} -> ${String(r.iv).padStart(3)}   ${JSON.stringify(r.porTipo)}`
+    `${r.nucleo.padEnd(26)} ${String(r.pend).padStart(4)}  ${String(r.comb).padStart(3)}  `
+    + `${String(r.domin).padEnd(12)}  ${String(r.pel0).padStart(3)} -> ${String(r.pel).padStart(3)}     `
+    + `${String(r.iv0).padStart(3)} -> ${String(r.iv).padStart(3)}`
   );
 }
-const realCap = informe.filter((r) => r.vias !== "—").length;
-console.log(`\nCAPACIDAD (vías OSM ponderadas) real: ${realCap}/12`);
+const conPend = informe.filter((r) => r.pend !== "—").length;
+const conComb = informe.filter((r) => r.comb !== "—").length;
+console.log(`\nPENDIENTE (real, EU-DEM): ${conPend}/12 | COMBUSTIBLE (aprox. OSM): ${conComb}/12`);
+const sinComb = informe.filter((r) => r.comb === "—").map((r) => r.nucleo);
+if (sinComb.length) console.log("Sin combustible OSM (peligro solo-pendiente):", sinComb.join(", "));

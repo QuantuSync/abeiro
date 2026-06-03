@@ -1,0 +1,130 @@
+{
+  "metadata": {
+    "fuente": "OpenStreetMap landuse/natural vía Overpass (ODbL). APROXIMACIÓN provisional, NO el mapa de combustible calibrado (Sentinel-2 + LiDAR + fotoguía).",
+    "radio_m": 800,
+    "niveles_combustibilidad": {
+      "natural=scrub": 90,
+      "natural=heath": 90,
+      "landuse=forest": 80,
+      "natural=wood": 80,
+      "natural=grassland": 45,
+      "landuse=meadow": 45,
+      "landuse=grass": 45,
+      "landuse=farmland": 25,
+      "landuse=orchard": 25,
+      "landuse=vineyard": 25,
+      "landuse=residential": 5,
+      "landuse=industrial": 5,
+      "landuse=quarry": 5,
+      "natural=bare_rock": 5,
+      "natural=water": 0,
+      "natural=wetland": 20
+    }
+  },
+  "nucleos": {
+    "larouco": {
+      "nombre": "Larouco",
+      "radio_m": 800,
+      "cobertura_clasificada_m2": null,
+      "areas": {},
+      "combustibilidad": 73,
+      "dominante": "landuse=forest"
+    },
+    "seadur": {
+      "nombre": "Seadur",
+      "radio_m": 800,
+      "cobertura_clasificada_m2": null,
+      "areas": {},
+      "combustibilidad": 89,
+      "dominante": "natural=heath"
+    },
+    "pradorramisquedo": {
+      "nombre": "Pradorramisquedo",
+      "radio_m": 800,
+      "cobertura_clasificada_m2": null,
+      "areas": {},
+      "combustibilidad": 78,
+      "dominante": "landuse=forest"
+    },
+    "portomourisco": {
+      "nombre": "Portomourisco",
+      "radio_m": 800,
+      "cobertura_clasificada_m2": null,
+      "areas": {},
+      "combustibilidad": 80,
+      "dominante": "landuse=forest"
+    },
+    "petin": {
+      "nombre": "Petín",
+      "radio_m": 800,
+      "cobertura_clasificada_m2": null,
+      "areas": {},
+      "combustibilidad": 11,
+      "dominante": "landuse=residential"
+    },
+    "a-rua": {
+      "nombre": "A Rúa",
+      "radio_m": 800,
+      "cobertura_clasificada_m2": null,
+      "areas": {},
+      "combustibilidad": 12,
+      "dominante": "landuse=residential"
+    },
+    "o-barco": {
+      "nombre": "O Barco de Valdeorras",
+      "radio_m": 800,
+      "cobertura_clasificada_m2": null,
+      "areas": {},
+      "combustibilidad": 65,
+      "dominante": "landuse=forest"
+    },
+    "vilardesilva": {
+      "nombre": "Vilardesilva",
+      "radio_m": 800,
+      "cobertura_clasificada_m2": null,
+      "areas": {},
+      "combustibilidad": 80,
+      "dominante": "landuse=forest"
+    },
+    "freixido": {
+      "nombre": "Freixido",
+      "radio_m": 1500,
+      "combustibilidad": 43,
+      "dominante": "landuse=forest",
+      "cobertura_clasificada_m2": 419413,
+      "areas": {
+        "landuse=forest": 215173,
+        "landuse=residential": 204174,
+        "natural=water": 66
+      }
+    },
+    "casaio": {
+      "nombre": "Casaio",
+      "radio_m": 800,
+      "combustibilidad": 79,
+      "dominante": "landuse=forest",
+      "cobertura_clasificada_m2": 28295451,
+      "areas": {
+        "landuse=forest": 27906354,
+        "landuse=orchard": 389098
+      }
+    },
+    "a-medua": {
+      "nombre": "A Medua",
+      "radio_m": 800,
+      "combustibilidad": 80,
+      "dominante": "landuse=forest",
+      "cobertura_clasificada_m2": 2780038,
+      "areas": {
+        "landuse=forest": 2780038
+      }
+    },
+    "vilamartin": {
+      "nombre": "Vilamartín de Valdeorras",
+      "radio_m": 1500,
+      "combustibilidad": null,
+      "dominante": null,
+      "areas": {}
+    }
+  }
+}

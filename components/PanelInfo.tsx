@@ -26,6 +26,7 @@ export interface NucleoProps {
   ige_nome?: string;
   // Capacidad de respuesta (vías de salida, OpenStreetMap).
   vias_salida?: number;
+  vias_salida_ponderadas?: number;
   vias_salida_por_tipo?: Record<string, number>;
   dato_capacidad_real?: boolean;
   fuente_capacidad?: string;
@@ -117,7 +118,14 @@ export default function PanelInfo({
               texto={nucleo.dato_capacidad_real ? "real · OpenStreetMap" : "estimación"}
             />
           </dt>
-          <dd>{nucleo.vias_salida ?? nucleo.num_accesos}</dd>
+          <dd>
+            {nucleo.vias_salida ?? nucleo.num_accesos}
+            {nucleo.vias_salida_ponderadas != null && (
+              <span className="ponderado" title="Salidas ponderadas por clase de vía (pistas forestales cuentan menos)">
+                {" "}({nucleo.vias_salida_ponderadas} pond.)
+              </span>
+            )}
+          </dd>
         </div>
         <div>
           <dt>Cobertura móvil</dt>

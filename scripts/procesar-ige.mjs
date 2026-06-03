@@ -39,13 +39,29 @@ const FICHEROS_CONCELLO = [5, 9, 10, 11, 12, 13, 14, 15, 16];
 const PESO_SOCIAL = 0.35; // peso provisional de la sensibilidad social en el IV
 const PESO_CAP = 0.25;    // peso provisional de la capacidad de respuesta en el IV
 
-// Capacidad de respuesta a partir del nº de vías de salida (OSM). Mapeo
-// PROVISIONAL y lineal saturado: ~40 salidas -> 100. Mayor capacidad = menor
-// vulnerabilidad (entra en el IV con signo negativo). El indicador es simple
-// (cuenta de vías, tracks incluidos); refinar ponderando por clase es trabajo
-// posterior.
-const capDeSalidas = (viasSalida) =>
-  Math.max(0, Math.min(100, Math.round(viasSalida * 2.5)));
+// Peso por CLASE de vía al contar salidas. Una pista forestal no es una vía de
+// evacuación fiable ante un incendio (puede estar cortada, sin asfaltar,
+// intransitable con humo), así que cuenta mucho menos que una carretera.
+//   - primary/secondary/tertiary  -> 1.0  (carretera asfaltada: salida plena)
+//   - unclassified/residential    -> 0.5  (vía menor: peso intermedio)
+//   - track                       -> 0.2  (pista forestal: peso bajo)
+const PESOS_VIA = {
+  primary: 1.0, secondary: 1.0, tertiary: 1.0,
+  unclassified: 0.5, residential: 0.5,
+  track: 0.2,
+};
+const PESO_VIA_DEFECTO = 0.5; // clases no listadas: peso intermedio prudente
+
+// Recuento PONDERADO de salidas a partir del desglose por tipo (OSM).
+const salidasPonderadas = (porTipo = {}) =>
+  Object.entries(porTipo).reduce(
+    (acc, [tipo, n]) => acc + n * (PESOS_VIA[tipo] ?? PESO_VIA_DEFECTO), 0);
+
+// Capacidad de respuesta (0-100) a partir del recuento (ponderado) de salidas.
+// Mapeo PROVISIONAL lineal saturado (~40 salidas plenas -> 100). Mayor capacidad
+// = menor vulnerabilidad (entra en el IV con signo negativo).
+const capDeSalidas = (vias) =>
+  Math.max(0, Math.min(100, Math.round(vias * 2.5)));
 
 // --- utilidades CSV / normalización ------------------------------------------
 
@@ -169,17 +185,21 @@ for (const feat of base.features) {
     p.fuente_edad = "estimación provisional (concello sin Padrón de edad disponible)";
   }
 
-  // --- componente CAPACIDAD DE RESPUESTA (vías de salida, real de OSM) ---
+  // --- componente CAPACIDAD DE RESPUESTA (vías de salida ponderadas, OSM) ---
   const ac = accesos[p.id];
   let deltaCap = 0;
+  let capSinPonderar = null;
   if (ac) {
-    p.vias_salida = ac.vias_salida;
+    const ponderadas = salidasPonderadas(ac.por_tipo);
+    p.vias_salida = ac.vias_salida;            // recuento bruto (referencia)
+    p.vias_salida_ponderadas = Number(ponderadas.toFixed(1));
     p.vias_salida_por_tipo = ac.por_tipo;
-    p.num_accesos = ac.vias_salida; // sustituye el dato inventado de accesos
-    const capReal = capDeSalidas(ac.vias_salida);
+    p.num_accesos = ac.vias_salida;
+    const capReal = capDeSalidas(ponderadas);  // capacidad PONDERADA
+    capSinPonderar = capDeSalidas(ac.vias_salida);
     p.capacidad_respuesta = capReal;
     p.dato_capacidad_real = true;
-    p.fuente_capacidad = `OpenStreetMap/Overpass (vías de salida en ${ac.radio_m} m; ODbL)`;
+    p.fuente_capacidad = `OpenStreetMap/Overpass (vías de salida ponderadas por clase, ${ac.radio_m} m; ODbL)`;
     deltaCap = -PESO_CAP * (capReal - cap0); // más capacidad -> menos vulnerabilidad
   } else {
     p.dato_capacidad_real = false;
@@ -187,14 +207,20 @@ for (const feat of base.features) {
 
   p.iv = Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial + deltaCap)));
 
+  // IV "antes de ponderar" (capacidad con recuento bruto), solo para el informe.
+  const ivSinPonderar = ac
+    ? Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial - PESO_CAP * (capSinPonderar - cap0))))
+    : p.iv;
+
   informe.push({
     nucleo: p.nombre,
-    pob: p.poblacion,
-    pctReal: p.dato_edad_real,
-    pct_pct: Math.round(p.pct_mayores_65 * 1000) / 10,
     vias: ac ? ac.vias_salida : "—",
-    cap0, cap: p.capacidad_respuesta,
-    iv0, iv: p.iv,
+    viasPond: ac ? Number(salidasPonderadas(ac.por_tipo).toFixed(1)) : "—",
+    capBruta: capSinPonderar ?? "—",
+    cap: p.capacidad_respuesta,
+    ivBruto: ivSinPonderar,
+    iv: p.iv,
+    porTipo: ac ? ac.por_tipo : {},
   });
 }
 
@@ -205,8 +231,10 @@ base.metadata = {
     + "real (OpenStreetMap/Overpass) para los núcleos del piloto.",
   edad_nota: "pct_mayores_65 es fracción 0-1, proxy a nivel concello (2022); la "
     + "población es real por aldea (2025).",
-  capacidad_nota: "capacidad_respuesta se deriva de vias_salida (cruces de carretera "
-    + "con el radio OSM). Peligro biofísico sigue estimado.",
+  capacidad_nota: "capacidad_respuesta se deriva de las vías de salida OSM PONDERADAS "
+    + "por clase (primary/secondary/tertiary=1.0; unclassified/residential=0.5; track=0.2). "
+    + "Peligro biofísico sigue estimado.",
+  pesos_via: PESOS_VIA,
   fuente_edad_concellos: "data/padron_edad_concellos.csv",
   fuente_accesos: "data/accesos_osm.json (OpenStreetMap, ODbL).",
 };
@@ -216,16 +244,15 @@ writeFileSync(join(DATA, "nucleos.json"), JSON.stringify(base, null, 2) + "\n", 
 // Informe
 console.log("Concellos con edad (CSV):",
   Object.entries(edad).map(([k, v]) => `${k}=${(v.pct * 100).toFixed(1)}%`).join("  "));
-console.log("Aldeas piloto (pob>0):", piloto.length, "| con accesos OSM:", Object.keys(accesos).length);
-console.log("\n--- Componentes reales por núcleo (edad / vías de salida) e IV ---");
+console.log("Pesos por clase de vía:", JSON.stringify(PESOS_VIA));
+console.log("\n--- Capacidad: bruta (sin ponderar) -> ponderada, y efecto en el IV ---");
+console.log(`${"núcleo".padEnd(26)} ${"vías(brutas->pond)".padEnd(20)} cap(bruta->pond)  iv(bruto->pond)`);
 for (const r of informe) {
   console.log(
-    `${r.nucleo.padEnd(26)} pob=${String(r.pob).padStart(6)}  `
-    + `edad=${r.pctReal ? "REAL " : "estim"} ${String(r.pct_pct).padStart(5)}%  `
-    + `vias_salida=${String(r.vias).padStart(3)}  cap ${String(r.cap0).padStart(3)}->${String(r.cap).padStart(3)}  `
-    + `iv ${String(r.iv0).padStart(2)}->${String(r.iv).padStart(2)}`
+    `${r.nucleo.padEnd(26)} ${`${r.vias} -> ${r.viasPond}`.padEnd(20)} `
+    + `${String(r.capBruta).padStart(3)} -> ${String(r.cap).padStart(3)}        `
+    + `${String(r.ivBruto).padStart(3)} -> ${String(r.iv).padStart(3)}   ${JSON.stringify(r.porTipo)}`
   );
 }
-const realEdad = informe.filter((r) => r.pctReal).length;
 const realCap = informe.filter((r) => r.vias !== "—").length;
-console.log(`\nEDAD real: ${realEdad}/12 | CAPACIDAD (vías OSM) real: ${realCap}/12`);
+console.log(`\nCAPACIDAD (vías OSM ponderadas) real: ${realCap}/12`);

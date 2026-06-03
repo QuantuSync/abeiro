@@ -116,9 +116,12 @@ La componente de **capacidad de respuesta** usa la **red viaria de OpenStreetMap
   transitables (`highway`: primary, secondary, tertiary, unclassified, residential, track)
   que **cruzan** un círculo de 1 km alrededor del centro (cada cruce = una salida). El
   resultado se **cachea** en `data/accesos_osm.json` (ODbL) para no depender de la API en
-  cada build. La capacidad se deriva de ese recuento (mapeo provisional). *Limitación: el
-  recuento incluye `track` (pistas), que dominan en aldeas rurales; refinar ponderando por
-  clase de vía queda pendiente.*
+  cada build.
+- **Ponderación por clase de vía:** una pista forestal no es una vía de evacuación fiable
+  ante un incendio, así que las salidas se ponderan antes de derivar la capacidad:
+  `primary/secondary/tertiary = 1.0`, `unclassified/residential = 0.5`, `track = 0.2`. Así
+  las aldeas conectadas sólo por pistas reflejan su aislamiento real (menor capacidad, mayor
+  vulnerabilidad). Los pesos quedan documentados en `nucleos.json` (`metadata.pesos_via`).
 
 Los ficheros del IGE vienen en **ISO-8859-1**. El procesador parte de `data/nucleos.base.json`
 (línea base reproducible, con las componentes aún estimadas), los lee como `latin1`,

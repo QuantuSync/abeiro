@@ -14,7 +14,15 @@
     "privacidad": "Solo indicadores agregados y no identificativos. Ninguna identidad nominal.",
     "fase": "Fase 1: población real (Nomenclátor IGE 2025), % de mayores de 65 real (Padrón IGE 2022, proxy concello) y capacidad de respuesta por vías de salida real (OpenStreetMap/Overpass) para los núcleos del piloto.",
     "edad_nota": "pct_mayores_65 es fracción 0-1, proxy a nivel concello (2022); la población es real por aldea (2025).",
-    "capacidad_nota": "capacidad_respuesta se deriva de vias_salida (cruces de carretera con el radio OSM). Peligro biofísico sigue estimado.",
+    "capacidad_nota": "capacidad_respuesta se deriva de las vías de salida OSM PONDERADAS por clase (primary/secondary/tertiary=1.0; unclassified/residential=0.5; track=0.2). Peligro biofísico sigue estimado.",
+    "pesos_via": {
+      "primary": 1,
+      "secondary": 1,
+      "tertiary": 1,
+      "unclassified": 0.5,
+      "residential": 0.5,
+      "track": 0.2
+    },
     "fuente_edad_concellos": "data/padron_edad_concellos.csv",
     "fuente_accesos": "data/accesos_osm.json (OpenStreetMap, ODbL)."
   },
@@ -25,14 +33,14 @@
         "id": "larouco",
         "nombre": "Larouco",
         "concello": "Larouco",
-        "iv": 80,
+        "iv": 85,
         "poblacion": 350,
         "pct_mayores_65": 0.443,
         "pct_hogares_uniper_mayores": 28,
         "dispersion": "media",
         "distancia_servicios_km": 12.4,
         "peligro_biofisico": 72,
-        "capacidad_respuesta": 33,
+        "capacidad_respuesta": 16,
         "num_accesos": 13,
         "cobertura_movil": "parcial",
         "notas": "Capital municipal. Envejecimiento alto y accesos limitados por carretera de montaña.",
@@ -44,6 +52,7 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32038 Larouco)",
         "vias_salida": 13,
+        "vias_salida_ponderadas": 6.4,
         "vias_salida_por_tipo": {
           "secondary": 2,
           "tertiary": 2,
@@ -51,7 +60,7 @@
           "track": 7
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",
@@ -67,14 +76,14 @@
         "id": "seadur",
         "nombre": "Seadur",
         "concello": "Larouco",
-        "iv": 83,
+        "iv": 86,
         "poblacion": 59,
         "pct_mayores_65": 0.443,
         "pct_hogares_uniper_mayores": 37,
         "dispersion": "alta",
         "distancia_servicios_km": 15.1,
         "peligro_biofisico": 79,
-        "capacidad_respuesta": 20,
+        "capacidad_respuesta": 8,
         "num_accesos": 8,
         "cobertura_movil": "deficiente",
         "notas": "Un solo acceso viario y vegetación densa en la interfaz. Población muy envejecida.",
@@ -86,13 +95,14 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32038 Larouco)",
         "vias_salida": 8,
+        "vias_salida_ponderadas": 3,
         "vias_salida_por_tipo": {
           "tertiary": 1,
           "track": 5,
           "residential": 2
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",
@@ -108,14 +118,14 @@
         "id": "freixido",
         "nombre": "Freixido",
         "concello": "Larouco",
-        "iv": 73,
+        "iv": 74,
         "poblacion": 39,
         "pct_mayores_65": 0.443,
         "pct_hogares_uniper_mayores": 33,
         "dispersion": "alta",
         "distancia_servicios_km": 17.8,
         "peligro_biofisico": 68,
-        "capacidad_respuesta": 15,
+        "capacidad_respuesta": 11,
         "num_accesos": 6,
         "cobertura_movil": "deficiente",
         "notas": "Aldea dispersa en ladera; combustible continuo hasta las primeras casas.",
@@ -127,13 +137,14 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32038 Larouco)",
         "vias_salida": 6,
+        "vias_salida_ponderadas": 4.4,
         "vias_salida_por_tipo": {
           "secondary": 2,
           "tertiary": 2,
           "track": 2
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",
@@ -149,14 +160,14 @@
         "id": "pradorramisquedo",
         "nombre": "Pradorramisquedo",
         "concello": "Larouco",
-        "iv": 77,
+        "iv": 82,
         "poblacion": 15,
         "pct_mayores_65": 0.416,
         "pct_hogares_uniper_mayores": 44,
         "dispersion": "muy alta",
         "distancia_servicios_km": 22.6,
         "peligro_biofisico": 81,
-        "capacidad_respuesta": 40,
+        "capacidad_respuesta": 20,
         "num_accesos": 16,
         "cobertura_movil": "nula",
         "notas": "Núcleo aislado de alta montaña. El caso más crítico de la comarca piloto.",
@@ -168,12 +179,13 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32086 Viana do Bolo)",
         "vias_salida": 16,
+        "vias_salida_ponderadas": 8,
         "vias_salida_por_tipo": {
           "tertiary": 6,
           "track": 10
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",
@@ -189,14 +201,14 @@
         "id": "portomourisco",
         "nombre": "Portomourisco",
         "concello": "Petín",
-        "iv": 61,
+        "iv": 64,
         "poblacion": 35,
         "pct_mayores_65": 0.341,
         "pct_hogares_uniper_mayores": 21,
         "dispersion": "media",
         "distancia_servicios_km": 6.2,
         "peligro_biofisico": 58,
-        "capacidad_respuesta": 15,
+        "capacidad_respuesta": 3,
         "num_accesos": 6,
         "cobertura_movil": "parcial",
         "notas": "Mejor conectado al valle; riesgo medio por proximidad a masa forestal.",
@@ -208,11 +220,12 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32060 Petín)",
         "vias_salida": 6,
+        "vias_salida_ponderadas": 1.2,
         "vias_salida_por_tipo": {
           "track": 6
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",
@@ -228,14 +241,14 @@
         "id": "petin",
         "nombre": "Petín",
         "concello": "Petín",
-        "iv": 40,
+        "iv": 51,
         "poblacion": 597,
         "pct_mayores_65": 0.341,
         "pct_hogares_uniper_mayores": 18,
         "dispersion": "baja",
         "distancia_servicios_km": 3.1,
         "peligro_biofisico": 51,
-        "capacidad_respuesta": 80,
+        "capacidad_respuesta": 37,
         "num_accesos": 32,
         "cobertura_movil": "buena",
         "notas": "Núcleo de valle con buenos accesos y servicios cercanos.",
@@ -247,6 +260,7 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32060 Petín)",
         "vias_salida": 32,
+        "vias_salida_ponderadas": 14.7,
         "vias_salida_por_tipo": {
           "residential": 16,
           "tertiary": 4,
@@ -254,7 +268,7 @@
           "unclassified": 1
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",
@@ -270,14 +284,14 @@
         "id": "a-rua",
         "nombre": "A Rúa",
         "concello": "A Rúa",
-        "iv": 31,
+        "iv": 43,
         "poblacion": 4119,
         "pct_mayores_65": 0.317,
         "pct_hogares_uniper_mayores": 14,
         "dispersion": "baja",
         "distancia_servicios_km": 0.6,
         "peligro_biofisico": 42,
-        "capacidad_respuesta": 83,
+        "capacidad_respuesta": 33,
         "num_accesos": 33,
         "cobertura_movil": "buena",
         "notas": "Villa principal del tramo. Servicios de emergencia y centro de salud propios.",
@@ -289,6 +303,7 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32072 A Rúa)",
         "vias_salida": 33,
+        "vias_salida_ponderadas": 13,
         "vias_salida_por_tipo": {
           "secondary": 1,
           "residential": 8,
@@ -296,7 +311,7 @@
           "tertiary": 4
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",
@@ -312,14 +327,14 @@
         "id": "o-barco",
         "nombre": "O Barco de Valdeorras",
         "concello": "O Barco de Valdeorras",
-        "iv": 21,
+        "iv": 32,
         "poblacion": 11101,
         "pct_mayores_65": 0.222,
         "pct_hogares_uniper_mayores": 12,
         "dispersion": "muy baja",
         "distancia_servicios_km": 0.3,
         "peligro_biofisico": 38,
-        "capacidad_respuesta": 100,
+        "capacidad_respuesta": 56,
         "num_accesos": 42,
         "cobertura_movil": "buena",
         "notas": "Capital de comarca. Máxima capacidad de respuesta; riesgo humano bajo.",
@@ -331,6 +346,7 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32009 O Barco de Valdeorras)",
         "vias_salida": 42,
+        "vias_salida_ponderadas": 22.3,
         "vias_salida_por_tipo": {
           "secondary": 2,
           "residential": 22,
@@ -339,7 +355,7 @@
           "unclassified": 3
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",
@@ -355,14 +371,14 @@
         "id": "vilardesilva",
         "nombre": "Vilardesilva",
         "concello": "Rubiá",
-        "iv": 63,
+        "iv": 71,
         "poblacion": 30,
         "pct_mayores_65": 0.396,
         "pct_hogares_uniper_mayores": 31,
         "dispersion": "alta",
         "distancia_servicios_km": 14.3,
         "peligro_biofisico": 64,
-        "capacidad_respuesta": 38,
+        "capacidad_respuesta": 8,
         "num_accesos": 15,
         "cobertura_movil": "deficiente",
         "notas": "Ladera de solana con matorral; acceso único y población envejecida.",
@@ -374,11 +390,12 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32073 Rubiá)",
         "vias_salida": 15,
+        "vias_salida_ponderadas": 3,
         "vias_salida_por_tipo": {
           "track": 15
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",
@@ -394,14 +411,14 @@
         "id": "casaio",
         "nombre": "Casaio",
         "concello": "Carballeda de Valdeorras",
-        "iv": 67,
+        "iv": 76,
         "poblacion": 249,
         "pct_mayores_65": 0.356,
         "pct_hogares_uniper_mayores": 29,
         "dispersion": "alta",
         "distancia_servicios_km": 19.2,
         "peligro_biofisico": 76,
-        "capacidad_respuesta": 48,
+        "capacidad_respuesta": 12,
         "num_accesos": 19,
         "cobertura_movil": "deficiente",
         "notas": "Bajo el macizo de Pena Trevinca; gran masa forestal y acceso de montaña.",
@@ -413,12 +430,13 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32017 Carballeda de Valdeorras)",
         "vias_salida": 19,
+        "vias_salida_ponderadas": 4.7,
         "vias_salida_por_tipo": {
           "unclassified": 3,
           "track": 16
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",
@@ -434,14 +452,14 @@
         "id": "a-medua",
         "nombre": "A Medua",
         "concello": "Carballeda de Valdeorras",
-        "iv": 61,
+        "iv": 65,
         "poblacion": 25,
         "pct_mayores_65": 0.356,
         "pct_hogares_uniper_mayores": 35,
         "dispersion": "muy alta",
         "distancia_servicios_km": 11.7,
         "peligro_biofisico": 59,
-        "capacidad_respuesta": 18,
+        "capacidad_respuesta": 4,
         "num_accesos": 7,
         "cobertura_movil": "parcial",
         "notas": "Entorno de Las Médulas gallegas; núcleo pequeño y muy disperso.",
@@ -453,11 +471,12 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32017 Carballeda de Valdeorras)",
         "vias_salida": 7,
+        "vias_salida_ponderadas": 1.4,
         "vias_salida_por_tipo": {
           "track": 7
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",
@@ -473,14 +492,14 @@
         "id": "vilamartin",
         "nombre": "Vilamartín de Valdeorras",
         "concello": "Vilamartín de Valdeorras",
-        "iv": 47,
+        "iv": 53,
         "poblacion": 648,
         "pct_mayores_65": 0.405,
         "pct_hogares_uniper_mayores": 17,
         "dispersion": "baja",
         "distancia_servicios_km": 2.4,
         "peligro_biofisico": 47,
-        "capacidad_respuesta": 48,
+        "capacidad_respuesta": 23,
         "num_accesos": 19,
         "cobertura_movil": "buena",
         "notas": "Núcleo de fondo de valle, bien comunicado por la N-120.",
@@ -492,13 +511,14 @@
         "edad_proxy_concello": true,
         "fuente_edad": "Padrón IGE 2022 (proxy concello: 32088 Vilamartín de Valdeorras)",
         "vias_salida": 19,
+        "vias_salida_ponderadas": 9.2,
         "vias_salida_por_tipo": {
           "tertiary": 3,
           "unclassified": 10,
           "track": 6
         },
         "dato_capacidad_real": true,
-        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida en 1000 m; ODbL)"
+        "fuente_capacidad": "OpenStreetMap/Overpass (vías de salida ponderadas por clase, 1000 m; ODbL)"
       },
       "geometry": {
         "type": "Point",

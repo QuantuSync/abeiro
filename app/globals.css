@@ -270,6 +270,11 @@ body {
 .datos .cap {
   text-transform: capitalize;
 }
+.datos .ponderado {
+  color: var(--texto-suave);
+  font-weight: 400;
+  font-size: 0.78rem;
+}
 
 /* Etiqueta de procedencia del dato */
 .origen {

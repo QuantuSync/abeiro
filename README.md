@@ -20,8 +20,9 @@ Mapa web ([MapLibre GL](https://maplibre.org/)) de la comarca piloto de
 **Valdeorras / Larouco** (Ourense) que pinta el **Índice de Vulnerabilidad** por núcleo
 de población con **datos de prueba** (inventados pero coherentes). Incluye:
 
-- Mapa interactivo con basemap neutro **CARTO Positron** (gris claro, sin claves de API),
-  para que los símbolos del mapa base no compitan con la paleta de datos.
+- Mapa interactivo con basemap **CARTO Voyager** (neutro pero con buen contraste y
+  legibilidad de carreteras y topónimos, sin claves de API), pensado para que personas
+  mayores distingan sin esfuerzo pueblos, carreteras y colores de riesgo.
 - Núcleos coloreados según su Índice de Vulnerabilidad (escala verde → rojo).
 - **Leyenda** con las cinco categorías de vulnerabilidad.
 - **Panel de información** al pinchar un núcleo: población, envejecimiento, aislamiento,

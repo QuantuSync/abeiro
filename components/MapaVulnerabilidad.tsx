@@ -36,11 +36,12 @@ const nucleos: FeatureCollection<Point, NucleoProps> = {
 
 // Capas que solo se muestran en cada lente.
 const CAPAS_VULN = ["nucleos-dato-real", "nucleos-afectado", "perimetro-fill", "perimetro-line"];
-const CAPAS_EVAC = ["rutas-evacuacion", "destinos-seguros"];
+const CAPAS_EVAC = ["rutas-casing", "rutas-evacuacion", "destinos-seguros"];
 
-// Basemap neutro/apagado sin clave de API: CARTO Positron (gris claro,
-// monocromo). Evita los símbolos llamativos de OSM (triángulos naranjas,
-// etiquetas) para que no compitan con la paleta de datos ni con la identidad.
+// Basemap neutro pero LEGIBLE sin clave de API: CARTO Voyager. Tiene más
+// contraste y color que Positron (carreteras y topónimos más marcados, se leen
+// con claridad) manteniéndose limpio. Pensado para legibilidad de usuarios
+// mayores: que pueblos, carreteras y colores de riesgo se distingan sin esfuerzo.
 const ESTILO_BASE: maplibregl.StyleSpecification = {
   version: 8,
   // Glyphs (fuentes para etiquetas symbol). Debe servir PBF válido: el endpoint
@@ -50,9 +51,9 @@ const ESTILO_BASE: maplibregl.StyleSpecification = {
     carto: {
       type: "raster",
       tiles: [
-        "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-        "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+        "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+        "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+        "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
       ],
       tileSize: 256,
       attribution:
@@ -61,8 +62,8 @@ const ESTILO_BASE: maplibregl.StyleSpecification = {
     },
   },
   layers: [
-    { id: "fondo", type: "background", paint: { "background-color": "#ececed" } },
-    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 0.92 } },
+    { id: "fondo", type: "background", paint: { "background-color": "#e7e2d8" } },
+    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 1 } },
   ],
 };
 
@@ -115,20 +116,28 @@ export default function MapaVulnerabilidad() {
         paint: { "line-color": "#7a1f12", "line-width": 0.8, "line-opacity": 0.4 },
       });
 
-      // Rutas de evacuación (capa independiente). Color por % de pista forestal:
-      // verde = ruta fiable (asfalto), naranja = depende de pista (poco fiable).
+      // Rutas de evacuación (capa independiente). Casing blanco debajo + línea
+      // de color encima, para que destaquen con fuerza sobre el basemap. Color
+      // por % de pista forestal: verde = fiable (asfalto), naranja = depende de pista.
       map.addSource("rutas", { type: "geojson", data: "/rutas_evacuacion.geojson" });
+      map.addLayer({
+        id: "rutas-casing",
+        type: "line",
+        source: "rutas",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-width": 7, "line-color": "#ffffff", "line-opacity": 0.9 },
+      });
       map.addLayer({
         id: "rutas-evacuacion",
         type: "line",
         source: "rutas",
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-width": 3,
-          "line-opacity": 0.85,
+          "line-width": 4,
+          "line-opacity": 1,
           "line-color": [
             "step", ["get", "pct_track"],
-            "#1f6f4a", 15, "#d8a200", 30, "#c2521e",
+            "#127c43", 15, "#d68a00", 30, "#b83a16",
           ],
         },
       });
@@ -149,8 +158,7 @@ export default function MapaVulnerabilidad() {
         },
       });
 
-      // Halo claro para destacar el punto sobre el basemap. Marcadores más
-      // pequeños para que no se solapen al norte (Larouco/Seadur/Freixido...).
+      // Halo blanco para separar el marcador del basemap (legibilidad).
       map.addLayer({
         id: "nucleos-halo",
         type: "circle",
@@ -158,14 +166,15 @@ export default function MapaVulnerabilidad() {
         paint: {
           "circle-radius": [
             "interpolate", ["linear"], ["get", "iv"],
-            0, 6, 100, 12,
+            0, 7.5, 100, 14,
           ],
           "circle-color": "#ffffff",
-          "circle-opacity": 0.85,
+          "circle-opacity": 0.92,
         },
       });
 
-      // Círculo coloreado por Índice de Vulnerabilidad.
+      // Círculo coloreado por Índice de Vulnerabilidad, con borde oscuro definido
+      // para destacar con fuerza sobre el basemap.
       map.addLayer({
         id: "nucleos-punto",
         type: "circle",
@@ -173,11 +182,11 @@ export default function MapaVulnerabilidad() {
         paint: {
           "circle-radius": [
             "interpolate", ["linear"], ["get", "iv"],
-            0, 4, 100, 9,
+            0, 5, 100, 11,
           ],
           "circle-color": EXPRESION_COLOR_IV as maplibregl.ExpressionSpecification,
-          "circle-stroke-width": 1.2,
-          "circle-stroke-color": "#2a2a2a",
+          "circle-stroke-width": 1.8,
+          "circle-stroke-color": "#1c1c1c",
         },
       });
 
@@ -190,7 +199,7 @@ export default function MapaVulnerabilidad() {
         paint: {
           "circle-radius": [
             "interpolate", ["linear"], ["get", "iv"],
-            0, 7.5, 100, 13,
+            0, 9.5, 100, 16.5,
           ],
           "circle-color": "rgba(0,0,0,0)",
           "circle-stroke-width": 2,
@@ -213,27 +222,32 @@ export default function MapaVulnerabilidad() {
         },
       });
 
-      // Etiqueta con el nombre del núcleo. Tamaño menor + anclaje variable y
-      // padding de colisión para que no se pisen al norte (clúster de Larouco).
+      // Etiqueta con el nombre del núcleo. Grande, en negrita y con halo blanco
+      // fuerte para leerse sobre cualquier fondo (legibilidad de usuarios mayores).
+      // Anclaje variable + padding de colisión para que no se pisen al norte.
       map.addLayer({
         id: "nucleos-etiqueta",
         type: "symbol",
         source: "nucleos",
         layout: {
           "text-field": ["get", "nombre"],
-          "text-font": ["Noto Sans Regular"],
-          "text-size": 10.5,
-          "text-radial-offset": 0.9,
+          "text-font": ["Noto Sans Bold"],
+          "text-size": [
+            "interpolate", ["linear"], ["zoom"],
+            8, 12, 11, 14.5, 14, 16,
+          ],
+          "text-radial-offset": 1,
           "text-variable-anchor": ["top", "bottom", "left", "right"],
           "text-justify": "auto",
-          "text-padding": 6,
+          "text-padding": 8,
           "text-allow-overlap": false,
           "symbol-sort-key": ["-", 100, ["coalesce", ["get", "iv"], 0]],
         },
         paint: {
-          "text-color": "#33403a",
+          "text-color": "#161b18",
           "text-halo-color": "#ffffff",
-          "text-halo-width": 1.5,
+          "text-halo-width": 2.4,
+          "text-halo-blur": 0.4,
         },
       });
 

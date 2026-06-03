@@ -51,6 +51,7 @@ export interface NucleoProps {
   dist_area_m?: number;
   // Evacuación estática (capa independiente; NO es parte del IV).
   es_destino?: boolean;
+  destino?: string;
   destino_nombre?: string;
   dist_km?: number;
   tiempo_min?: number;
@@ -88,12 +89,34 @@ function Origen({ real, texto }: { real: boolean | "aprox"; texto: string }) {
   return <span className={`origen ${clase}`} title={texto}>{texto}</span>;
 }
 
+// Modos de ruta de escape. Estructura preparada para el futuro: activar un modo
+// "proximamente" será cambiar su `estado` a "activo" y conectar su `onActivar`,
+// sin rehacer la interfaz.
+type ModoEscape = {
+  id: string;
+  titulo: string;
+  estado: "activo" | "proximamente";
+  etiqueta?: string; // texto del estado deshabilitado
+};
+const MODOS_ESCAPE: ModoEscape[] = [
+  { id: "coche", titulo: "Ruta de escape en coche", estado: "activo" },
+  { id: "pie", titulo: "Ruta de escape a pie", estado: "proximamente", etiqueta: "Próximamente" },
+  {
+    id: "dinamica",
+    titulo: "Ruta dinámica según el fuego",
+    estado: "proximamente",
+    etiqueta: "Requiere motor de propagación (próximamente)",
+  },
+];
+
 export default function PanelInfo({
   nucleo,
   onClose,
+  onRutaCoche,
 }: {
   nucleo: NucleoProps;
   onClose: () => void;
+  onRutaCoche?: (id: string) => void;
 }) {
   const cat = categoriaPorIV(nucleo.iv);
 
@@ -291,6 +314,43 @@ export default function PanelInfo({
             Evacuación <strong>estática</strong>: no considera aún el fuego (qué vías quedan
             cortadas) ni el tráfico. Capa independiente, no parte del índice.
           </p>
+
+          <div className="escape">
+            <div className="escape-titulo">Rutas de escape</div>
+            <div className="escape-botones">
+              {MODOS_ESCAPE.map((m) =>
+                m.estado === "activo" ? (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className="escape-btn activo"
+                    onClick={() => onRutaCoche?.(nucleo.id)}
+                  >
+                    <span className="eb-titulo">{m.titulo}</span>
+                    <span className="eb-sub">
+                      {nucleo.destino_nombre} · {nucleo.dist_km} km · {nucleo.tiempo_min} min
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className="escape-btn deshabilitado"
+                    disabled
+                    aria-disabled="true"
+                    title={m.etiqueta}
+                  >
+                    <span className="eb-titulo">{m.titulo}</span>
+                    <span className="eb-badge">{m.etiqueta}</span>
+                  </button>
+                )
+              )}
+            </div>
+            <p className="escape-aviso">
+              La ruta en coche es una <strong>ruta de referencia en condiciones normales</strong>
+              {" "}(planificación), no una indicación de emergencia en tiempo real.
+            </p>
+          </div>
         </div>
       ) : null}
 

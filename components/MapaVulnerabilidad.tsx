@@ -36,7 +36,7 @@ const nucleos: FeatureCollection<Point, NucleoProps> = {
 
 // Capas que solo se muestran en cada lente.
 const CAPAS_VULN = ["nucleos-dato-real", "nucleos-afectado", "perimetro-fill", "perimetro-line"];
-const CAPAS_EVAC = ["rutas-casing", "rutas-evacuacion", "destinos-seguros"];
+const CAPAS_EVAC = ["rutas-resaltada", "rutas-casing", "rutas-evacuacion", "destinos-seguros"];
 
 // Basemap neutro pero LEGIBLE sin clave de API: CARTO Voyager. Tiene más
 // contraste y color que Positron (carreteras y topónimos más marcados, se leen
@@ -77,6 +77,7 @@ export default function MapaVulnerabilidad() {
   const [seleccionado, setSeleccionado] = useState<NucleoProps | null>(null);
   const [mostrarValidacion, setMostrarValidacion] = useState(false);
   const [lente, setLente] = useState<Lente>("vulnerabilidad");
+  const [rutaResaltada, setRutaResaltada] = useState<string | null>(null);
 
   useEffect(() => {
     if (!contenedor.current || mapRef.current) return;
@@ -120,6 +121,16 @@ export default function MapaVulnerabilidad() {
       // de color encima, para que destaquen con fuerza sobre el basemap. Color
       // por % de pista forestal: verde = fiable (asfalto), naranja = depende de pista.
       map.addSource("rutas", { type: "geojson", data: "/rutas_evacuacion.geojson" });
+      // Resaltado dorado (glow) de la ruta del núcleo seleccionado al pulsar
+      // "Ruta de escape en coche". Filtro vacío hasta que se active.
+      map.addLayer({
+        id: "rutas-resaltada",
+        type: "line",
+        source: "rutas",
+        layout: { "line-cap": "round", "line-join": "round" },
+        filter: ["==", ["get", "id"], "__ninguna__"],
+        paint: { "line-width": 13, "line-color": "#c8a44a", "line-opacity": 0.85, "line-blur": 1 },
+      });
       map.addLayer({
         id: "rutas-casing",
         type: "line",
@@ -305,9 +316,42 @@ export default function MapaVulnerabilidad() {
         if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", evac ? "visible" : "none");
       }
     };
-    if (map.isStyleLoaded()) aplicar();
+    // Gate por existencia de capa (no por isStyleLoaded, que es false durante
+    // animaciones/carga de teselas aunque las capas ya existan).
+    if (map.getLayer("nucleos-punto")) aplicar();
     else map.once("load", aplicar);
   }, [lente]);
+
+  // Resalta la ruta del núcleo seleccionado (glow dorado) según el estado.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const aplicar = () =>
+      map.setFilter("rutas-resaltada", ["==", ["get", "id"], rutaResaltada ?? "__ninguna__"]);
+    if (map.getLayer("rutas-resaltada")) aplicar();
+    else map.once("load", aplicar);
+  }, [rutaResaltada]);
+
+  // Al cambiar de núcleo seleccionado (o cerrar el panel) se limpia el resaltado.
+  useEffect(() => {
+    setRutaResaltada(null);
+  }, [seleccionado?.id]);
+
+  // "Ruta de escape en coche": pasa a la lente de evacuación, resalta la ruta y
+  // encuadra el trayecto núcleo -> destino seguro.
+  const resaltarRutaCoche = (id: string) => {
+    setLente("evacuacion");
+    setRutaResaltada(id);
+    const map = mapRef.current;
+    if (!map) return;
+    const nuc = nucleos.features.find((f) => f.properties.id === id);
+    const dest = nucleos.features.find((f) => f.properties.id === nuc?.properties.destino);
+    if (nuc && dest) {
+      const a = nuc.geometry.coordinates as [number, number];
+      const b = dest.geometry.coordinates as [number, number];
+      map.fitBounds([a, b], { padding: { top: 90, bottom: 90, left: 360, right: 90 }, maxZoom: 12, duration: 800 });
+    }
+  };
 
   return (
     <div className="mapa-wrap">
@@ -340,7 +384,11 @@ export default function MapaVulnerabilidad() {
         Validación 2025 ▸
       </button>
       {seleccionado && (
-        <PanelInfo nucleo={seleccionado} onClose={() => setSeleccionado(null)} />
+        <PanelInfo
+          nucleo={seleccionado}
+          onClose={() => setSeleccionado(null)}
+          onRutaCoche={resaltarRutaCoche}
+        />
       )}
       {mostrarValidacion && <PanelValidacion onClose={() => setMostrarValidacion(false)} />}
     </div>

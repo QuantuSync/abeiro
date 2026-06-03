@@ -431,6 +431,86 @@ body {
   line-height: 1.3;
   margin: 0.45rem 0 0;
 }
+
+/* ---- Rutas de escape (andamiaje; coche activo, resto preparado) ---- */
+.escape {
+  margin: 0.7rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+.escape-titulo {
+  font-family: var(--titulo);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--oro-claro);
+  margin-bottom: 0.45rem;
+}
+.escape-botones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.escape-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--borde);
+  background: var(--superficie-2);
+  color: var(--texto);
+  font-family: inherit;
+  cursor: pointer;
+}
+.escape-btn .eb-titulo {
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.escape-btn .eb-sub {
+  font-size: 0.74rem;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+.escape-btn.activo {
+  border-color: rgba(200, 164, 74, 0.55);
+  background: rgba(200, 164, 74, 0.1);
+}
+.escape-btn.activo .eb-titulo {
+  color: var(--oro-claro);
+}
+.escape-btn.activo:hover {
+  background: rgba(200, 164, 74, 0.18);
+  border-color: var(--oro);
+}
+.escape-btn.deshabilitado {
+  cursor: not-allowed;
+  opacity: 0.55;
+  background: transparent;
+}
+.escape-btn.deshabilitado .eb-titulo {
+  color: var(--texto-suave);
+}
+.escape-btn .eb-badge {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  padding: 0.04rem 0.4rem;
+  margin-top: 0.15rem;
+}
+.escape-aviso {
+  font-size: 0.7rem;
+  color: var(--texto-suave);
+  line-height: 1.35;
+  margin: 0.5rem 0 0;
+}
+
 .afectacion {
   margin: 0.8rem 0;
   padding: 0.6rem 0.7rem;

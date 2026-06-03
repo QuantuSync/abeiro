@@ -166,6 +166,31 @@ es una fase posterior.
 | Alta        | 60–80    | 🟠 naranja |
 | Muy alta    | 80–100   | 🔴 rojo oscuro |
 
+## Capa de afectación física 2025 (validación, NO es parte del índice)
+
+Para **validar** el Índice de Vulnerabilidad contra el incendio real de 2025 se cruza el
+perímetro quemado con los 12 núcleos. **No** es una componente del IV: es una columna de
+validación independiente.
+
+- **Fuente:** Copernicus EMS Rapid Mapping, activación **EMSR837** (*Wildfires in West
+  Spain*), AOI01 *Ourense Province*, delineaciones `DEL` (`observedEvent`, GeoJSON WGS84).
+  Se eligió EMS porque el **WFS de EFFIS estaba caído** (error de backend Oracle) y los
+  respaldos MITECO/SITGA no servían vectores por WFS.
+- **Método** (`scripts/afectacion_emsr837.py`): *dissolve* (`unary_union`) de las 10
+  delineaciones por fecha (2025-08-16 → 2025-08-30); por núcleo se calcula `afect_fisica`
+  (dentro del perímetro), `borde_500m` (a ≤ 500 m) y `fecha_frente` (1ª delineación que lo
+  alcanza). Resultado en `data/nucleos_afectacion_fisica.json`; perímetro para el mapa en
+  `public/perimetro_emsr837.geojson` (recortado al piloto y simplificado).
+- **Limitación documentada:** EFFIS no da un perímetro único sino polígonos de incremento
+  diario que hay que unir, y un perímetro puede estar **incompleto**. Aquí, con EMS, el
+  perímetro AOI01 **capturó ~129.823 ha** y agrega **varios complejos de incendios** del
+  área de Ourense (el mayor parche ≈ 32.843 ha corresponde al incendio de Larouco): es
+  amplio para la región, no solo el incendio piloto.
+
+En el mapa, el perímetro se pinta en granate y los núcleos dentro del área llevan un punto
+oscuro; el panel muestra el estado de afectación marcado como dato Copernicus EMS con su
+limitación.
+
 ## Privacidad (RGPD)
 
 La identidad nominal de personas vulnerables queda **fuera** del sistema. Solo se usan

@@ -6,11 +6,22 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { FeatureCollection, Point } from "geojson";
 
 import nucleosData from "@/data/nucleos.json";
+import afectacionData from "@/data/nucleos_afectacion_fisica.json";
 import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
 import Leyenda from "@/components/Leyenda";
 import PanelInfo, { type NucleoProps } from "@/components/PanelInfo";
 
-const nucleos = nucleosData as unknown as FeatureCollection<Point, NucleoProps>;
+// Capa de afectación física (validación EMSR837): se une por id a cada núcleo
+// SOLO para visualización; no forma parte del Índice de Vulnerabilidad.
+const afectacion = (afectacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
+const nucleosBase = nucleosData as unknown as FeatureCollection<Point, NucleoProps>;
+const nucleos: FeatureCollection<Point, NucleoProps> = {
+  ...nucleosBase,
+  features: nucleosBase.features.map((f) => ({
+    ...f,
+    properties: { ...f.properties, ...(afectacion[f.properties.id] || {}) },
+  })),
+};
 
 // Estilo de basemap sin clave de API: teselas raster de OpenStreetMap.
 // En fases posteriores se sustituirá por PMTiles propio (vector, estático).
@@ -63,6 +74,22 @@ export default function MapaVulnerabilidad() {
     map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
 
     map.on("load", () => {
+      // Perímetro quemado EMSR837 (capa de validación). Se carga del estático
+      // (recortado al piloto y simplificado) para no inflar el bundle.
+      map.addSource("perimetro", { type: "geojson", data: "/perimetro_emsr837.geojson" });
+      map.addLayer({
+        id: "perimetro-fill",
+        type: "fill",
+        source: "perimetro",
+        paint: { "fill-color": "#7a1f12", "fill-opacity": 0.22 },
+      });
+      map.addLayer({
+        id: "perimetro-line",
+        type: "line",
+        source: "perimetro",
+        paint: { "line-color": "#7a1f12", "line-width": 1, "line-opacity": 0.55 },
+      });
+
       map.addSource("nucleos", { type: "geojson", data: nucleos });
 
       // Halo blanco para destacar el punto sobre el basemap.
@@ -110,6 +137,21 @@ export default function MapaVulnerabilidad() {
           "circle-color": "rgba(0,0,0,0)",
           "circle-stroke-width": 2.5,
           "circle-stroke-color": "#1a7d45",
+        },
+      });
+
+      // Marcador de afectación física (EMSR837): punto central oscuro para los
+      // núcleos dentro del perímetro quemado.
+      map.addLayer({
+        id: "nucleos-afectado",
+        type: "circle",
+        source: "nucleos",
+        filter: ["==", ["get", "afect_fisica"], true],
+        paint: {
+          "circle-radius": 3.5,
+          "circle-color": "#3a0d06",
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#ffffff",
         },
       });
 

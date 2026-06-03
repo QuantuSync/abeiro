@@ -166,6 +166,14 @@ body {
   border: 2.5px solid #1a7d45;
   flex: none;
 }
+.leyenda .quemado {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: rgba(122, 31, 18, 0.22);
+  border: 1px solid #7a1f12;
+  flex: none;
+}
 .leyenda .aviso {
   margin: 0.5rem 0 0;
   font-size: 0.7rem;
@@ -342,6 +350,48 @@ body {
   border-radius: 4px;
 }
 
+.afectacion {
+  margin: 0.8rem 0;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #e7d2cd;
+  border-radius: 8px;
+  background: #fbf3f1;
+}
+.afect-head {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #7a1f12;
+  margin-bottom: 0.4rem;
+}
+.afect-estado {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.afect-estado.dentro {
+  color: #7a1f12;
+}
+.afect-estado.borde {
+  color: #b9472f;
+}
+.afect-estado.fuera {
+  color: var(--texto-suave);
+}
+.afect-dist {
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+.afect-fecha {
+  font-size: 0.84rem;
+  margin-top: 0.2rem;
+}
+.afect-nota {
+  font-size: 0.7rem;
+  color: var(--texto-suave);
+  line-height: 1.3;
+  margin: 0.45rem 0 0;
+}
 .notas {
   font-size: 0.82rem;
   line-height: 1.4;

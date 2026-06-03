@@ -47,3 +47,12 @@ scripts/_*.png
 .claude/
 CLAUDE.md
 CLAUDE_*.md
+
+# Copernicus EMS EMSR837 — descargas y perímetro crudo (pesados; reproducibles vía script)
+data/emsr837/
+data/*.zip
+data/perimetro_emsr837.geojson
+data/_*.py
+data/effis_cap.xml
+data/*_test.json
+data/mit.xml

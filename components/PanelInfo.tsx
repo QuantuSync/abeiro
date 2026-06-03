@@ -38,6 +38,11 @@ export interface NucleoProps {
   dato_pendiente_real?: boolean;
   dato_combustible_aprox?: boolean;
   combustible_sin_dato?: boolean;
+  // Afectación física 2025 (validación EMSR837; NO es parte del IV).
+  afect_fisica?: boolean;
+  borde_500m?: boolean;
+  fecha_frente?: string | null;
+  dist_area_m?: number;
 }
 
 // Traduce la etiqueta OSM de cubierta dominante a algo legible.
@@ -198,6 +203,33 @@ export default function PanelInfo({
           <strong>{nucleo.capacidad_respuesta}</strong>
         </div>
       </div>
+
+      {nucleo.afect_fisica !== undefined && (
+        <div className="afectacion">
+          <div className="afect-head">
+            Afectación física · incendio 2025{" "}
+            <Origen real="aprox" texto="Copernicus EMS · EMSR837" />
+          </div>
+          <div className={`afect-estado ${nucleo.afect_fisica ? "dentro" : nucleo.borde_500m ? "borde" : "fuera"}`}>
+            {nucleo.afect_fisica
+              ? "Dentro del perímetro quemado"
+              : nucleo.borde_500m
+              ? "En el borde (a ≤ 500 m del área quemada)"
+              : "Fuera del perímetro"}
+            {!nucleo.afect_fisica && nucleo.dist_area_m != null && (
+              <span className="afect-dist"> · {Math.round(nucleo.dist_area_m)} m</span>
+            )}
+          </div>
+          {nucleo.fecha_frente && (
+            <div className="afect-fecha">Frente más próximo: <strong>{nucleo.fecha_frente}</strong></div>
+          )}
+          <p className="afect-nota">
+            Perímetro EMSR837/AOI01 (delineación Copernicus EMS, ago-2025). Capa de
+            validación, no componente del índice. El perímetro puede no ser completo
+            respecto al total del complejo de incendios.
+          </p>
+        </div>
+      )}
 
       {nucleo.notas && <p className="notas">{nucleo.notas}</p>}
 

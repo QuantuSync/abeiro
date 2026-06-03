@@ -1,0 +1,11 @@
+AOI: Ourense Province
+https://rapidmapping.emergency.copernicus.eu/backend/EMSR837/AOI01/DEL_MONIT02/EMSR837_AOI01_DEL_MONIT02_v2.zip
+https://rapidmapping.emergency.copernicus.eu/backend/EMSR837/AOI01/DEL_MONIT05/EMSR837_AOI01_DEL_MONIT05_v2.zip
+https://rapidmapping.emergency.copernicus.eu/backend/EMSR837/AOI01/DEL_MONIT01/EMSR837_AOI01_DEL_MONIT01_v1.zip
+https://rapidmapping.emergency.copernicus.eu/backend/EMSR837/AOI01/DEL_MONIT03/EMSR837_AOI01_DEL_MONIT03_v2.zip
+https://rapidmapping.emergency.copernicus.eu/backend/EMSR837/AOI01/DEL_MONIT04/EMSR837_AOI01_DEL_MONIT04_v2.zip
+https://rapidmapping.emergency.copernicus.eu/backend/EMSR837/AOI01/DEL_PRODUCT/EMSR837_AOI01_DEL_PRODUCT_v1.zip
+https://rapidmapping.emergency.copernicus.eu/backend/EMSR837/AOI01/DEL_MONIT08/EMSR837_AOI01_DEL_MONIT08_v2.zip
+https://rapidmapping.emergency.copernicus.eu/backend/EMSR837/AOI01/DEL_MONIT09/EMSR837_AOI01_DEL_MONIT09_v2.zip
+https://rapidmapping.emergency.copernicus.eu/backend/EMSR837/AOI01/DEL_MONIT06/EMSR837_AOI01_DEL_MONIT06_v2.zip
+https://rapidmapping.emergency.copernicus.eu/backend/EMSR837/AOI01/DEL_MONIT07/EMSR837_AOI01_DEL_MONIT07_v1.zip

@@ -26,7 +26,7 @@
 //     posterior. Si un concello no tiene edad disponible, el núcleo conserva iv0.
 // =============================================================================
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -37,6 +37,15 @@ const DATA = join(DIR, "..", "data");
 const FICHEROS_CONCELLO = [5, 9, 10, 11, 12, 13, 14, 15, 16];
 
 const PESO_SOCIAL = 0.35; // peso provisional de la sensibilidad social en el IV
+const PESO_CAP = 0.25;    // peso provisional de la capacidad de respuesta en el IV
+
+// Capacidad de respuesta a partir del nº de vías de salida (OSM). Mapeo
+// PROVISIONAL y lineal saturado: ~40 salidas -> 100. Mayor capacidad = menor
+// vulnerabilidad (entra en el IV con signo negativo). El indicador es simple
+// (cuenta de vías, tracks incluidos); refinar ponderando por clase es trabajo
+// posterior.
+const capDeSalidas = (viasSalida) =>
+  Math.max(0, Math.min(100, Math.round(viasSalida * 2.5)));
 
 // --- utilidades CSV / normalización ------------------------------------------
 
@@ -114,12 +123,20 @@ const edad = leerEdadCSV();
 const { piloto, general } = leerAldeas();
 const base = JSON.parse(readFileSync(join(DATA, "nucleos.base.json"), "utf8"));
 
+// Caché de accesos OSM (capacidad de respuesta). Opcional: si no existe, la
+// componente de capacidad se deja como en la base.
+const ACCESOS_PATH = join(DATA, "accesos_osm.json");
+const accesos = existsSync(ACCESOS_PATH)
+  ? JSON.parse(readFileSync(ACCESOS_PATH, "utf8")).nucleos || {}
+  : {};
+
 const informe = [];
 
 for (const feat of base.features) {
   const p = feat.properties;
   const iv0 = p.iv;
   const pct0 = (p.pct_mayores_65 > 1 ? p.pct_mayores_65 / 100 : p.pct_mayores_65); // fracción
+  const cap0 = p.capacidad_respuesta; // capacidad invent. de la base (0-100)
 
   // Cruce: primero en los 9 concellos; si no, en el Nomenclátor general.
   let aldea = cruzar(p.id, p.nombre, piloto);
@@ -136,40 +153,62 @@ for (const feat of base.features) {
     p.dato_poblacion_real = false;
   }
 
+  // --- componente SOCIAL (% mayores de 65, real por proxy de concello) ---
   const ec = aldea ? edad[aldea.codmun] : null;
+  let deltaSocial = 0;
   if (ec) {
     p.pct_mayores_65 = Number(ec.pct.toFixed(4)); // REAL (fracción 0-1)
     p.dato_edad_real = true;
     p.edad_proxy_concello = true;
     p.fuente_edad = `Padrón IGE 2022 (proxy concello: ${aldea.codmun} ${ec.concello})`;
-    const delta = PESO_SOCIAL * (p.pct_mayores_65 - pct0) * 100;
-    p.iv = Math.round(Math.max(0, Math.min(100, iv0 + delta)));
+    deltaSocial = PESO_SOCIAL * (p.pct_mayores_65 - pct0) * 100;
   } else {
     p.pct_mayores_65 = Number(pct0.toFixed(4)); // estimación
     p.dato_edad_real = false;
     p.edad_proxy_concello = true;
     p.fuente_edad = "estimación provisional (concello sin Padrón de edad disponible)";
-    p.iv = iv0;
   }
+
+  // --- componente CAPACIDAD DE RESPUESTA (vías de salida, real de OSM) ---
+  const ac = accesos[p.id];
+  let deltaCap = 0;
+  if (ac) {
+    p.vias_salida = ac.vias_salida;
+    p.vias_salida_por_tipo = ac.por_tipo;
+    p.num_accesos = ac.vias_salida; // sustituye el dato inventado de accesos
+    const capReal = capDeSalidas(ac.vias_salida);
+    p.capacidad_respuesta = capReal;
+    p.dato_capacidad_real = true;
+    p.fuente_capacidad = `OpenStreetMap/Overpass (vías de salida en ${ac.radio_m} m; ODbL)`;
+    deltaCap = -PESO_CAP * (capReal - cap0); // más capacidad -> menos vulnerabilidad
+  } else {
+    p.dato_capacidad_real = false;
+  }
+
+  p.iv = Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial + deltaCap)));
 
   informe.push({
     nucleo: p.nombre,
-    ige: aldea ? aldea.nome : "—",
-    codmun: aldea ? aldea.codmun : "—",
     pob: p.poblacion,
     pctReal: p.dato_edad_real,
     pct_pct: Math.round(p.pct_mayores_65 * 1000) / 10,
-    iv0, iv: p.iv, origenPob,
+    vias: ac ? ac.vias_salida : "—",
+    cap0, cap: p.capacidad_respuesta,
+    iv0, iv: p.iv,
   });
 }
 
 base.metadata = {
   ...base.metadata,
-  fase: "Fase 1: población real (Nomenclátor IGE 2025) y % de mayores de 65 real "
-    + "(Padrón IGE 2022, proxy concello) para los 9 concellos del piloto.",
+  fase: "Fase 1: población real (Nomenclátor IGE 2025), % de mayores de 65 real "
+    + "(Padrón IGE 2022, proxy concello) y capacidad de respuesta por vías de salida "
+    + "real (OpenStreetMap/Overpass) para los núcleos del piloto.",
   edad_nota: "pct_mayores_65 es fracción 0-1, proxy a nivel concello (2022); la "
     + "población es real por aldea (2025).",
+  capacidad_nota: "capacidad_respuesta se deriva de vias_salida (cruces de carretera "
+    + "con el radio OSM). Peligro biofísico sigue estimado.",
   fuente_edad_concellos: "data/padron_edad_concellos.csv",
+  fuente_accesos: "data/accesos_osm.json (OpenStreetMap, ODbL).",
 };
 
 writeFileSync(join(DATA, "nucleos.json"), JSON.stringify(base, null, 2) + "\n", "utf8");
@@ -177,17 +216,16 @@ writeFileSync(join(DATA, "nucleos.json"), JSON.stringify(base, null, 2) + "\n", 
 // Informe
 console.log("Concellos con edad (CSV):",
   Object.entries(edad).map(([k, v]) => `${k}=${(v.pct * 100).toFixed(1)}%`).join("  "));
-console.log("Aldeas piloto (pob>0):", piloto.length, "| Nomenclátor general:", general.length);
-console.log("\n%-26s %-24s %-7s %7s  %-6s  %5s  iv0->iv".replace ? "" : "");
-console.log("--- % de mayores de 65 aplicado a cada núcleo ---");
+console.log("Aldeas piloto (pob>0):", piloto.length, "| con accesos OSM:", Object.keys(accesos).length);
+console.log("\n--- Componentes reales por núcleo (edad / vías de salida) e IV ---");
 for (const r of informe) {
   console.log(
-    `${r.nucleo.padEnd(26)} ${String(r.ige).padEnd(24)} ${r.codmun.padEnd(7)} `
-    + `pob=${String(r.pob).padStart(6)}  edad=${r.pctReal ? "REAL " : "estim"}  `
-    + `${String(r.pct_pct).padStart(5)}%  iv ${r.iv0}->${r.iv}`
+    `${r.nucleo.padEnd(26)} pob=${String(r.pob).padStart(6)}  `
+    + `edad=${r.pctReal ? "REAL " : "estim"} ${String(r.pct_pct).padStart(5)}%  `
+    + `vias_salida=${String(r.vias).padStart(3)}  cap ${String(r.cap0).padStart(3)}->${String(r.cap).padStart(3)}  `
+    + `iv ${String(r.iv0).padStart(2)}->${String(r.iv).padStart(2)}`
   );
 }
-const real = informe.filter((r) => r.pctReal).length;
-console.log(`\nNúcleos con EDAD REAL: ${real}/12`);
-const sinEdad = informe.filter((r) => !r.pctReal).map((r) => `${r.nucleo} (${r.codmun})`);
-console.log("Sin edad real:", sinEdad.length ? sinEdad.join(", ") : "(ninguno)");
+const realEdad = informe.filter((r) => r.pctReal).length;
+const realCap = informe.filter((r) => r.vias !== "—").length;
+console.log(`\nEDAD real: ${realEdad}/12 | CAPACIDAD (vías OSM) real: ${realCap}/12`);

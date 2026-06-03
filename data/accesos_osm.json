@@ -1,0 +1,170 @@
+{
+  "metadata": {
+    "fuente": "OpenStreetMap vía Overpass API (ODbL).",
+    "indicador": "vias_salida = nº de cruces de vías transitables con el círculo de radio R alrededor del centro del núcleo (cada cruce = una salida).",
+    "radio_m": 1000,
+    "clases_highway": [
+      "primary",
+      "secondary",
+      "tertiary",
+      "unclassified",
+      "residential",
+      "track"
+    ]
+  },
+  "nucleos": {
+    "larouco": {
+      "nombre": "Larouco",
+      "lat": 42.5831,
+      "lon": -7.1836,
+      "radio_m": 1000,
+      "vias_salida": 13,
+      "vias_que_cruzan": 11,
+      "por_tipo": {
+        "secondary": 2,
+        "tertiary": 2,
+        "residential": 2,
+        "track": 7
+      }
+    },
+    "seadur": {
+      "nombre": "Seadur",
+      "lat": 42.5972,
+      "lon": -7.1612,
+      "radio_m": 1000,
+      "vias_salida": 8,
+      "vias_que_cruzan": 6,
+      "por_tipo": {
+        "tertiary": 1,
+        "track": 5,
+        "residential": 2
+      }
+    },
+    "freixido": {
+      "nombre": "Freixido",
+      "lat": 42.6038,
+      "lon": -7.2048,
+      "radio_m": 1000,
+      "vias_salida": 6,
+      "vias_que_cruzan": 5,
+      "por_tipo": {
+        "secondary": 2,
+        "tertiary": 2,
+        "track": 2
+      }
+    },
+    "pradorramisquedo": {
+      "nombre": "Pradorramisquedo",
+      "lat": 42.6211,
+      "lon": -7.2331,
+      "radio_m": 1000,
+      "vias_salida": 16,
+      "vias_que_cruzan": 8,
+      "por_tipo": {
+        "tertiary": 6,
+        "track": 10
+      }
+    },
+    "portomourisco": {
+      "nombre": "Portomourisco",
+      "lat": 42.4309,
+      "lon": -7.1158,
+      "radio_m": 1000,
+      "vias_salida": 6,
+      "vias_que_cruzan": 3,
+      "por_tipo": {
+        "track": 6
+      }
+    },
+    "petin": {
+      "nombre": "Petín",
+      "lat": 42.4006,
+      "lon": -7.1042,
+      "radio_m": 1000,
+      "vias_salida": 32,
+      "vias_que_cruzan": 30,
+      "por_tipo": {
+        "residential": 16,
+        "tertiary": 4,
+        "track": 11,
+        "unclassified": 1
+      }
+    },
+    "a-rua": {
+      "nombre": "A Rúa",
+      "lat": 42.3922,
+      "lon": -7.1117,
+      "radio_m": 1000,
+      "vias_salida": 33,
+      "vias_que_cruzan": 32,
+      "por_tipo": {
+        "secondary": 1,
+        "residential": 8,
+        "track": 20,
+        "tertiary": 4
+      }
+    },
+    "o-barco": {
+      "nombre": "O Barco de Valdeorras",
+      "lat": 42.4164,
+      "lon": -6.9831,
+      "radio_m": 1000,
+      "vias_salida": 42,
+      "vias_que_cruzan": 38,
+      "por_tipo": {
+        "secondary": 2,
+        "residential": 22,
+        "tertiary": 6,
+        "track": 9,
+        "unclassified": 3
+      }
+    },
+    "vilardesilva": {
+      "nombre": "Vilardesilva",
+      "lat": 42.4671,
+      "lon": -6.9389,
+      "radio_m": 1000,
+      "vias_salida": 15,
+      "vias_que_cruzan": 10,
+      "por_tipo": {
+        "track": 15
+      }
+    },
+    "casaio": {
+      "nombre": "Casaio",
+      "lat": 42.4889,
+      "lon": -6.8472,
+      "radio_m": 1000,
+      "vias_salida": 19,
+      "vias_que_cruzan": 9,
+      "por_tipo": {
+        "unclassified": 3,
+        "track": 16
+      }
+    },
+    "a-medua": {
+      "nombre": "A Medua",
+      "lat": 42.4538,
+      "lon": -6.8061,
+      "radio_m": 1000,
+      "vias_salida": 7,
+      "vias_que_cruzan": 4,
+      "por_tipo": {
+        "track": 7
+      }
+    },
+    "vilamartin": {
+      "nombre": "Vilamartín de Valdeorras",
+      "lat": 42.4256,
+      "lon": -7.0494,
+      "radio_m": 1000,
+      "vias_salida": 19,
+      "vias_que_cruzan": 14,
+      "por_tipo": {
+        "tertiary": 3,
+        "unclassified": 10,
+        "track": 6
+      }
+    }
+  }
+}

@@ -110,14 +110,26 @@ pasan a datos abiertos del **IGE**:
   subgrupos de `85 e máis`, para evitar doble conteo). `pct_mayores_65` se guarda como
   fracción 0–1.
 
+La componente de **capacidad de respuesta** usa la **red viaria de OpenStreetMap**:
+
+- **Vías de salida:** por cada núcleo se cuenta, vía **Overpass API**, el nº de carreteras
+  transitables (`highway`: primary, secondary, tertiary, unclassified, residential, track)
+  que **cruzan** un círculo de 1 km alrededor del centro (cada cruce = una salida). El
+  resultado se **cachea** en `data/accesos_osm.json` (ODbL) para no depender de la API en
+  cada build. La capacidad se deriva de ese recuento (mapeo provisional). *Limitación: el
+  recuento incluye `track` (pistas), que dominan en aldeas rurales; refinar ponderando por
+  clase de vía queda pendiente.*
+
 Los ficheros del IGE vienen en **ISO-8859-1**. El procesador parte de `data/nucleos.base.json`
 (línea base reproducible, con las componentes aún estimadas), los lee como `latin1`,
 normaliza nombres a UTF-8, cruza las aldeas del Nomenclátor con los núcleos del mapa
-(normalizando mayúsculas/tildes y reordenando el artículo) y reescribe `data/nucleos.json`
-marcando con `dato_poblacion_real` / `dato_edad_real` qué núcleos ya usan dato real.
+(normalizando mayúsculas/tildes y reordenando el artículo), incorpora la capacidad desde
+`data/accesos_osm.json` y reescribe `data/nucleos.json` marcando con `dato_poblacion_real`
+/ `dato_edad_real` / `dato_capacidad_real` qué componentes ya usan dato real.
 
 ```bash
-node scripts/procesar-ige.mjs   # regenera data/nucleos.json desde base + IGE
+node scripts/fetch-accesos-osm.mjs --force   # (opcional) re-consulta Overpass y cachea
+node scripts/procesar-ige.mjs                # regenera data/nucleos.json desde base + IGE + OSM
 ```
 
 En el mapa, los núcleos con **edad real** se marcan con un anillo verde; el panel de cada

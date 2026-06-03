@@ -24,6 +24,11 @@ export interface NucleoProps {
   fuente_poblacion?: string;
   fuente_edad?: string;
   ige_nome?: string;
+  // Capacidad de respuesta (vías de salida, OpenStreetMap).
+  vias_salida?: number;
+  vias_salida_por_tipo?: Record<string, number>;
+  dato_capacidad_real?: boolean;
+  fuente_capacidad?: string;
 }
 
 function Barra({ valor, color }: { valor: number; color: string }) {
@@ -105,8 +110,14 @@ export default function PanelInfo({
           <dd>{nucleo.distancia_servicios_km} km</dd>
         </div>
         <div>
-          <dt>Accesos viarios</dt>
-          <dd>{nucleo.num_accesos}</dd>
+          <dt>
+            Vías de salida (OSM){" "}
+            <Origen
+              real={!!nucleo.dato_capacidad_real}
+              texto={nucleo.dato_capacidad_real ? "real · OpenStreetMap" : "estimación"}
+            />
+          </dt>
+          <dd>{nucleo.vias_salida ?? nucleo.num_accesos}</dd>
         </div>
         <div>
           <dt>Cobertura móvil</dt>
@@ -116,12 +127,17 @@ export default function PanelInfo({
 
       <div className="factores">
         <div className="factor">
-          <span>Peligro biofísico</span>
+          <span>
+            Peligro biofísico <Origen real={false} texto="estimación" />
+          </span>
           <Barra valor={nucleo.peligro_biofisico} color="#d9534f" />
           <strong>{nucleo.peligro_biofisico}</strong>
         </div>
         <div className="factor">
-          <span>Capacidad de respuesta</span>
+          <span>
+            Capacidad de respuesta{" "}
+            <Origen real={!!nucleo.dato_capacidad_real} texto={nucleo.dato_capacidad_real ? "real · OSM" : "estimación"} />
+          </span>
           <Barra valor={nucleo.capacidad_respuesta} color="#2e8b57" />
           <strong>{nucleo.capacidad_respuesta}</strong>
         </div>
@@ -134,11 +150,11 @@ export default function PanelInfo({
         probabilísticas.{" "}
         {nucleo.dato_poblacion_real ? (
           <>
-            Población real del IGE (Nomenclátor 2025
-            {nucleo.ige_nome ? `, "${nucleo.ige_nome}"` : ""}).{" "}
-            {nucleo.dato_edad_real
-              ? "% de mayores real (Padrón 2022, proxy de concello)."
-              : "% de mayores y resto de componentes: estimación provisional."}
+            Dato real: población (Nomenclátor IGE 2025
+            {nucleo.ige_nome ? `, "${nucleo.ige_nome}"` : ""})
+            {nucleo.dato_edad_real ? ", % de mayores (Padrón IGE 2022, proxy concello)" : ""}
+            {nucleo.dato_capacidad_real ? ", vías de salida (OpenStreetMap)" : ""}. El
+            peligro biofísico sigue siendo estimación provisional.
           </>
         ) : (
           <strong>Datos de prueba.</strong>

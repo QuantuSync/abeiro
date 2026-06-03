@@ -1,0 +1,253 @@
+{
+  "type": "FeatureCollection",
+  "name": "nucleos_valdeorras_larouco",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "metadata": {
+    "descripcion": "DATOS DE PRUEBA (inventados pero coherentes) para la Fase 0 de ABEIRO. NO son datos reales. Núcleos de la comarca piloto de Valdeorras / zona de Larouco (Ourense).",
+    "indice": "Índice de Vulnerabilidad (0-100). Combina peligro biofísico, sensibilidad social (envejecimiento, aislamiento, dispersión) y capacidad de respuesta (accesos, cobertura).",
+    "fuente": "Generado para Fase 0. Sustituir por fuentes abiertas en Fase 1.",
+    "privacidad": "Solo indicadores agregados y no identificativos. Ninguna identidad nominal."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "larouco",
+        "nombre": "Larouco",
+        "concello": "Larouco",
+        "iv": 78,
+        "poblacion": 312,
+        "pct_mayores_65": 41,
+        "pct_hogares_uniper_mayores": 28,
+        "dispersion": "media",
+        "distancia_servicios_km": 12.4,
+        "peligro_biofisico": 72,
+        "capacidad_respuesta": 38,
+        "num_accesos": 2,
+        "cobertura_movil": "parcial",
+        "notas": "Capital municipal. Envejecimiento alto y accesos limitados por carretera de montaña."
+      },
+      "geometry": { "type": "Point", "coordinates": [-7.1836, 42.5831] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "seadur",
+        "nombre": "Seadur",
+        "concello": "Larouco",
+        "iv": 84,
+        "poblacion": 96,
+        "pct_mayores_65": 53,
+        "pct_hogares_uniper_mayores": 37,
+        "dispersion": "alta",
+        "distancia_servicios_km": 15.1,
+        "peligro_biofisico": 79,
+        "capacidad_respuesta": 27,
+        "num_accesos": 1,
+        "cobertura_movil": "deficiente",
+        "notas": "Un solo acceso viario y vegetación densa en la interfaz. Población muy envejecida."
+      },
+      "geometry": { "type": "Point", "coordinates": [-7.1612, 42.5972] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "freixido",
+        "nombre": "Freixido",
+        "concello": "Larouco",
+        "iv": 71,
+        "poblacion": 58,
+        "pct_mayores_65": 49,
+        "pct_hogares_uniper_mayores": 33,
+        "dispersion": "alta",
+        "distancia_servicios_km": 17.8,
+        "peligro_biofisico": 68,
+        "capacidad_respuesta": 31,
+        "num_accesos": 1,
+        "cobertura_movil": "deficiente",
+        "notas": "Aldea dispersa en ladera; combustible continuo hasta las primeras casas."
+      },
+      "geometry": { "type": "Point", "coordinates": [-7.2048, 42.6038] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "pradorramisquedo",
+        "nombre": "Pradorramisquedo",
+        "concello": "Larouco",
+        "iv": 89,
+        "poblacion": 34,
+        "pct_mayores_65": 61,
+        "pct_hogares_uniper_mayores": 44,
+        "dispersion": "muy alta",
+        "distancia_servicios_km": 22.6,
+        "peligro_biofisico": 81,
+        "capacidad_respuesta": 19,
+        "num_accesos": 1,
+        "cobertura_movil": "nula",
+        "notas": "Núcleo aislado de alta montaña. El caso más crítico de la comarca piloto."
+      },
+      "geometry": { "type": "Point", "coordinates": [-7.2331, 42.6211] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "portomourisco",
+        "nombre": "Portomourisco",
+        "concello": "Petín",
+        "iv": 52,
+        "poblacion": 187,
+        "pct_mayores_65": 34,
+        "pct_hogares_uniper_mayores": 21,
+        "dispersion": "media",
+        "distancia_servicios_km": 6.2,
+        "peligro_biofisico": 58,
+        "capacidad_respuesta": 49,
+        "num_accesos": 2,
+        "cobertura_movil": "parcial",
+        "notas": "Mejor conectado al valle; riesgo medio por proximidad a masa forestal."
+      },
+      "geometry": { "type": "Point", "coordinates": [-7.1158, 42.4309] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "petin",
+        "nombre": "Petín",
+        "concello": "Petín",
+        "iv": 44,
+        "poblacion": 421,
+        "pct_mayores_65": 29,
+        "pct_hogares_uniper_mayores": 18,
+        "dispersion": "baja",
+        "distancia_servicios_km": 3.1,
+        "peligro_biofisico": 51,
+        "capacidad_respuesta": 58,
+        "num_accesos": 3,
+        "cobertura_movil": "buena",
+        "notas": "Núcleo de valle con buenos accesos y servicios cercanos."
+      },
+      "geometry": { "type": "Point", "coordinates": [-7.1042, 42.4006] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "a-rua",
+        "nombre": "A Rúa",
+        "concello": "A Rúa",
+        "iv": 31,
+        "poblacion": 4180,
+        "pct_mayores_65": 24,
+        "pct_hogares_uniper_mayores": 14,
+        "dispersion": "baja",
+        "distancia_servicios_km": 0.6,
+        "peligro_biofisico": 42,
+        "capacidad_respuesta": 71,
+        "num_accesos": 4,
+        "cobertura_movil": "buena",
+        "notas": "Villa principal del tramo. Servicios de emergencia y centro de salud propios."
+      },
+      "geometry": { "type": "Point", "coordinates": [-7.1117, 42.3922] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "o-barco",
+        "nombre": "O Barco de Valdeorras",
+        "concello": "O Barco de Valdeorras",
+        "iv": 26,
+        "poblacion": 10980,
+        "pct_mayores_65": 22,
+        "pct_hogares_uniper_mayores": 12,
+        "dispersion": "muy baja",
+        "distancia_servicios_km": 0.3,
+        "peligro_biofisico": 38,
+        "capacidad_respuesta": 79,
+        "num_accesos": 5,
+        "cobertura_movil": "buena",
+        "notas": "Capital de comarca. Máxima capacidad de respuesta; riesgo humano bajo."
+      },
+      "geometry": { "type": "Point", "coordinates": [-6.9831, 42.4164] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "vilardesilva",
+        "nombre": "Vilardesilva",
+        "concello": "Rubiá",
+        "iv": 67,
+        "poblacion": 71,
+        "pct_mayores_65": 47,
+        "pct_hogares_uniper_mayores": 31,
+        "dispersion": "alta",
+        "distancia_servicios_km": 14.3,
+        "peligro_biofisico": 64,
+        "capacidad_respuesta": 33,
+        "num_accesos": 1,
+        "cobertura_movil": "deficiente",
+        "notas": "Ladera de solana con matorral; acceso único y población envejecida."
+      },
+      "geometry": { "type": "Point", "coordinates": [-6.9389, 42.4671] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "casaio",
+        "nombre": "Casaio",
+        "concello": "Carballeda de Valdeorras",
+        "iv": 75,
+        "poblacion": 142,
+        "pct_mayores_65": 45,
+        "pct_hogares_uniper_mayores": 29,
+        "dispersion": "alta",
+        "distancia_servicios_km": 19.2,
+        "peligro_biofisico": 76,
+        "capacidad_respuesta": 28,
+        "num_accesos": 1,
+        "cobertura_movil": "deficiente",
+        "notas": "Bajo el macizo de Pena Trevinca; gran masa forestal y acceso de montaña."
+      },
+      "geometry": { "type": "Point", "coordinates": [-6.8472, 42.4889] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "a-medua",
+        "nombre": "A Medua",
+        "concello": "Carballeda de Valdeorras",
+        "iv": 62,
+        "poblacion": 49,
+        "pct_mayores_65": 51,
+        "pct_hogares_uniper_mayores": 35,
+        "dispersion": "muy alta",
+        "distancia_servicios_km": 11.7,
+        "peligro_biofisico": 59,
+        "capacidad_respuesta": 36,
+        "num_accesos": 1,
+        "cobertura_movil": "parcial",
+        "notas": "Entorno de Las Médulas gallegas; núcleo pequeño y muy disperso."
+      },
+      "geometry": { "type": "Point", "coordinates": [-6.8061, 42.4538] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "vilamartin",
+        "nombre": "Vilamartín de Valdeorras",
+        "concello": "Vilamartín de Valdeorras",
+        "iv": 39,
+        "poblacion": 698,
+        "pct_mayores_65": 28,
+        "pct_hogares_uniper_mayores": 17,
+        "dispersion": "baja",
+        "distancia_servicios_km": 2.4,
+        "peligro_biofisico": 47,
+        "capacidad_respuesta": 62,
+        "num_accesos": 3,
+        "cobertura_movil": "buena",
+        "notas": "Núcleo de fondo de valle, bien comunicado por la N-120."
+      },
+      "geometry": { "type": "Point", "coordinates": [-7.0494, 42.4256] }
+    }
+  ]
+}

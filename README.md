@@ -100,25 +100,32 @@ modelo supervisado contra el resultado humano observado en el incendio de 2025
 La componente de **sensibilidad social** y la **población** dejan de ser inventadas y
 pasan a datos abiertos del **IGE**:
 
-- **Población por aldea:** Nomenclátor IGE 2025 (`data/Fichero1.txt`), real por entidade
-  singular.
-- **% de mayores de 65:** Padrón IGE 2022 por grupos de edad a nivel **concello**
-  (`data/Fichero2.txt`); se aplica como **proxy** a cada aldea de ese concello. El 65+
-  suma sólo los grupos `65-69`, `70-74`, `75-79`, `80-84` y `85 e máis` (no los
+- **Población por aldea:** Nomenclátor IGE 2025, real por entidade singular. Repartido por
+  concello en `data/Fichero5,9,10..16.txt` (los 9 concellos del piloto) más el Nomenclátor
+  general `data/Fichero1.txt` como respaldo.
+- **% de mayores de 65:** Padrón IGE 2022 por grupos de edad a nivel **concello**,
+  consolidado en `data/padron_edad_concellos.csv` (columnas `codmun, concello,
+  pct_mayores_65` como fracción 0–1). Se aplica como **proxy** a cada aldea de su concello.
+  El 65+ suma sólo los grupos `65-69`, `70-74`, `75-79`, `80-84` y `85 e máis` (no los
   subgrupos de `85 e máis`, para evitar doble conteo). `pct_mayores_65` se guarda como
   fracción 0–1.
 
-Los ficheros del IGE vienen en **ISO-8859-1**. El procesador los lee como `latin1`,
+Los ficheros del IGE vienen en **ISO-8859-1**. El procesador parte de `data/nucleos.base.json`
+(línea base reproducible, con las componentes aún estimadas), los lee como `latin1`,
 normaliza nombres a UTF-8, cruza las aldeas del Nomenclátor con los núcleos del mapa
 (normalizando mayúsculas/tildes y reordenando el artículo) y reescribe `data/nucleos.json`
 marcando con `dato_poblacion_real` / `dato_edad_real` qué núcleos ya usan dato real.
 
 ```bash
-node scripts/procesar-ige.mjs   # regenera data/nucleos.json desde los ficheros del IGE
+node scripts/procesar-ige.mjs   # regenera data/nucleos.json desde base + IGE
 ```
 
 En el mapa, los núcleos con **edad real** se marcan con un anillo verde; el panel de cada
 núcleo muestra la procedencia de cada dato (real / estimación).
+
+> **Cobertura actual:** 11 de los 12 núcleos del mapa tienen edad real (los 9 concellos del
+> piloto). Pradorramisquedo pertenece a **Viana do Bolo (32086)**, fuera de los 9 concellos:
+> conserva población real pero su edad queda como estimación hasta añadir ese concello al CSV.
 
 ### Categorías
 

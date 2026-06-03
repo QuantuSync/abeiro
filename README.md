@@ -1,10 +1,14 @@
-# ABEIRO — Frontend (Fase 0)
+# ABEIRO — FASOR · Evaluación de Riesgo de Incendios
 
-Sistema abierto de protección ante incendios forestales en Galicia. **Abeiro** significa
-*refugio/amparo* en gallego. El sistema es open source y gratuito. Su aportación no es
-detectar el fuego (eso ya lo cubren satélites y organismos públicos), sino cerrar el
-último eslabón: traducir el avance del fuego en una **decisión accionable por aldea y por
-persona**.
+**ABEIRO** es la herramienta de evaluación de riesgo de incendios forestales de **FASOR**
+(Fuerza de Auxilio, Soporte y Rescate · Casa Alaniz). *Abeiro* significa *refugio/amparo*
+en gallego. Sistema abierto y gratuito. Su aportación no es detectar el fuego (eso ya lo
+cubren satélites y organismos públicos), sino cerrar el último eslabón: traducir el avance
+del fuego en una **decisión accionable por aldea y por persona**.
+
+La interfaz adopta la **identidad visual de FASOR** (verde bosque muy oscuro + acento
+dorado, tipografía serif institucional). Es un **demostrador con datos reales**
+(IGE · OpenStreetMap · Sentinel-2), no datos de prueba.
 
 Este repositorio es el **frontend** (desplegable en Vercel). El motor científico pesado
 (emulador de propagación, asimilación de datos) vive en un servidor dedicado aparte y se
@@ -16,7 +20,8 @@ Mapa web ([MapLibre GL](https://maplibre.org/)) de la comarca piloto de
 **Valdeorras / Larouco** (Ourense) que pinta el **Índice de Vulnerabilidad** por núcleo
 de población con **datos de prueba** (inventados pero coherentes). Incluye:
 
-- Mapa interactivo con basemap de OpenStreetMap (sin claves de API en el navegador).
+- Mapa interactivo con basemap neutro **CARTO Positron** (gris claro, sin claves de API),
+  para que los símbolos del mapa base no compitan con la paleta de datos.
 - Núcleos coloreados según su Índice de Vulnerabilidad (escala verde → rojo).
 - **Leyenda** con las cinco categorías de vulnerabilidad.
 - **Panel de información** al pinchar un núcleo: población, envejecimiento, aislamiento,

@@ -1,11 +1,20 @@
 :root {
-  --bg: #f4f2ec;
-  --panel-bg: #ffffff;
-  --texto: #1f2933;
-  --texto-suave: #5b6671;
-  --borde: #e0ddd4;
-  --acento: #1f6f4a;
-  --sombra: 0 6px 24px rgba(0, 0, 0, 0.14);
+  /* Identidad FASOR: verde bosque muy oscuro (casi negro) + acento dorado. */
+  --bg: #0a120d;
+  --superficie: #13201a;     /* paneles */
+  --superficie-2: #1b2b23;   /* sub-bloques destacados */
+  --panel-bg: var(--superficie);
+  --texto: #e9e6d8;
+  --texto-suave: #9aab9f;
+  --borde: #2a3a30;
+  --oro: #c8a44a;            /* color de marca FASOR */
+  --oro-claro: #ddc079;
+  --acento: #3f8a63;        /* verde institucional para detalles no-marca */
+  --sombra: 0 10px 30px rgba(0, 0, 0, 0.55);
+  /* Stacks tipográficos: --fuente-titulo / --fuente-cuerpo los define next/font
+     en <html>; aquí solo añadimos los fallbacks. */
+  --titulo: var(--fuente-titulo), Georgia, "Times New Roman", serif;
+  --cuerpo: var(--fuente-cuerpo), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 * {
@@ -20,9 +29,10 @@ body {
 }
 
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--cuerpo);
   color: var(--texto);
   background: var(--bg);
+  -webkit-font-smoothing: antialiased;
 }
 
 .app {
@@ -31,51 +41,65 @@ body {
   height: 100vh;
 }
 
-/* ---- Cabecera ---- */
+/* ---- Cabecera FASOR ---- */
 .cabecera {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.7rem 1.2rem;
-  background: #11261d;
-  color: #f4f2ec;
+  padding: 0.85rem 1.4rem;
+  background: linear-gradient(180deg, #0c1610 0%, #0a120d 100%);
+  border-bottom: 1px solid var(--borde);
+  box-shadow: 0 2px 0 rgba(200, 164, 74, 0.25);
+  color: var(--texto);
   flex-wrap: wrap;
 }
 .marca {
   display: flex;
   align-items: baseline;
-  gap: 0.7rem;
+  gap: 0.85rem;
+  flex-wrap: wrap;
 }
 .logo {
-  font-size: 1.5rem;
+  font-family: var(--titulo);
+  font-size: 1.85rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  color: #ffffff;
+  letter-spacing: 0.14em;
+  color: var(--oro);
+  line-height: 1;
 }
 .claim {
-  font-size: 0.82rem;
-  color: #9fc7b1;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+  text-transform: uppercase;
 }
 .contexto {
-  font-size: 0.85rem;
-  color: #d7e4dc;
+  font-size: 0.84rem;
+  color: var(--texto-suave);
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.9rem;
+  flex-wrap: wrap;
 }
 .contexto strong {
-  color: #ffffff;
+  color: var(--texto);
 }
-.fase {
-  background: #b9472f;
-  color: #fff;
-  font-size: 0.72rem;
+.distintivo {
+  border: 1px solid rgba(200, 164, 74, 0.55);
+  background: rgba(200, 164, 74, 0.08);
+  color: var(--oro-claro);
+  font-size: 0.7rem;
   font-weight: 600;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
+  padding: 0.22rem 0.6rem;
+  border-radius: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.distintivo em {
+  font-style: normal;
+  color: var(--texto-suave);
 }
 
 /* ---- Mapa ---- */
@@ -117,10 +141,11 @@ body {
 }
 .leyenda h3 {
   margin: 0 0 0.5rem;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--texto-suave);
+  font-family: var(--titulo);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--oro-claro);
 }
 .leyenda ul {
   list-style: none;
@@ -230,7 +255,10 @@ body {
 }
 .panel-head h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.45rem;
+  font-family: var(--titulo);
+  font-weight: 700;
+  color: var(--oro-claro);
 }
 .panel-head .concello {
   margin: 0.1rem 0 0;
@@ -246,7 +274,7 @@ body {
   padding: 0.7rem 0.85rem;
   border: 2px solid;
   border-radius: 10px;
-  background: #fafafa;
+  background: var(--superficie-2);
 }
 .iv-num {
   font-size: 2.4rem;
@@ -313,19 +341,19 @@ body {
   vertical-align: middle;
 }
 .origen.real {
-  background: #e3f3e8;
-  color: #1a7d45;
-  border: 1px solid #b3e0c4;
+  background: rgba(63, 138, 99, 0.18);
+  color: #7fd0a0;
+  border: 1px solid rgba(127, 208, 160, 0.4);
 }
 .origen.aprox {
-  background: #fdf3e0;
-  color: #9a6a16;
-  border: 1px solid #f0d9a8;
+  background: rgba(200, 164, 74, 0.15);
+  color: var(--oro-claro);
+  border: 1px solid rgba(200, 164, 74, 0.4);
 }
 .origen.estim {
-  background: #f0eee9;
-  color: #8a8377;
-  border: 1px solid #ddd8cd;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--texto-suave);
+  border: 1px solid var(--borde);
 }
 .subfactor {
   font-size: 0.76rem;
@@ -358,7 +386,7 @@ body {
 .barra {
   grid-column: 1 / -1;
   height: 7px;
-  background: #ececec;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -370,20 +398,20 @@ body {
 .evacuacion {
   margin: 0.8rem 0;
   padding: 0.6rem 0.7rem;
-  border: 1px solid #cfe0e8;
+  border: 1px solid rgba(91, 155, 213, 0.3);
   border-radius: 8px;
-  background: #f2f8fb;
+  background: rgba(91, 155, 213, 0.08);
 }
 .evacuacion.destino {
-  border-color: #b6dce8;
-  background: #eaf5fa;
+  border-color: rgba(91, 155, 213, 0.4);
+  background: rgba(91, 155, 213, 0.12);
 }
 .evac-head {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #0b6e99;
+  color: #7fb4e0;
   margin-bottom: 0.35rem;
 }
 .evac-destino {
@@ -406,16 +434,16 @@ body {
 .afectacion {
   margin: 0.8rem 0;
   padding: 0.6rem 0.7rem;
-  border: 1px solid #e7d2cd;
+  border: 1px solid rgba(201, 100, 70, 0.3);
   border-radius: 8px;
-  background: #fbf3f1;
+  background: rgba(201, 100, 70, 0.08);
 }
 .afect-head {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #7a1f12;
+  color: #e08a6c;
   margin-bottom: 0.4rem;
 }
 .afect-estado {
@@ -423,10 +451,10 @@ body {
   font-size: 0.9rem;
 }
 .afect-estado.dentro {
-  color: #7a1f12;
+  color: #f0795a;
 }
 .afect-estado.borde {
-  color: #b9472f;
+  color: #e0a06c;
 }
 .afect-estado.fuera {
   color: var(--texto-suave);
@@ -449,8 +477,8 @@ body {
   font-size: 0.82rem;
   line-height: 1.4;
   color: var(--texto);
-  background: #f6f4ee;
-  border-left: 3px solid var(--acento);
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid var(--oro);
   padding: 0.5rem 0.7rem;
   border-radius: 0 6px 6px 0;
   margin: 0.7rem 0;
@@ -488,27 +516,27 @@ body {
   cursor: pointer;
 }
 .selector-lente button.activo {
-  background: #11261d;
-  color: #fff;
+  background: var(--oro);
+  color: #15110a;
 }
 
 /* ---- Títulos de bloque en el panel ---- */
 .bloque-titulo {
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0.7rem 0 0.3rem;
-  padding-bottom: 0.2rem;
-  border-bottom: 2px solid;
+  font-family: var(--titulo);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin: 0.8rem 0 0.4rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid;
 }
 .bt-vuln {
-  color: var(--acento);
-  border-color: #cfe3d7;
+  color: var(--oro-claro);
+  border-color: rgba(200, 164, 74, 0.35);
 }
 .bt-evac {
-  color: #0b6e99;
-  border-color: #cfe0e8;
+  color: #7fb4e0;
+  border-color: rgba(91, 155, 213, 0.35);
 }
 
 /* Bloque de dificultad de evacuación (paralelo al de IV) */
@@ -520,7 +548,7 @@ body {
   padding: 0.55rem 0.7rem;
   border: 2px solid;
   border-radius: 10px;
-  background: #fafafa;
+  background: var(--superficie-2);
 }
 .dif-num {
   font-size: 2rem;
@@ -550,9 +578,9 @@ body {
   top: 12px;
   left: 12px;
   z-index: 6;
-  background: #11261d;
-  color: #fff;
-  border: none;
+  background: var(--superficie);
+  color: var(--oro-claro);
+  border: 1px solid rgba(200, 164, 74, 0.45);
   border-radius: 8px;
   padding: 0.45rem 0.8rem;
   font-size: 0.82rem;
@@ -561,7 +589,8 @@ body {
   box-shadow: var(--sombra);
 }
 .btn-validacion:hover {
-  background: #1d3d2e;
+  background: var(--superficie-2);
+  border-color: var(--oro);
 }
 
 .validacion {
@@ -592,7 +621,10 @@ body {
 }
 .validacion h2 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.3rem;
+  font-family: var(--titulo);
+  font-weight: 700;
+  color: var(--oro-claro);
 }
 .validacion .sub {
   margin: 0.15rem 0 0.7rem;
@@ -602,12 +634,12 @@ body {
 .aviso-fuerte {
   font-size: 0.76rem;
   line-height: 1.4;
-  background: #fdf3e0;
-  border: 1px solid #f0d9a8;
+  background: rgba(200, 164, 74, 0.1);
+  border: 1px solid rgba(200, 164, 74, 0.35);
   border-radius: 8px;
   padding: 0.6rem 0.7rem;
   margin: 0 0 0.8rem;
-  color: #5e4710;
+  color: #e6d5a8;
 }
 .tabla-val {
   width: 100%;
@@ -642,14 +674,14 @@ body {
   border-radius: 50%;
   margin-right: 0.35rem;
   vertical-align: middle;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 .tabla-val .cat,
 .tabla-val .fecha {
   color: var(--texto-suave);
 }
 .tabla-val tr.afectado {
-  background: #fbf3f1;
+  background: rgba(201, 100, 70, 0.1);
 }
 .tabla-val tr.afectado.dentro td {
   font-weight: 600;
@@ -663,13 +695,13 @@ body {
   white-space: nowrap;
 }
 .badge-af.dentro {
-  background: #7a1f12;
-  color: #fff;
+  background: #9c2a18;
+  color: #ffe7e0;
 }
 .badge-af.borde {
-  background: #f3dcd6;
-  color: #7a1f12;
-  border: 1px solid #d9a99d;
+  background: rgba(201, 100, 70, 0.2);
+  color: #e0a06c;
+  border: 1px solid rgba(201, 100, 70, 0.45);
 }
 .badge-no {
   font-size: 0.68rem;

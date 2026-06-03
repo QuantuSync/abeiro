@@ -11,12 +11,18 @@ export default function Home() {
     <main className="app">
       <header className="cabecera">
         <div className="marca">
-          <span className="logo">abeiro</span>
-          <span className="claim">protección ante incendios forestales · Galicia</span>
+          <span className="logo">ABEIRO</span>
+          <span className="claim">
+            FASOR · Evaluación de Riesgo de Incendios · Casa Alaniz
+          </span>
         </div>
         <div className="contexto">
-          Comarca piloto: <strong>Valdeorras / Larouco</strong> (Ourense)
-          <span className="fase">Fase 0 · datos de prueba</span>
+          <span className="comarca">
+            Comarca piloto: <strong>Valdeorras / Larouco</strong> (Ourense)
+          </span>
+          <span className="distintivo">
+            Demostrador · Datos reales <em>(IGE · OSM · Sentinel-2)</em>
+          </span>
         </div>
       </header>
       <MapaVulnerabilidad />

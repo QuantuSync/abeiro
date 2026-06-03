@@ -38,25 +38,31 @@ const nucleos: FeatureCollection<Point, NucleoProps> = {
 const CAPAS_VULN = ["nucleos-dato-real", "nucleos-afectado", "perimetro-fill", "perimetro-line"];
 const CAPAS_EVAC = ["rutas-evacuacion", "destinos-seguros"];
 
-// Estilo de basemap sin clave de API: teselas raster de OpenStreetMap.
-// En fases posteriores se sustituirá por PMTiles propio (vector, estático).
+// Basemap neutro/apagado sin clave de API: CARTO Positron (gris claro,
+// monocromo). Evita los símbolos llamativos de OSM (triángulos naranjas,
+// etiquetas) para que no compitan con la paleta de datos ni con la identidad.
 const ESTILO_BASE: maplibregl.StyleSpecification = {
   version: 8,
   // Glyphs (fuentes para etiquetas symbol). Debe servir PBF válido: el endpoint
   // de openmaptiles devolvía HTML y provocaba el error "Unimplemented type: 4".
   glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   sources: {
-    osm: {
+    carto: {
       type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tiles: [
+        "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+        "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+        "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+      ],
       tileSize: 256,
       attribution:
-        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · '
+        + '© <a href="https://carto.com/attributions">CARTO</a>',
     },
   },
   layers: [
-    { id: "fondo", type: "background", paint: { "background-color": "#e9e6df" } },
-    { id: "osm", type: "raster", source: "osm", paint: { "raster-opacity": 0.85 } },
+    { id: "fondo", type: "background", paint: { "background-color": "#ececed" } },
+    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 0.92 } },
   ],
 };
 
@@ -94,17 +100,19 @@ export default function MapaVulnerabilidad() {
       // Perímetro quemado EMSR837 (capa de validación). Se carga del estático
       // (recortado al piloto y simplificado) para no inflar el bundle.
       map.addSource("perimetro", { type: "geojson", data: "/perimetro_emsr837.geojson" });
+      // Velo translúcido: relleno muy tenue + contorno suave, para que no compita
+      // con los núcleos.
       map.addLayer({
         id: "perimetro-fill",
         type: "fill",
         source: "perimetro",
-        paint: { "fill-color": "#7a1f12", "fill-opacity": 0.22 },
+        paint: { "fill-color": "#7a1f12", "fill-opacity": 0.08 },
       });
       map.addLayer({
         id: "perimetro-line",
         type: "line",
         source: "perimetro",
-        paint: { "line-color": "#7a1f12", "line-width": 1, "line-opacity": 0.55 },
+        paint: { "line-color": "#7a1f12", "line-width": 0.8, "line-opacity": 0.4 },
       });
 
       // Rutas de evacuación (capa independiente). Color por % de pista forestal:
@@ -134,14 +142,15 @@ export default function MapaVulnerabilidad() {
         source: "nucleos",
         filter: ["==", ["get", "es_destino"], true],
         paint: {
-          "circle-radius": 9,
+          "circle-radius": 7,
           "circle-color": "#0b6e99",
-          "circle-stroke-width": 2.5,
+          "circle-stroke-width": 2,
           "circle-stroke-color": "#ffffff",
         },
       });
 
-      // Halo blanco para destacar el punto sobre el basemap.
+      // Halo claro para destacar el punto sobre el basemap. Marcadores más
+      // pequeños para que no se solapen al norte (Larouco/Seadur/Freixido...).
       map.addLayer({
         id: "nucleos-halo",
         type: "circle",
@@ -149,10 +158,10 @@ export default function MapaVulnerabilidad() {
         paint: {
           "circle-radius": [
             "interpolate", ["linear"], ["get", "iv"],
-            0, 9, 100, 20,
+            0, 6, 100, 12,
           ],
           "circle-color": "#ffffff",
-          "circle-opacity": 0.9,
+          "circle-opacity": 0.85,
         },
       });
 
@@ -164,11 +173,11 @@ export default function MapaVulnerabilidad() {
         paint: {
           "circle-radius": [
             "interpolate", ["linear"], ["get", "iv"],
-            0, 6, 100, 16,
+            0, 4, 100, 9,
           ],
           "circle-color": EXPRESION_COLOR_IV as maplibregl.ExpressionSpecification,
-          "circle-stroke-width": 1.5,
-          "circle-stroke-color": "#3a3a3a",
+          "circle-stroke-width": 1.2,
+          "circle-stroke-color": "#2a2a2a",
         },
       });
 
@@ -181,10 +190,10 @@ export default function MapaVulnerabilidad() {
         paint: {
           "circle-radius": [
             "interpolate", ["linear"], ["get", "iv"],
-            0, 11, 100, 22,
+            0, 7.5, 100, 13,
           ],
           "circle-color": "rgba(0,0,0,0)",
-          "circle-stroke-width": 2.5,
+          "circle-stroke-width": 2,
           "circle-stroke-color": "#1a7d45",
         },
       });
@@ -197,14 +206,15 @@ export default function MapaVulnerabilidad() {
         source: "nucleos",
         filter: ["==", ["get", "afect_fisica"], true],
         paint: {
-          "circle-radius": 3.5,
+          "circle-radius": 2.4,
           "circle-color": "#3a0d06",
-          "circle-stroke-width": 1,
+          "circle-stroke-width": 0.8,
           "circle-stroke-color": "#ffffff",
         },
       });
 
-      // Etiqueta con el nombre del núcleo.
+      // Etiqueta con el nombre del núcleo. Tamaño menor + anclaje variable y
+      // padding de colisión para que no se pisen al norte (clúster de Larouco).
       map.addLayer({
         id: "nucleos-etiqueta",
         type: "symbol",
@@ -212,15 +222,18 @@ export default function MapaVulnerabilidad() {
         layout: {
           "text-field": ["get", "nombre"],
           "text-font": ["Noto Sans Regular"],
-          "text-size": 12,
-          "text-offset": [0, 1.5],
-          "text-anchor": "top",
+          "text-size": 10.5,
+          "text-radial-offset": 0.9,
+          "text-variable-anchor": ["top", "bottom", "left", "right"],
+          "text-justify": "auto",
+          "text-padding": 6,
           "text-allow-overlap": false,
+          "symbol-sort-key": ["-", 100, ["coalesce", ["get", "iv"], 0]],
         },
         paint: {
-          "text-color": "#1f2933",
+          "text-color": "#33403a",
           "text-halo-color": "#ffffff",
-          "text-halo-width": 1.6,
+          "text-halo-width": 1.5,
         },
       });
 

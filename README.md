@@ -1,12 +1,12 @@
-# ABEIRO — FASOR · Evaluación de Riesgo de Incendios
+# ABEIRO — Protección ante incendios forestales · Galicia
 
-**ABEIRO** es la herramienta de evaluación de riesgo de incendios forestales de **FASOR**
-(Fuerza de Auxilio, Soporte y Rescate · Casa Alaniz). *Abeiro* significa *refugio/amparo*
-en gallego. Sistema abierto y gratuito. Su aportación no es detectar el fuego (eso ya lo
-cubren satélites y organismos públicos), sino cerrar el último eslabón: traducir el avance
-del fuego en una **decisión accionable por aldea y por persona**.
+**ABEIRO** es una herramienta de protección ante incendios forestales en Galicia.
+*Abeiro* significa *refugio/amparo* en gallego. Sistema abierto y gratuito. Su aportación
+no es detectar el fuego (eso ya lo cubren satélites y organismos públicos), sino cerrar el
+último eslabón: traducir el avance del fuego en una **decisión accionable por aldea y por
+persona**.
 
-La interfaz adopta la **identidad visual de FASOR** (verde bosque muy oscuro + acento
+La interfaz adopta una **identidad visual sobria** (verde bosque muy oscuro + acento
 dorado, tipografía serif institucional). Es un **demostrador con datos reales**
 (IGE · OpenStreetMap · Sentinel-2), no datos de prueba.
 

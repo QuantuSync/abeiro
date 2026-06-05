@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 
-// Títulos: serif clásica con autoridad (institucional/heráldica, identidad FASOR).
+// Títulos: serif clásica con autoridad (institucional/heráldica).
 const playfair = Playfair_Display({
   subsets: ["latin"],
   weight: ["600", "700", "800"],
@@ -17,11 +17,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ABEIRO — FASOR · Evaluación de Riesgo de Incendios",
+  title: "ABEIRO — Protección ante incendios forestales · Galicia",
   description:
-    "ABEIRO, herramienta de evaluación de riesgo de incendios forestales de FASOR "
-    + "(Fuerza de Auxilio, Soporte y Rescate · Casa Alaniz). Comarca piloto de "
-    + "Valdeorras / Larouco (Ourense). Demostrador con datos reales (IGE · OSM · Sentinel-2).",
+    "ABEIRO, herramienta de protección ante incendios forestales en Galicia. "
+    + "Comarca piloto de Valdeorras / Larouco (Ourense). "
+    + "Demostrador con datos reales (IGE · OSM · Sentinel-2).",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

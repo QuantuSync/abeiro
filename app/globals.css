@@ -1,5 +1,5 @@
 :root {
-  /* Identidad FASOR: verde bosque muy oscuro (casi negro) + acento dorado. */
+  /* Identidad visual: verde bosque muy oscuro (casi negro) + acento dorado. */
   --bg: #0a120d;
   --superficie: #13201a;     /* paneles */
   --superficie-2: #1b2b23;   /* sub-bloques destacados */
@@ -7,7 +7,7 @@
   --texto: #e9e6d8;
   --texto-suave: #9aab9f;
   --borde: #2a3a30;
-  --oro: #c8a44a;            /* color de marca FASOR */
+  --oro: #c8a44a;            /* color de marca */
   --oro-claro: #ddc079;
   --acento: #3f8a63;        /* verde institucional para detalles no-marca */
   --sombra: 0 10px 30px rgba(0, 0, 0, 0.55);
@@ -41,7 +41,7 @@ body {
   height: 100vh;
 }
 
-/* ---- Cabecera FASOR ---- */
+/* ---- Cabecera ---- */
 .cabecera {
   display: flex;
   align-items: center;

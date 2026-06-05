@@ -13,7 +13,7 @@ export default function Home() {
         <div className="marca">
           <span className="logo">ABEIRO</span>
           <span className="claim">
-            FASOR · Evaluación de Riesgo de Incendios · Casa Alaniz
+            Protección ante incendios forestales · Galicia
           </span>
         </div>
         <div className="contexto">

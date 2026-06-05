@@ -14,24 +14,32 @@ Este repositorio es el **frontend** (desplegable en Vercel). El motor científic
 (emulador de propagación, asimilación de datos) vive en un servidor dedicado aparte y se
 construye en fases posteriores.
 
-## Qué hace la Fase 0
+## Qué muestra
 
 Mapa web ([MapLibre GL](https://maplibre.org/)) de la comarca piloto de
 **Valdeorras / Larouco** (Ourense) que pinta el **Índice de Vulnerabilidad** por núcleo
-de población con **datos de prueba** (inventados pero coherentes). Incluye:
+de población con **datos reales** (IGE · OpenStreetMap · Sentinel-2 · EU-DEM · Copernicus
+EMS). Los 12 núcleos del piloto tienen ya dato real en sus cinco componentes (población,
+envejecimiento, capacidad de respuesta y pendiente reales; combustible aproximado por
+satélite). Incluye:
 
 - Mapa interactivo con basemap **CARTO Voyager** (neutro pero con buen contraste y
   legibilidad de carreteras y topónimos, sin claves de API), pensado para que personas
   mayores distingan sin esfuerzo pueblos, carreteras y colores de riesgo.
 - Núcleos coloreados según su Índice de Vulnerabilidad (escala verde → rojo).
-- **Leyenda** con las cinco categorías de vulnerabilidad.
+- **Dos lentes** intercambiables —**Vulnerabilidad** y **Evacuación** (rutas reales de
+  salida por carretera)— que no se funden en un único número.
+- **Leyenda** que cambia según la lente activa.
 - **Panel de información** al pinchar un núcleo: población, envejecimiento, aislamiento,
-  dispersión, accesos, peligro biofísico y capacidad de respuesta.
+  dispersión, accesos, peligro biofísico, capacidad de respuesta, ruta de evacuación y
+  afectación del incendio de 2025, indicando la **procedencia de cada dato** (real /
+  aproximación / estimación).
 
-> ⚠️ **Datos de prueba.** Las cifras de este repositorio son inventadas para validar el
-> circuito completo *datos → mapa → despliegue*. No deben usarse para ninguna decisión
-> real. En la Fase 1 se sustituyen por fuentes abiertas (PNOA-LiDAR, MeteoGalicia, IGE/INE,
-> Sentinel-2, OpenStreetMap, EFFIS…).
+> ⚠️ **Demostrador, no herramienta operativa.** Los **datos son reales** (no inventados),
+> pero los **pesos del índice son provisionales** y aún **no están calibrados** contra el
+> resultado observado del incendio de 2025 (ROC/AUC, fase posterior). El **combustible** es
+> una *aproximación* por satélite, no el mapa de combustible calibrado (fotoguía + LiDAR).
+> No debe usarse como única base para decisiones operativas reales.
 
 ## Stack
 
@@ -80,17 +88,30 @@ abeiro/
 ├─ app/
 │  ├─ layout.tsx          # layout raíz y metadatos
 │  ├─ page.tsx            # página principal (carga el mapa en cliente)
-│  └─ globals.css         # estilos
+│  └─ globals.css         # estilos e identidad visual
 ├─ components/
-│  ├─ MapaVulnerabilidad.tsx  # mapa MapLibre + capas + interacción
-│  ├─ Leyenda.tsx             # leyenda del Índice de Vulnerabilidad
-│  └─ PanelInfo.tsx           # panel de detalle de un núcleo
+│  ├─ MapaVulnerabilidad.tsx  # mapa MapLibre + capas + interacción + selector de lente
+│  ├─ Leyenda.tsx             # leyenda (cambia según la lente activa)
+│  ├─ PanelInfo.tsx           # panel de detalle de un núcleo (vulnerabilidad + evacuación)
+│  └─ PanelValidacion.tsx     # panel de validación (afectación física 2025)
 ├─ lib/
-│  └─ vulnerabilidad.ts   # categorías, paleta y expresión de color
-├─ data/
-│  └─ nucleos.json        # GeoJSON de núcleos (DATOS DE PRUEBA)
+│  ├─ vulnerabilidad.ts   # categorías, paleta y expresión de color del IV
+│  └─ evacuacion.ts       # dificultad de evacuación, paleta y expresión de color
+├─ data/                  # núcleos + cachés de fuentes (IGE / OSM / Sentinel-2 / DEM / EMS)
+│  ├─ nucleos.json            # GeoJSON de núcleos con el IV y la procedencia de cada dato
+│  ├─ nucleos.base.json       # línea base reproducible (antes de cruzar fuentes)
+│  ├─ evacuacion.json         # rutas de evacuación por núcleo
+│  └─ ...                     # accesos_osm, ndvi/ndmi_sentinel2, pendiente_dem, afectación…
+├─ public/
+│  ├─ rutas_evacuacion.geojson   # líneas de evacuación para el mapa
+│  └─ perimetro_emsr837.geojson  # perímetro quemado 2025 (Copernicus EMS)
 └─ scripts/
-   └─ verificar-mapa.mjs  # verificación headless (Playwright)
+   ├─ procesar-ige.mjs         # regenera nucleos.json desde base + IGE + OSM + DEM
+   ├─ fetch-accesos-osm.mjs    # red viaria OSM -> accesos_osm.json
+   ├─ fetch-peligro.mjs        # pendiente EU-DEM + combustible (Sentinel-2)
+   ├─ afectacion_emsr837.py    # cruce con el perímetro Copernicus EMS 2025
+   ├─ evacuacion_osm.py        # grafo viario + rutas de evacuación
+   └─ verificar-mapa.mjs       # verificación headless (Playwright)
 ```
 
 ## El Índice de Vulnerabilidad

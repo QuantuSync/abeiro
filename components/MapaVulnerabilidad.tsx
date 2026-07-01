@@ -3,36 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MapLibreMap, GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { FeatureCollection, Point } from "geojson";
 
-import nucleosData from "@/data/nucleos.json";
-import afectacionData from "@/data/nucleos_afectacion_fisica.json";
-import evacuacionData from "@/data/evacuacion.json";
+// import type { FeatureCollection, Point } from "geojson";
+// import nucleosData from "@/data/nucleos.json";
+// import afectacionData from "@/data/nucleos_afectacion_fisica.json";
+// import evacuacionData from "@/data/evacuacion.json";
 import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
 import { EXPRESION_COLOR_EVAC, dificultadEvac } from "@/lib/evacuacion";
 import Leyenda, { type Lente } from "@/components/Leyenda";
 import PanelInfo, { type NucleoProps } from "@/components/PanelInfo";
 import PanelValidacion from "@/components/PanelValidacion";
 
-// Capas de afectación física (EMSR837) y de evacuación: se unen por id a cada
-// núcleo SOLO para visualización; no forman parte del Índice de Vulnerabilidad.
-const afectacion = (afectacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
-const evacuacion = (evacuacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
-const nucleosBase = nucleosData as unknown as FeatureCollection<Point, NucleoProps>;
-const nucleos: FeatureCollection<Point, NucleoProps> = {
-  ...nucleosBase,
-  features: nucleosBase.features.map((f) => {
-    const props: NucleoProps = {
-      ...f.properties,
-      ...(afectacion[f.properties.id] || {}),
-      ...(evacuacion[f.properties.id] || {}),
-    };
-    // Dificultad de evacuación (métrica derivada, independiente del IV).
-    const d = dificultadEvac(props);
-    if (d != null) props.dificultad_evac = d;
-    return { ...f, properties: props };
-  }),
-};
+//const nucleos = ...
+import {useNucleos} from "@/hooks/useNucleos";
+//import { nucleos } from "@/lib/nucleos";
 
 // Capas que solo se muestran en cada lente.
 const CAPAS_VULN = ["nucleos-dato-real", "nucleos-afectado", "perimetro-fill", "perimetro-line"];
@@ -72,6 +56,9 @@ const CENTRO: [number, number] = [-7.05, 42.48];
 const ZOOM_INICIAL = 9.4;
 
 export default function MapaVulnerabilidad() {
+  // de momento lo llama aqui va a ser siempre que se renderiza?
+  const { nucleos } = useNucleos();
+
   const contenedor = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const [seleccionado, setSeleccionado] = useState<NucleoProps | null>(null);
@@ -153,7 +140,9 @@ export default function MapaVulnerabilidad() {
         },
       });
 
-      map.addSource("nucleos", { type: "geojson", data: nucleos });
+      map.addSource("nucleos", { type: "geojson", data: nucleos }); 
+      //FUTURO... DADO QUE ES UseEffect ([]), se ejecuta la primera vez. si nucleos fuese fetching, aun no estaria inicializado.
+      // // Habria que hacer un useEffect que dependa de nucleos y haga map.getSource("nucleos").setData(nucleos) cuando cambie.
 
       // Destinos seguros (cabeceras comarcales): marcador de estrella/diamante.
       map.addLayer({
@@ -288,7 +277,7 @@ export default function MapaVulnerabilidad() {
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, []); //solo se ejecuta 1 vez, en el montaje del componente.
 
   // Vuela hacia el núcleo seleccionado para centrarlo.
   useEffect(() => {

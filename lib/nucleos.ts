@@ -12,8 +12,6 @@ import type { NucleoProps } from "@/components/PanelInfo";
 import { dificultadEvac } from "@/lib/evacuacion";
 
 
-
-
 export function construirNucleos(
   nucleosBase: FeatureCollection<Point, NucleoProps>,
   afectacion: Record<string, Partial<NucleoProps>>,

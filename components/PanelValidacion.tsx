@@ -1,14 +1,18 @@
 "use client";
 
 import type { FeatureCollection, Point } from "geojson";
-import nucleosData from "@/data/nucleos.json";
-import afectacionData from "@/data/nucleos_afectacion_fisica.json";
+//tambien accede a los json
+// import nucleosData from "@/data/nucleos.json";
+// import afectacionData from "@/data/nucleos_afectacion_fisica.json";
 import { categoriaPorIV, type CategoriaIV } from "@/lib/vulnerabilidad";
 import type { NucleoProps } from "@/components/PanelInfo";
 
+//
+import{useNucleos} from "@/hooks/useNucleos";
+
 type Afect = { afect_fisica?: boolean; borde_500m?: boolean; fecha_frente?: string | null };
-const afect = (afectacionData as { nucleos: Record<string, Afect> }).nucleos;
-const fc = nucleosData as unknown as FeatureCollection<Point, NucleoProps>;
+
+
 
 interface Fila {
   nombre: string;
@@ -18,24 +22,33 @@ interface Fila {
   fecha: string | null;
 }
 
-// Tabla ordenada por IV descendente, cruzando IV (predicción) con afectación real.
-const FILAS: Fila[] = fc.features
-  .map((f) => {
-    const a = afect[f.properties.id] || {};
-    const estado = a.afect_fisica ? "dentro" : a.borde_500m ? "borde" : "fuera";
-    return {
-      nombre: f.properties.nombre,
-      iv: f.properties.iv,
-      cat: categoriaPorIV(f.properties.iv),
-      estado: estado as Fila["estado"],
-      fecha: a.fecha_frente ?? null,
-    };
-  })
-  .sort((x, y) => y.iv - x.iv);
+
+function useFilas(){
+  const {nucleosBase, afectacion} = useNucleos()
+
+  // Tabla ordenada por IV descendente, cruzando IV (predicción) con afectación real.
+  const FILAS: Fila[] = nucleosBase.features
+    .map((f) => {
+      const a = afectacion[f.properties.id] || {};
+      const estado = a.afect_fisica ? "dentro" : a.borde_500m ? "borde" : "fuera";
+      return {
+        nombre: f.properties.nombre,
+        iv: f.properties.iv,
+        cat: categoriaPorIV(f.properties.iv),
+        estado: estado as Fila["estado"],
+        fecha: a.fecha_frente ?? null,
+      };
+    })
+    .sort((x, y) => y.iv - x.iv);
+
+    return FILAS
+}
 
 const ETIQUETA = { dentro: "Ardió", borde: "Borde ≤500 m", fuera: "No alcanzado" };
 
 export default function PanelValidacion({ onClose }: { onClose: () => void }) {
+  const FILAS = useFilas()
+
   return (
     <aside className="validacion" aria-label="Validación cualitativa contra el incendio de 2025">
       <button className="cerrar" onClick={onClose} aria-label="Cerrar">×</button>

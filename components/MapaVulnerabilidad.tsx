@@ -14,9 +14,9 @@ import Leyenda, { type Lente } from "@/components/Leyenda";
 import PanelInfo, { type NucleoProps } from "@/components/PanelInfo";
 import PanelValidacion from "@/components/PanelValidacion";
 
-//const nucleos = ...
+//ANTES: const nucleos = ...
+//AHORA: CustomHook para el fetching de datos de nucleos, afectacion y evacuacion.
 import {useNucleos} from "@/hooks/useNucleos";
-//import { nucleos } from "@/lib/nucleos";
 
 // Capas que solo se muestran en cada lente.
 const CAPAS_VULN = ["nucleos-dato-real", "nucleos-afectado", "perimetro-fill", "perimetro-line"];
@@ -140,9 +140,13 @@ export default function MapaVulnerabilidad() {
         },
       });
 
-      map.addSource("nucleos", { type: "geojson", data: nucleos }); 
-      //FUTURO... DADO QUE ES UseEffect ([]), se ejecuta la primera vez. si nucleos fuese fetching, aun no estaria inicializado.
-      // // Habria que hacer un useEffect que dependa de nucleos y haga map.getSource("nucleos").setData(nucleos) cuando cambie.
+      //ANTES: map.addSource("nucleos", { type: "geojson", data: nucleos });
+      // AHORA: data vacío. aun no tenemos nucleos con datos cargados en usEffect([]) 
+      map.addSource("nucleos", { type: "geojson", data:{
+        type:"FeatureCollection", 
+        features:[] //vacio porque hacemos fetching de datos de nucleos
+      } }); 
+
 
       // Destinos seguros (cabeceras comarcales): marcador de estrella/diamante.
       map.addLayer({
@@ -278,6 +282,25 @@ export default function MapaVulnerabilidad() {
       mapRef.current = null;
     };
   }, []); //solo se ejecuta 1 vez, en el montaje del componente.
+
+
+  // cuando cambie nucleos por el fetching de datos, actualizamos el mapRef
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const actualizarDatos = () => {
+      const source = map.getSource("nucleos") as GeoJSONSource | undefined;
+      source?.setData(nucleos);
+    };
+
+    if (map.getSource("nucleos")) actualizarDatos();
+    else map.once("load", actualizarDatos);
+  }, [nucleos]); // se relanza cuando useNucleos entregue los datos reales
+
+
+
+
 
   // Vuela hacia el núcleo seleccionado para centrarlo.
   useEffect(() => {

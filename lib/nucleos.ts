@@ -17,6 +17,7 @@ export function construirNucleos(
   afectacion: Record<string, Partial<NucleoProps>>,
   evacuacion: Record<string, Partial<NucleoProps>>
 ): FeatureCollection<Point, NucleoProps> {
+
   return {
     ...nucleosBase,
     features: nucleosBase.features.map((f) => {

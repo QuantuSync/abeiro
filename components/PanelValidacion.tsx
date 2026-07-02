@@ -1,46 +1,14 @@
 "use client";
 
-import type { FeatureCollection, Point } from "geojson";
-//tambien accede a los json
+//ANTES ==> Accedia a los json igual que MapaVulnerabilidad
 // import nucleosData from "@/data/nucleos.json";
 // import afectacionData from "@/data/nucleos_afectacion_fisica.json";
-import { categoriaPorIV, type CategoriaIV } from "@/lib/vulnerabilidad";
-//
-import{useNucleos} from "@/hooks/useNucleos";
+// AHORA:
+import {useFilas} from "@/hooks/useFilas";
 
-type Afect = { afect_fisica?: boolean; borde_500m?: boolean; fecha_frente?: string | null };
+// No se usa, pero lo dejo por si acaso.
+//type Afect = { afect_fisica?: boolean; borde_500m?: boolean; fecha_frente?: string | null };
 
-
-
-interface Fila {
-  nombre: string;
-  iv: number;
-  cat: CategoriaIV;
-  estado: "dentro" | "borde" | "fuera";
-  fecha: string | null;
-}
-
-
-function useFilas(){
-  const {nucleosBase, afectacion} = useNucleos()
-
-  // Tabla ordenada por IV descendente, cruzando IV (predicción) con afectación real.
-  const FILAS: Fila[] = nucleosBase.features
-    .map((f) => {
-      const a = afectacion[f.properties.id] || {};
-      const estado = a.afect_fisica ? "dentro" : a.borde_500m ? "borde" : "fuera";
-      return {
-        nombre: f.properties.nombre,
-        iv: f.properties.iv,
-        cat: categoriaPorIV(f.properties.iv),
-        estado: estado as Fila["estado"],
-        fecha: a.fecha_frente ?? null,
-      };
-    })
-    .sort((x, y) => y.iv - x.iv);
-
-    return FILAS
-}
 
 const ETIQUETA = { dentro: "Ardió", borde: "Borde ≤500 m", fuera: "No alcanzado" };
 

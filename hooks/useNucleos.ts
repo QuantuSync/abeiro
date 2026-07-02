@@ -3,23 +3,22 @@
 // Capas de afectación física (EMSR837) y de evacuación: se unen por id a cada
 // núcleo SOLO para visualización; no forman parte del Índice de Vulnerabilidad.
 import type { FeatureCollection, Point } from "geojson";
+import useSWR from 'swr'
+import { useMemo } from "react";
 import type { NucleoProps } from "@/components/PanelInfo";
+import { construirNucleos } from "@/lib/nucleos";
 
 import nucleosData from "@/data/nucleos.json";
 import afectacionData from "@/data/nucleos_afectacion_fisica.json";
 import evacuacionData from "@/data/evacuacion.json";
 
-import { construirNucleos } from "@/lib/nucleos";
-
-//import {useState, useEffect} from 'react'
-import useSWR from 'swr'
 
 // interface ==> ponerle nombre a un tipo de objeto
 // asi el useNucleos sabe el tipo del objeto que devuelve
 export interface UseNucleosResult {
     nucleos: FeatureCollection<Point, NucleoProps>;
-    nucleosBase: FeatureCollection<Point, NucleoProps>;
-    afectacion: Record<string, Partial<NucleoProps>>;
+    //nucleosBase: FeatureCollection<Point, NucleoProps>;
+    //afectacion: Record<string, Partial<NucleoProps>>;
     //no estoy seguro
     loading:boolean;
     error: Error|null
@@ -34,48 +33,42 @@ const vacio: FeatureCollection<Point, NucleoProps> = {
 };
 
 // FUTURO ==> Pasar a fetch en vez de json estatico ---
-async function fetchNucleosRaw() {
-    // HOY: datos estáticos, "envueltos" en una promesa para que la interfaz
-    // (async, devuelve algo) no cambie el día de mañana.
-    const nucleosBase = nucleosData as unknown as FeatureCollection<Point, NucleoProps>;
-    const afectacion = (afectacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
-    const evacuacion = (evacuacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
-
-    return { nucleosBase, afectacion, evacuacion };
-
-    // FUTURO.... (borras lo de arriba y descomentas esto):
-    // const [resNucleos, resAfect, resEvac] = await Promise.all([
-    //     fetch("/api/nucleos"),
-    //     fetch("/api/afectacion"),
-    //     fetch("/api/evacuacion"),
-    // ]);
-    // const nucleosBase = await resNucleos.json();
-    // const afectacion = (await resAfect.json()).nucleos;
-    // const evacuacion = (await resEvac.json()).nucleos;
-    // return { nucleosBase, afectacion, evacuacion };
+async function fetchNucleosBase() {
+    return nucleosData as unknown as FeatureCollection<Point, NucleoProps>;
+    // FUTURO: return (await fetch("/api/nucleos-base")).json();
+}
+async function fetchAfectacion() {
+    return (afectacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
+    // FUTURO: fetch con refreshInterval de minutos
+}
+async function fetchEvacuacion() {
+    return (evacuacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
+    // FUTURO: fetch con refreshInterval corto — la fuente que más cambia
 }
 
 export function useNucleos() : UseNucleosResult {
-    //FUTURO ==> Si varían los datos del fetch, habría que controlar con un estado 
-    // y variar el key y los params de fetchNuecleosRaw.
+    //FUTURO ==> Si varían los datos del fetch, habría que controlar con un estado
+    // y variar el key y los params de fetchFunction????
 
     //useSWR recibe una key único (string) + una funcion fetcher (que devuelve la data)
     //Mejor que useState + useEffect porque hace caching, revalidación, etc.
-    const { data, error, isLoading } = useSWR("nucleos", fetchNucleosRaw);
+    const base  = useSWR("nucleos-base", fetchNucleosBase);
+    const afect = useSWR("afectacion", fetchAfectacion);
+    const evac  = useSWR("evacuacion", fetchEvacuacion);
 
-    const nucleosBase = data?.nucleosBase ?? vacio;
-    const afectacion = data?.afectacion ?? {};
-    const evacuacion = data?.evacuacion ?? {};
 
-    const nucleos = data
-        ? construirNucleos(nucleosBase, afectacion, evacuacion)
-        : vacio;
+     // PROBLEMA: cada vez que se llama a useNucleos, crea un objeto nuevo en memoria, aunque data no haya cambiado.
+    // - nucleos no cambia de valor, pero su referencia en memoria si.
+    // - Esto provoca que los componentes que usan useNucleos se rendericen de nuevo aunque no haya cambios.
+    // SOLUCION: usar useMemo para memorizar el resultado de construirNucleos, y solo recalcularlo si cambian los datos de base, afectacion o evacuacion.
+    const nucleos = useMemo(() => {
+    if (!base.data) return vacio;
+        return construirNucleos(base.data, afect.data ?? {}, evac.data ?? {});
+    }, [base.data, afect.data, evac.data]);
 
     return { //devolvemos un interface UseNucleosResult
         nucleos,
-        nucleosBase,
-        afectacion,
-        loading: isLoading,
-        error: error ?? null,
-    };    
+        loading: base.isLoading,
+        error: base.error ?? afect.error ?? evac.error ?? null,
+    };
 }

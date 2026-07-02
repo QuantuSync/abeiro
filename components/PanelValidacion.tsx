@@ -5,8 +5,6 @@ import type { FeatureCollection, Point } from "geojson";
 // import nucleosData from "@/data/nucleos.json";
 // import afectacionData from "@/data/nucleos_afectacion_fisica.json";
 import { categoriaPorIV, type CategoriaIV } from "@/lib/vulnerabilidad";
-import type { NucleoProps } from "@/components/PanelInfo";
-
 //
 import{useNucleos} from "@/hooks/useNucleos";
 

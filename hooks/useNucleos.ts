@@ -1,3 +1,5 @@
+'use client' //nuevo. tengo mis dudas
+
 // Capas de afectación física (EMSR837) y de evacuación: se unen por id a cada
 // núcleo SOLO para visualización; no forman parte del Índice de Vulnerabilidad.
 import type { FeatureCollection, Point } from "geojson";
@@ -9,7 +11,8 @@ import evacuacionData from "@/data/evacuacion.json";
 
 import { construirNucleos } from "@/lib/nucleos";
 
-import {useState, useEffect} from 'react'
+//import {useState, useEffect} from 'react'
+import useSWR from 'swr'
 
 // interface ==> ponerle nombre a un tipo de objeto
 // asi el useNucleos sabe el tipo del objeto que devuelve
@@ -17,6 +20,9 @@ export interface UseNucleosResult {
     nucleos: FeatureCollection<Point, NucleoProps>;
     nucleosBase: FeatureCollection<Point, NucleoProps>;
     afectacion: Record<string, Partial<NucleoProps>>;
+    //no estoy seguro
+    loading:boolean;
+    error: Error|null
 }
 
 // - Partial ==> coge los PanelInfo.NucleoProps y hace que todas sus propiedades sean opcionales 
@@ -27,36 +33,49 @@ const vacio: FeatureCollection<Point, NucleoProps> = {
     features: [],
 };
 
-// ^ lo ejecutamos solo una vez al cargar el modulo, no dentro del usenucleos
-// con un usestate o algo?
+// FUTURO ==> Pasar a fetch en vez de json estatico ---
+async function fetchNucleosRaw() {
+    // HOY: datos estáticos, "envueltos" en una promesa para que la interfaz
+    // (async, devuelve algo) no cambie el día de mañana.
+    const nucleosBase = nucleosData as unknown as FeatureCollection<Point, NucleoProps>;
+    const afectacion = (afectacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
+    const evacuacion = (evacuacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
+
+    return { nucleosBase, afectacion, evacuacion };
+
+    // FUTURO.... (borras lo de arriba y descomentas esto):
+    // const [resNucleos, resAfect, resEvac] = await Promise.all([
+    //     fetch("/api/nucleos"),
+    //     fetch("/api/afectacion"),
+    //     fetch("/api/evacuacion"),
+    // ]);
+    // const nucleosBase = await resNucleos.json();
+    // const afectacion = (await resAfect.json()).nucleos;
+    // const evacuacion = (await resEvac.json()).nucleos;
+    // return { nucleosBase, afectacion, evacuacion };
+}
 
 export function useNucleos() : UseNucleosResult {
-    const [nucleosBase, setnucleosBase] = useState<FeatureCollection<Point, NucleoProps>>(vacio);
-    const [nucleos, setNucleos] = useState<FeatureCollection<Point, NucleoProps>>(vacio);
-    const [afectacion, setAfectacion] = useState<Record<string, Partial<NucleoProps>>>({});
+    //FUTURO ==> Si varían los datos del fetch, habría que controlar con un estado 
+    // y variar el key y los params de fetchNuecleosRaw.
 
-   
-    //FUTURO... Si hay fetch, igual hace falta un bool cancelado y meter el fetch en una async function cargar() dentro del useffect
-    // INTENATR SUSTITUIR LOS STATES Y USEFFECT POR SERVER COMPONENTS??
-    useEffect(() => {
-        // si en el futuro se hace fetching de nucleos, aqui se haria y luego setNucleos(nucleosFetcheados)
-        const afectacionAux = (afectacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
-        const evacuacionAux = (evacuacionData as { nucleos: Record<string, Partial<NucleoProps>> }).nucleos;
+    //useSWR recibe una key único (string) + una funcion fetcher (que devuelve la data)
+    //Mejor que useState + useEffect porque hace caching, revalidación, etc.
+    const { data, error, isLoading } = useSWR("nucleos", fetchNucleosRaw);
 
-        //Le dice a TypeScript que la geometría es tipo Point y que las propiedades son NucleoProps (con id, nombre, iv, etc.).
-        const nucleosBaseAux = nucleosData as unknown as FeatureCollection<Point, NucleoProps>;
+    const nucleosBase = data?.nucleosBase ?? vacio;
+    const afectacion = data?.afectacion ?? {};
+    const evacuacion = data?.evacuacion ?? {};
 
+    const nucleos = data
+        ? construirNucleos(nucleosBase, afectacion, evacuacion)
+        : vacio;
 
-        //(afectacionData as { nucleos: Record<string, Afect> }).nucleos;
-
-        const nucleosAux = construirNucleos(nucleosBaseAux, afectacionAux, evacuacionAux);
-
-        setNucleos(nucleosAux)
-        setnucleosBase(nucleosBaseAux)
-        setAfectacion(afectacionAux)
-
-    },
-    []) //se ejecuta solo al montar el componente, quizas en futuro sea cuando cambie nucleos?
-
-return { nucleos, nucleosBase, afectacion  };
+    return { //devolvemos un interface UseNucleosResult
+        nucleos,
+        nucleosBase,
+        afectacion,
+        loading: isLoading,
+        error: error ?? null,
+    };    
 }

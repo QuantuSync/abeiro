@@ -19,7 +19,7 @@ const MapaVulnerabilidad = dynamic(
 export default function Home() {
   const comarca = 'Valdeorras'
   const municipio = 'Larouco'
-  const provincia = 'Ourenseeee'
+  const provincia = 'Ourense'
 
   return (
     <main className="app">

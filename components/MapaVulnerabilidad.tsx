@@ -18,6 +18,7 @@ import PanelValidacion from "@/components/PanelValidacion";
 //AHORA: CustomHook para el fetching de datos de nucleos, afectacion y evacuacion.
 import {useNucleos} from "@/hooks/useNucleos";
 import { configurarCapas, configurarInteraccionNucleos } from "@/lib/mapaCapas";
+import { resaltarRutaCoche } from "@/lib/resaltarRutaCoche";
 
 // Capas que solo se muestran en cada lente.
 const CAPAS_VULN = ["nucleos-dato-real", "nucleos-afectado", "perimetro-fill", "perimetro-line"];
@@ -35,6 +36,11 @@ const ESTILO_BASE: maplibregl.StyleSpecification = {
   sources: {
     carto: {
       type: "raster",
+      //CARTO no recibe ningún mensaje tipo "enséñame Valdeorras". 
+      // CARTO tiene, para todo el planeta, un tile PNG de 256×256 px por cada combinación de:
+      // - zoom (z) 
+      // - coordenadas de cuadrícula (x, y)
+      // de ahí el {z}/{x}/{y}.png en la URL:
       tiles: [
         "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
         "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
@@ -52,9 +58,18 @@ const ESTILO_BASE: maplibregl.StyleSpecification = {
   ],
 };
 
-// Centro aproximado de la comarca piloto (Valdeorras / Larouco).
+// Variables de control de cámara: POSICION (x,y) + ZOOM INICIAL
+// POR DEFECTO: centro aproximado de Valdeorras (para el zoom inicial).
 const CENTRO: [number, number] = [-7.05, 42.48];
 const ZOOM_INICIAL = 9.4;
+//Controlamos la App el zoom minimo y maximo que puede hacer el user.
+const MIN_ZOOM = 7;
+const MAX_ZOOM = 15;
+//Controlamos que no puedas moverte con el raton por todo el planeta
+const MAX_BOUNDS: [[number, number], [number, number]] = [
+  [-7.55, 42.25], // esquina suroeste
+  [-6.55, 42.75], // esquina noreste
+];
 
 export default function MapaVulnerabilidad() {
   // de momento lo llama aqui va a ser siempre que se renderiza?
@@ -75,8 +90,9 @@ export default function MapaVulnerabilidad() {
       style: ESTILO_BASE,
       center: CENTRO,
       zoom: ZOOM_INICIAL,
-      minZoom: 7,
-      maxZoom: 15,
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
+      maxBounds: MAX_BOUNDS, //nuevo: limita el movimiento del mapa a Galicia
       attributionControl: { compact: true },
     });
     mapRef.current = map;
@@ -112,6 +128,12 @@ export default function MapaVulnerabilidad() {
       source?.setData(nucleos);
     };
 
+    //PROBLEMA A FUTURO: 
+    // En el efecto que hace setData cuando cambian los datos, 
+    // si nucleos cambiara dos veces antes de que el mapa termine de cargar sus teselas (evento load), 
+    // se registrarían dos map.once("load", actualizarDatos) 
+    // porque el efecto no tiene función de limpieza que desregistre el anterior. 
+    // Actualmente no pasa nada, pero cuidado cuando hagas fetchs largos
     if (map.getSource("nucleos")) actualizarDatos();
     else map.once("load", actualizarDatos);
   }, [nucleos]); // se relanza cuando useNucleos entregue los datos reales
@@ -166,33 +188,11 @@ export default function MapaVulnerabilidad() {
 
   // "Ruta de escape en coche": pasa a la lente de evacuación, resalta la ruta y
   // encuadra el trayecto núcleo -> destino seguro DENTRO de Valdeorras.
-  const resaltarRutaCoche = (id: string) => {
+  const resaltarRutaCocheAux = (id: string) => {
     setLente("evacuacion");
     setRutaResaltada(id);
-    const map = mapRef.current;
-    if (!map) return;
-    const nuc = nucleos.features.find((f) => f.properties.id === id);
-    const dest = nucleos.features.find((f) => f.properties.id === nuc?.properties.destino);
-    if (!nuc || !dest) return;
-    const pts = [nuc.geometry.coordinates, dest.geometry.coordinates] as [number, number][];
-    // Salvaguarda: solo encuadra si ambos puntos están en el bbox de Galicia
-    // (evita cualquier salto fuera por datos o cálculo inesperado).
-    const dentroGalicia = pts.every(([lon, lat]) => lon > -9 && lon < -6.3 && lat > 41.6 && lat < 44);
-    if (!dentroGalicia) return;
-    // LngLatBounds explícito (sin ambigüedad de estructura de arrays).
-    const bounds = new maplibregl.LngLatBounds(pts[0], pts[0]);
-    pts.forEach((p) => bounds.extend(p));
-    // Padding seguro: nunca supera el espacio disponible (en ventanas estrechas
-    // un padding grande producía un viewport inválido y la cámara saltaba fuera).
-    const w = map.getContainer().clientWidth || 1000;
-    const h = map.getContainer().clientHeight || 700;
-    const padX = Math.min(70, Math.floor(w * 0.12));
-    const padY = Math.min(70, Math.floor(h * 0.12));
-    map.fitBounds(bounds, {
-      padding: { top: padY, bottom: padY, left: padX, right: padX },
-      maxZoom: 12.5,
-      duration: 800,
-    });
+    // Funcion en lib 
+    resaltarRutaCoche(mapRef.current, nucleos, id);    
   };
 
   return (
@@ -229,7 +229,7 @@ export default function MapaVulnerabilidad() {
         <PanelInfo
           nucleo={seleccionado}
           onClose={() => setSeleccionado(null)}
-          onRutaCoche={resaltarRutaCoche}
+          onRutaCoche={resaltarRutaCocheAux}
         />
       )}
       {mostrarValidacion && <PanelValidacion onClose={() => setMostrarValidacion(false)} />}

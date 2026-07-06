@@ -58,18 +58,26 @@ const ESTILO_BASE: maplibregl.StyleSpecification = {
   ],
 };
 
+// - X = longitud (este-oeste)
+// - Y = latitud (norte-sur). 
+// 1º de latitud = 111 km aprox, 1º de longitud varía segun la distancia al ecuador (85 km aprox en Valdeorras.
+// Las coordenadas estan en grados
 // Variables de control de cámara: POSICION (x,y) + ZOOM INICIAL
 // POR DEFECTO: centro aproximado de Valdeorras (para el zoom inicial).
 const CENTRO: [number, number] = [-7.05, 42.48];
+//const CENTRO: [number, number] = [-3.70, 40.41];
 const ZOOM_INICIAL = 9.4;
 //Controlamos la App el zoom minimo y maximo que puede hacer el user.
 const MIN_ZOOM = 7;
-const MAX_ZOOM = 15;
+const MAX_ZOOM = 13;
 //Controlamos que no puedas moverte con el raton por todo el planeta
-const MAX_BOUNDS: [[number, number], [number, number]] = [
-  [-7.55, 42.25], // esquina suroeste
-  [-6.55, 42.75], // esquina noreste
-];
+const MAP_SIZE = {  // unidades en grados, para limitar el movimiento del mapa a Galicia
+  WIDTH: 2.0,
+  HEIGHT: 0.5, 
+} 
+
+// 👇 NUEVO: el componente ahora exige la comarca activa como prop.
+
 
 export default function MapaVulnerabilidad() {
   // de momento lo llama aqui va a ser siempre que se renderiza?
@@ -92,7 +100,10 @@ export default function MapaVulnerabilidad() {
       zoom: ZOOM_INICIAL,
       minZoom: MIN_ZOOM,
       maxZoom: MAX_ZOOM,
-      maxBounds: MAX_BOUNDS, //nuevo: limita el movimiento del mapa a Galicia
+      maxBounds: [
+        [CENTRO[0] - MAP_SIZE.WIDTH / 2, CENTRO[1] - MAP_SIZE.HEIGHT / 2], // esquina suroeste
+        [CENTRO[0] + MAP_SIZE.WIDTH / 2, CENTRO[1] + MAP_SIZE.HEIGHT / 2], // esquina noreste
+      ], //nuevo: limita el movimiento del mapa a Galicia
       attributionControl: { compact: true },
     });
     mapRef.current = map;

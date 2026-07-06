@@ -1,0 +1,14 @@
+[
+  { "id": "allariz-maceda", "nombre": "Allariz-Maceda", "capital": "Allariz", "centro": [-7.8005, 42.1936] },
+  { "id": "baixa-limia", "nombre": "A Baixa Limia", "capital": "Bande", "centro": [-7.9667, 42.0333] },
+  { "id": "carballino", "nombre": "O Carballiño", "capital": "O Carballiño", "centro": [-8.0781, 42.4325] },
+  { "id": "ribeiro", "nombre": "O Ribeiro", "capital": "Ribadavia", "centro": [-8.1425, 42.2919] },
+  { "id": "caldelas", "nombre": "Terra de Caldelas", "capital": "Castro Caldelas", "centro": [-7.4356, 42.3081] },
+  { "id": "celanova", "nombre": "Terra de Celanova", "capital": "Celanova", "centro": [-7.9583, 42.1544] },
+  { "id": "limia", "nombre": "A Limia", "capital": "Xinzo de Limia", "centro": [-7.7239, 42.0611] },
+  { "id": "ourense", "nombre": "Ourense", "capital": "Ourense", "centro": [-7.8639, 42.3358] },
+  { "id": "trives", "nombre": "Terra de Trives", "capital": "A Pobra de Trives", "centro": [-7.2333, 42.3333] },
+  { "id": "valdeorras", "nombre": "Valdeorras", "capital": "O Barco de Valdeorras", "centro": [-6.9831, 42.4164] },
+  { "id": "verin", "nombre": "Verín", "capital": "Verín", "centro": [-7.4386, 41.9358] },
+  { "id": "viana", "nombre": "Viana", "capital": "Viana do Bolo", "centro": [-7.1, 42.1667] }
+]

@@ -1,4 +1,7 @@
+//"use client"; // Next.js no soporta ssr: false en un Server Component. Es una restricción de App Router.
+
 import dynamic from "next/dynamic";
+
 
 // MapLibre usa APIs del navegador: se carga solo en cliente (sin SSR).
 // Esto es equivalente a englobar en <Suspense fallback={...}>, pero con dynamic podemos definir que no se carga en servidor (ssr=false).

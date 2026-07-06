@@ -102,6 +102,88 @@ body {
   color: var(--texto-suave);
 }
 
+/* ---- Buscador de comarcas (header) ---- */
+.buscador-comarcas {
+  position: relative;
+  flex: 1 1 220px;
+  max-width: 260px;
+}
+.buscador-input {
+  width: 100%;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  color: var(--texto);
+  font-size: 0.85rem;
+  font-family: var(--cuerpo);
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  outline: none;
+}
+.buscador-input::placeholder {
+  color: var(--texto-suave);
+}
+.buscador-input:focus {
+  border-color: var(--oro);
+}
+.buscador-lista {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  box-shadow: var(--sombra);
+}
+.buscador-opcion {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.buscador-nombre {
+  color: var(--texto);
+}
+.buscador-capital {
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+}
+.buscador-opcion.resaltada {
+  background: var(--superficie-2);
+}
+.buscador-opcion.seleccionada .buscador-nombre {
+  color: var(--oro-claro);
+  font-weight: 600;
+}
+.buscador-vacio {
+  padding: 0.5rem 0.6rem;
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+}
+
+/* ---- Aviso: comarca sin datos de núcleos cargados ---- */
+.aviso-comarca {
+  margin: 0;
+  padding: 0.4rem 1.4rem;
+  background: rgba(200, 164, 74, 0.1);
+  border-bottom: 1px solid rgba(200, 164, 74, 0.3);
+  color: var(--oro-claro);
+  font-size: 0.78rem;
+}
+.aviso-comarca strong {
+  color: var(--texto);
+}
+
 /* ---- Mapa ---- */
 .mapa-wrap {
   position: relative;

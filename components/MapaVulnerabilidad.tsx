@@ -13,6 +13,7 @@ import { EXPRESION_COLOR_EVAC } from "@/lib/evacuacion";
 import Leyenda, { type Lente } from "@/components/Leyenda";
 import PanelInfo, { type NucleoProps } from "@/components/PanelInfo";
 import PanelValidacion from "@/components/PanelValidacion";
+import type { Comarca } from "@/lib/tipos";
 
 //ANTES: const nucleos = ...
 //AHORA: CustomHook para el fetching de datos de nucleos, afectacion y evacuacion.
@@ -67,19 +68,23 @@ const ESTILO_BASE: maplibregl.StyleSpecification = {
 const CENTRO: [number, number] = [-7.05, 42.48];
 //const CENTRO: [number, number] = [-3.70, 40.41];
 const ZOOM_INICIAL = 9.4;
+// Zoom al saltar a otra comarca desde el buscador (fijo: es un salto de
+// "vista regional", no un acercamiento progresivo desde donde estuvieras).
+const ZOOM_COMARCA = 10.5;
 //Controlamos la App el zoom minimo y maximo que puede hacer el user.
 const MIN_ZOOM = 7;
 const MAX_ZOOM = 13;
-//Controlamos que no puedas moverte con el raton por todo el planeta
-const MAP_SIZE = {  // unidades en grados, para limitar el movimiento del mapa a Galicia
-  WIDTH: 2.0,
-  HEIGHT: 0.5, 
-} 
+// Límite de movimiento del mapa: cubre las 12 comarcas de Ourense (con
+// margen), no solo Valdeorras. ANTES el cuadro estaba centrado y ajustado
+// solo a Valdeorras (CENTRO ± MAP_SIZE/2): el flyTo del buscador a comarcas
+// más al sur/oeste (Verín, A Baixa Limia, O Ribeiro...) quedaba bloqueado
+// por el propio maxBounds, porque quedaban fuera de ese cuadro.
+const LIMITES_PROVINCIA: [[number, number], [number, number]] = [
+  [-8.5, 41.75], // esquina suroeste
+  [-6.65, 42.65], // esquina noreste
+];
 
-// 👇 NUEVO: el componente ahora exige la comarca activa como prop.
-
-
-export default function MapaVulnerabilidad() {
+export default function MapaVulnerabilidad({ comarca }: { comarca?: Comarca }) {
   // de momento lo llama aqui va a ser siempre que se renderiza?
   const { nucleos } = useNucleos();
 
@@ -89,6 +94,9 @@ export default function MapaVulnerabilidad() {
   const [mostrarValidacion, setMostrarValidacion] = useState(false);
   const [lente, setLente] = useState<Lente>("vulnerabilidad");
   const [rutaResaltada, setRutaResaltada] = useState<string | null>(null);
+  // Guarda la última comarca a la que ya volamos, para no repetir el flyTo en
+  // cada render y para no saltar en el propio montaje (ver efecto más abajo).
+  const comarcaAnterior = useRef(comarca?.id);
 
   useEffect(() => {
     if (!contenedor.current || mapRef.current) return;
@@ -100,10 +108,7 @@ export default function MapaVulnerabilidad() {
       zoom: ZOOM_INICIAL,
       minZoom: MIN_ZOOM,
       maxZoom: MAX_ZOOM,
-      maxBounds: [
-        [CENTRO[0] - MAP_SIZE.WIDTH / 2, CENTRO[1] - MAP_SIZE.HEIGHT / 2], // esquina suroeste
-        [CENTRO[0] + MAP_SIZE.WIDTH / 2, CENTRO[1] + MAP_SIZE.HEIGHT / 2], // esquina noreste
-      ], //nuevo: limita el movimiento del mapa a Galicia
+      maxBounds: LIMITES_PROVINCIA, // limita el movimiento del mapa a la provincia de Ourense
       attributionControl: { compact: true },
     });
     mapRef.current = map;
@@ -149,6 +154,19 @@ export default function MapaVulnerabilidad() {
     else map.once("load", actualizarDatos);
   }, [nucleos]); // se relanza cuando useNucleos entregue los datos reales
 
+
+  // Vuela hacia la comarca elegida en el buscador del header. Se salta la
+  // primera ejecución (montaje, comarca por defecto = misma vista inicial)
+  // comparando con la comarca anterior; si no, el mapa "saltaría" nada más
+  // cargar aunque el usuario no haya tocado el buscador.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !comarca) return;
+    if (comarcaAnterior.current === comarca.id) return;
+    comarcaAnterior.current = comarca.id;
+    setSeleccionado(null); // cierra el panel de un núcleo de otra comarca
+    map.flyTo({ center: comarca.centro, zoom: ZOOM_COMARCA, speed: 0.8 });
+  }, [comarca]);
 
   // Vuela hacia el núcleo seleccionado para centrarlo.
   useEffect(() => {

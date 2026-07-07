@@ -74,6 +74,7 @@ async function overpass(query) {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": UA },
           body: new URLSearchParams({ data: query }).toString(),
+          signal: AbortSignal.timeout(90_000), // un mirror colgado no debe bloquear el script
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
@@ -181,10 +182,14 @@ const FUEL_PATH = join(DATA, "combustible_osm.json");
 let fuel = {};
 if (!force && existsSync(FUEL_PATH)) {
   fuel = JSON.parse(readFileSync(FUEL_PATH, "utf8")).nucleos;
-  console.log("\nCombustible: usando caché.");
-} else {
-  console.log("\nCombustible: consultando Overpass (OSM landuse/natural)...");
-  for (const n of nucleos) {
+  console.log("\nCombustible: usando caché (reintentando solo los núcleos con error).");
+}
+// Consulta los núcleos sin dato en caché (todos con --force; con caché, solo
+// los que quedaron en error por fallos transitorios de Overpass).
+const fuelPendiente = nucleos.filter((n) => force || !fuel[n.id] || fuel[n.id].combustibilidad == null);
+if (fuelPendiente.length) {
+  console.log(`\nCombustible: consultando Overpass (OSM landuse/natural), ${fuelPendiente.length} núcleo(s)...`);
+  for (const n of fuelPendiente) {
     try {
       const data = await overpass(consultaCubierta(n.lat, n.lon));
       fuel[n.id] = { nombre: n.nombre, radio_m: RADIO_FUEL_M, ...evaluarCubierta(data.elements || [], n.lat, n.lon) };

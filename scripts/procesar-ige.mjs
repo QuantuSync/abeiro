@@ -280,6 +280,21 @@ const combustible = cargaCache("combustible_osm.json"); // peligro: cubierta (OS
 const ndmi = cargaCache("ndmi_sentinel2.json");     // peligro: humedad vegetación (Sentinel-2)
 const ndvi = cargaCache("ndvi_sentinel2.json");     // peligro: biomasa vegetación (Sentinel-2)
 
+// -----------------------------------------------------------------------------
+// Cachés de SATÉLITE pendientes de re-medición tras corregir las coordenadas.
+// Las coordenadas de Fase 0 de estos núcleos estaban desplazadas > 1 km de su
+// posición real (hasta 57 km en Pradorramisquedo); los NDVI/NDMI cacheados se
+// midieron con buffer de 1 km sobre la coordenada ANTIGUA, así que describen
+// otro lugar. Hasta re-ejecutar la medición Sentinel-2 (requiere Google Earth
+// Engine, no disponible en local), para estos núcleos el combustible cae al
+// RESPALDO por cubierta OSM (regenerada ya en la coordenada real). Solo A Rúa
+// (0,4 km) y O Barco (0,1 km) conservan la medición de satélite.
+// -----------------------------------------------------------------------------
+const SATELITE_PENDIENTE_REMEDICION = new Set([
+  "larouco", "seadur", "freixido", "pradorramisquedo", "portomourisco",
+  "petin", "vilardesilva", "casaio", "a-medua", "vilamartin",
+]);
+
 // Normalización con RANGOS FIJOS documentados (con recorte fuera de rango).
 // Los rangos observados de la muestra se calculan solo como referencia histórica.
 const [NDMI_MIN, NDMI_MAX] = NDMI_RANGO_FIJO;
@@ -352,7 +367,12 @@ for (const feat of base.features) {
   }
 
   // --- componente PELIGRO BIOFÍSICO (pendiente real + combustible SATÉLITE) ---
-  const pe = pendiente[p.id], co = combustible[p.id], nm = ndmi[p.id], nv = ndvi[p.id];
+  // Los NDVI/NDMI medidos en la coordenada antigua (desplazada) se descartan:
+  // el núcleo cae al respaldo por cubierta OSM hasta re-medir con Earth Engine.
+  const sateliteValido = !SATELITE_PENDIENTE_REMEDICION.has(p.id);
+  const pe = pendiente[p.id], co = combustible[p.id];
+  const nm = sateliteValido ? ndmi[p.id] : null;
+  const nv = sateliteValido ? ndvi[p.id] : null;
   let deltaPeligro = 0;
   const cobOSM = co?.combustibilidad ?? null; // cubierta OSM (solo respaldo/referencia)
   if (pe && pe.pendiente_grados != null) {
@@ -477,6 +497,11 @@ base.metadata = {
     + "0/25/50/75/100 (ESTIMACIÓN Fase 0). poblacion: escala log invertida "
     + "100 − 25·log10(hab), 1 hab->100, 10.000 hab->0 (REAL, Nomenclátor 2025).",
   pesos_via: PESOS_VIA,
+  satelite_pendiente_remedicion: [...SATELITE_PENDIENTE_REMEDICION],
+  satelite_nota: "Tras corregir las coordenadas de Fase 0 (desplazadas hasta 57 km), los "
+    + "NDVI/NDMI cacheados (medidos con buffer 1 km sobre la coordenada ANTIGUA) solo siguen "
+    + "siendo válidos para A Rúa y O Barco. Los núcleos listados usan el RESPALDO por cubierta "
+    + "OSM (regenerada en la coordenada real) hasta re-medir con Sentinel-2/Earth Engine.",
   ndmi_amplitud: NDMI_AMP,
   ndmi_rango_fijo: NDMI_RANGO_FIJO,
   ndvi_rango_fijo: NDVI_RANGO_FIJO,

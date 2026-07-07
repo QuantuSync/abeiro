@@ -47,12 +47,12 @@ export default function PanelValidacion({ onClose }: { onClose: () => void }) {
       </header>
 
       <p className="aviso-fuerte">
-        <strong>Lectura ilustrativa, no estadística.</strong> Con sólo 2 núcleos afectados de
-        12 <strong>no hay muestra para ROC/AUC fiable</strong>. Además: (a) la muestra es muy
-        pequeña; (b) <strong>la afectación física no equivale a vulnerabilidad humana</strong>
-        — un núcleo puede arder sin víctimas o evacuarse sin arder; (c) la verdad-terreno
-        administrativa (evacuaciones/confinamientos de AXEGA) está <strong>pendiente</strong> y
-        permitirá la calibración real más adelante.
+        <strong>Lectura ilustrativa, no estadística.</strong> Con sólo 12 núcleos (1 dentro
+        del perímetro y 6 en su borde) <strong>no hay muestra para ROC/AUC fiable</strong>.
+        Además: (a) la muestra es muy pequeña; (b) <strong>la afectación física no equivale a
+        vulnerabilidad humana</strong> — un núcleo puede arder sin víctimas o evacuarse sin
+        arder; (c) la verdad-terreno administrativa (evacuaciones/confinamientos de AXEGA)
+        está <strong>pendiente</strong> y permitirá la calibración real más adelante.
       </p>
 
       <table className="tabla-val">
@@ -83,12 +83,13 @@ export default function PanelValidacion({ onClose }: { onClose: () => void }) {
       </table>
 
       <p className="lectura">
-        Los 2 núcleos que <strong>ardieron</strong> (Vilardesilva, Portomourisco) caen en la
-        mitad alta del índice (categoría «Alta»). Pero los 3 de mayor IV (cluster de Larouco)
-        <strong> no fueron alcanzados</strong> y dos núcleos de borde (Petín, A Rúa) están entre
-        los de IV más bajo. La relación es <strong>débil y no concluyente</strong> con esta
-        muestra: sirve para ilustrar el circuito de validación, no para afirmar el rendimiento
-        del índice. Fuente de afectación: Copernicus EMS · EMSR837.
+        El único núcleo <strong>dentro del perímetro</strong> (Freixido) y los del borde
+        inmediato (Seadur, Larouco, el frente del 16-08 al inicio del incendio) están en la
+        mitad alta del índice; pero también hay núcleos de borde con IV bajo (Petín,
+        Vilamartín) y núcleos de IV alto no alcanzados (Pradorramisquedo, A Medua). La
+        relación es <strong>orientativa y no concluyente</strong> con esta muestra: sirve
+        para ilustrar el circuito de validación, no para afirmar el rendimiento del índice.
+        Fuente de afectación: Copernicus EMS · EMSR837.
       </p>
     </aside>
   );

@@ -7,7 +7,7 @@
       "cap": 0.25
     },
     "n_combinaciones": 69,
-    "spearman_medio": 0.9721,
+    "spearman_medio": 0.9812,
     "lectura": "spearman_medio cercano a 1 = el RANKING apenas depende de los pesos elegidos; frecuencia_cambio_categoria alta en un núcleo = su categoría es sensible a los pesos y debe leerse con cautela."
   },
   "nucleos": {
@@ -17,77 +17,77 @@
       "categoria_base": "alta",
       "rango_iv": [
         55,
-        73
+        74
       ],
-      "frecuencia_cambio_categoria": 0.217
+      "frecuencia_cambio_categoria": 0.174
     },
     "seadur": {
       "nombre": "Seadur",
-      "iv_base": 55,
-      "categoria_base": "media",
+      "iv_base": 66,
+      "categoria_base": "alta",
       "rango_iv": [
-        43,
-        74
+        60,
+        78
       ],
-      "frecuencia_cambio_categoria": 0.536
+      "frecuencia_cambio_categoria": 0
     },
     "freixido": {
       "nombre": "Freixido",
-      "iv_base": 51,
-      "categoria_base": "media",
+      "iv_base": 69,
+      "categoria_base": "alta",
       "rango_iv": [
-        40,
-        67
+        67,
+        73
       ],
-      "frecuencia_cambio_categoria": 0.333
+      "frecuencia_cambio_categoria": 0
     },
     "pradorramisquedo": {
       "nombre": "Pradorramisquedo",
-      "iv_base": 73,
+      "iv_base": 75,
       "categoria_base": "alta",
       "rango_iv": [
-        69,
+        72,
         81
       ],
-      "frecuencia_cambio_categoria": 0.087
+      "frecuencia_cambio_categoria": 0.145
     },
     "portomourisco": {
       "nombre": "Portomourisco",
-      "iv_base": 40,
+      "iv_base": 54,
       "categoria_base": "media",
       "rango_iv": [
-        33,
-        52
+        52,
+        57
       ],
-      "frecuencia_cambio_categoria": 0.261
+      "frecuencia_cambio_categoria": 0
     },
     "petin": {
       "nombre": "Petín",
-      "iv_base": 46,
+      "iv_base": 42,
       "categoria_base": "media",
       "rango_iv": [
-        41,
-        60
+        36,
+        58
       ],
-      "frecuencia_cambio_categoria": 0.014
+      "frecuencia_cambio_categoria": 0.13
     },
     "a-rua": {
       "nombre": "A Rúa",
-      "iv_base": 37,
+      "iv_base": 39,
       "categoria_base": "baja",
       "rango_iv": [
-        32,
-        51
+        36,
+        52
       ],
-      "frecuencia_cambio_categoria": 0.522
+      "frecuencia_cambio_categoria": 0.652
     },
     "o-barco": {
       "nombre": "O Barco de Valdeorras",
-      "iv_base": 28,
+      "iv_base": 29,
       "categoria_base": "baja",
       "rango_iv": [
-        22,
-        38
+        23,
+        39
       ],
       "frecuencia_cambio_categoria": 0
     },
@@ -103,33 +103,33 @@
     },
     "casaio": {
       "nombre": "Casaio",
-      "iv_base": 49,
-      "categoria_base": "media",
+      "iv_base": 61,
+      "categoria_base": "alta",
       "rango_iv": [
-        39,
-        67
+        58,
+        72
       ],
-      "frecuencia_cambio_categoria": 0.246
+      "frecuencia_cambio_categoria": 0.145
     },
     "a-medua": {
       "nombre": "A Medua",
-      "iv_base": 55,
-      "categoria_base": "media",
+      "iv_base": 68,
+      "categoria_base": "alta",
       "rango_iv": [
-        44,
-        75
+        64,
+        80
       ],
-      "frecuencia_cambio_categoria": 0.551
+      "frecuencia_cambio_categoria": 0.029
     },
     "vilamartin": {
       "nombre": "Vilamartín de Valdeorras",
-      "iv_base": 53,
+      "iv_base": 49,
       "categoria_base": "media",
       "rango_iv": [
-        50,
-        60
+        46,
+        58
       ],
-      "frecuencia_cambio_categoria": 0.043
+      "frecuencia_cambio_categoria": 0
     }
   }
 }

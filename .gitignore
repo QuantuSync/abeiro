@@ -63,3 +63,4 @@ data/osm_valdeorras.json
 # Python
 __pycache__/
 *.pyc
+.venv/

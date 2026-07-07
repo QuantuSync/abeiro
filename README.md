@@ -181,8 +181,12 @@ La componente de **peligro biofísico** combina pendiente real y combustible apr
   la cota en el centro y en 4 vecinos a 90 m y se calcula la pendiente por diferencias
   centradas. Más pendiente → propagación más rápida. Cache: `data/pendiente_dem.json`.
 - **Combustible (APROXIMACIÓN, basado en SATÉLITE):** se mide con **Sentinel-2**
-  (`COPERNICUS/S2_SR_HARMONIZED`, vía Google Earth Engine, verano 2025), combinando *cuánto*
-  material hay y *cómo de seco* está:
+  (`COPERNICUS/S2_SR_HARMONIZED`, vía Google Earth Engine con
+  `scripts/fetch-satelite.py`), en el período **pre-incendio 1 jun – 31 jul 2025** (el
+  incendio grande fue en agosto; medir después contaminaría el NDVI de las zonas quemadas
+  justo donde más combustible había), con buffer de **1 km**, filtro
+  `CLOUDY_PIXEL_PERCENTAGE < 20`, **máscara de nubes/sombras por banda SCL** (clases 3, 8,
+  9, 10, 11) y **mediana temporal**. Combina *cuánto* material hay y *cómo de seco* está:
   - **Biomasa (NDVI):** el NDVI medio (1 km) mide directamente la **cantidad** de vegetación.
     `biomasa = NDVI_normalizado([0.15, 0.80]) × 100`, con recorte fuera de rango. El rango
     es **físico fijo** (0.15 ≈ suelo desnudo/urbano; 0.80 ≈ vegetación densa), no el rango
@@ -199,10 +203,10 @@ La componente de **peligro biofísico** combina pendiente real y combustible apr
   - **El NDVI sustituye a la cubierta OSM** como medida de cantidad de vegetación (el satélite
     la mide; OSM solo la etiquetaba, y mezclarlos sería doble conteo). La **cubierta OSM
     (`data/combustible_osm.json`) queda como respaldo** para núcleos sin satélite.
-  - **Estado actual:** tras la corrección de coordenadas, la medición Sentinel-2 solo
-    sigue siendo válida para A Rúa y O Barco; los otros 10 núcleos usan el **respaldo por
-    cubierta OSM** (regenerada en la coordenada real) hasta re-ejecutar la medición con
-    Earth Engine (`metadata.satelite_pendiente_remedicion`).
+  - **Estado actual:** los NDVI/NDMI están **re-medidos sobre las coordenadas corregidas**
+    con `scripts/fetch-satelite.py` (Earth Engine). Si algún núcleo quedara sin píxeles
+    válidos (nubes), cae automáticamente al respaldo por cubierta OSM y se lista en
+    `metadata.satelite_pendiente_remedicion`.
   - **No es** el mapa de combustible calibrado (fotoguía + LiDAR), que es una fase aparte;
     pero ahora se basa en **medición directa de satélite** (cantidad y humedad de vegetación),
     no en etiquetas de cubierta.
@@ -393,14 +397,17 @@ ejecutan a mano y cachean en `data/`):
 | `accesos_osm.json` | `node scripts/fetch-accesos-osm.mjs --extracto` | No (usa el extracto local) |
 | — variante Overpass | `node scripts/fetch-accesos-osm.mjs --force` | Sí (Overpass) |
 | `pendiente_dem.json` + `combustible_osm.json` | `node scripts/fetch-peligro.mjs --force` | Sí (opentopodata + Overpass) |
-| `ndvi/ndmi_sentinel2.json` | script de Google Earth Engine (externo) | Sí (GEE; **pendiente de re-medir** tras la corrección de coordenadas) |
+| `ndvi/ndmi_sentinel2.json` | `.venv/Scripts/python scripts/fetch-satelite.py` | Sí (Earth Engine; requiere `earthengine authenticate` una vez y proyecto Cloud con la API habilitada) |
 | `evacuacion.json` + `rutas_evacuacion.geojson` | `python scripts/evacuacion_osm.py` | Solo la 1ª vez (descarga el extracto; luego usa `data/osm_valdeorras.json`) |
 | `nucleos_afectacion_fisica.json` | `python scripts/afectacion_emsr837.py` | No (delineaciones EMS locales en `data/emsr837/`) |
 | `sensibilidad_pesos.json` | `node scripts/sensibilidad-pesos.mjs` | No |
 
 Tras regenerar cualquier caché, vuelve a ejecutar `node scripts/procesar-ige.mjs` para
 recomponer `nucleos.json`, y `npm test` para validar la integridad. Los scripts Python
-requieren `networkx` (evacuación) y `shapely` + `pyproj` (afectación).
+requieren `networkx` (evacuación) y `shapely` + `pyproj` (afectación); la re-medición de
+satélite usa un **venv** con `earthengine-api` (`python -m venv .venv &&
+.venv/Scripts/pip install earthengine-api`) — es una dependencia de re-medición que se
+ejecuta a mano, no forma parte del build.
 
 ## Privacidad (RGPD)
 

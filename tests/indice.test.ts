@@ -6,6 +6,7 @@ import {
   calcularIV,
   capDeSalidas,
   combustibleSatelite,
+  confianzaNucleo,
   factorNDMI,
   NDMI_AMP,
   NDMI_RANGO_FIJO,
@@ -142,5 +143,25 @@ describe("peligroBiofisico", () => {
   it("combina pendiente y combustible con los pesos declarados", () => {
     expect(peligroBiofisico(35, 100)).toBe(100);
     expect(peligroBiofisico(0, 0)).toBe(0);
+  });
+});
+
+describe("confianzaNucleo", () => {
+  const base = { edadReal: true, poblacionReal: true, capacidadReal: true, pendienteReal: true };
+  it("discrimina la fuente del combustible: satélite > respaldo OSM > sin dato", () => {
+    const sat = confianzaNucleo({ ...base, combustible: "satelite" });
+    const osm = confianzaNucleo({ ...base, combustible: "osm" });
+    const sin = confianzaNucleo({ ...base, combustible: "sin_dato" });
+    expect(sat).toBeGreaterThan(osm);
+    expect(osm).toBeGreaterThan(sin);
+  });
+  it("baja cuando las componentes pasan de real a estimación", () => {
+    const todoReal = confianzaNucleo({ ...base, combustible: "satelite" });
+    const todoEstim = confianzaNucleo({
+      edadReal: false, poblacionReal: false, capacidadReal: false,
+      pendienteReal: false, combustible: "sin_dato",
+    });
+    expect(todoReal).toBeGreaterThan(todoEstim);
+    expect(todoEstim).toBeCloseTo(0.3, 2); // todo en estimación = nivel mínimo
   });
 });

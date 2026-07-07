@@ -136,19 +136,15 @@ const ndmi = cargaCache("ndmi_sentinel2.json");     // peligro: humedad vegetaci
 const ndvi = cargaCache("ndvi_sentinel2.json");     // peligro: biomasa vegetación (Sentinel-2)
 
 // -----------------------------------------------------------------------------
-// Cachés de SATÉLITE pendientes de re-medición tras corregir las coordenadas.
-// Las coordenadas de Fase 0 de estos núcleos estaban desplazadas > 1 km de su
-// posición real (hasta 57 km en Pradorramisquedo); los NDVI/NDMI cacheados se
-// midieron con buffer de 1 km sobre la coordenada ANTIGUA, así que describen
-// otro lugar. Hasta re-ejecutar la medición Sentinel-2 (requiere Google Earth
-// Engine, no disponible en local), para estos núcleos el combustible cae al
-// RESPALDO por cubierta OSM (regenerada ya en la coordenada real). Solo A Rúa
-// (0,4 km) y O Barco (0,1 km) conservan la medición de satélite.
+// Cachés de SATÉLITE pendientes de re-medición. Tras corregir las coordenadas
+// de Fase 0 (desplazadas hasta 57 km), los NDVI/NDMI se RE-MIDIERON con
+// scripts/fetch-satelite.py (Earth Engine) sobre las coordenadas reales,
+// período pre-incendio 2025-06-01 a 2025-07-31, buffer 1 km: el conjunto queda
+// VACÍO. Si una futura edición de coordenadas vuelve a invalidar la medición
+// de algún núcleo, añádelo aquí (cae al respaldo por cubierta OSM) hasta
+// re-ejecutar fetch-satelite.py.
 // -----------------------------------------------------------------------------
-const SATELITE_PENDIENTE_REMEDICION = new Set([
-  "larouco", "seadur", "freixido", "pradorramisquedo", "portomourisco",
-  "petin", "vilardesilva", "casaio", "a-medua", "vilamartin",
-]);
+const SATELITE_PENDIENTE_REMEDICION = new Set([]);
 
 // Normalización con RANGOS FIJOS documentados (con recorte fuera de rango).
 // Los rangos observados de la muestra se calculan solo como referencia histórica.
@@ -305,7 +301,10 @@ for (const feat of base.features) {
     poblacionReal: !!p.dato_poblacion_real,
     capacidadReal: !!p.dato_capacidad_real,
     pendienteReal: !!p.dato_pendiente_real,
-    combustibleAprox: !!p.dato_combustible_aprox,
+    // Fuente efectiva del combustible: la medición Sentinel-2 pesa más que la
+    // etiqueta de cubierta OSM de respaldo (ver CONFIANZA_NIVEL en lib/indice.mjs).
+    combustible: p.combustible_fuente === "Sentinel-2 NDVI+NDMI" ? "satelite"
+      : p.combustible_sin_dato ? "sin_dato" : "osm",
   });
 
   // Rango del IV bajo variación de pesos (análisis de sensibilidad), si existe.
@@ -367,18 +366,20 @@ base.metadata = {
     + "100 − 25·log10(hab), 1 hab->100, 10.000 hab->0 (REAL, Nomenclátor 2025).",
   pesos_via: PESOS_VIA,
   confianza_nota: "confianza (0-1) por núcleo = ponderación de los flags de procedencia "
-    + "(real=1, aproximación=0.6, estimación=0.3) por componente y por los pesos del IV: "
-    + "social con subpesos_social (uniper y dispersión siguen en estimación Fase 0), "
-    + "peligro con 0.4·pendiente + 0.6·combustible, capacidad directa. "
+    + "(real=1, aproximación=0.6, aproximación débil=0.45, estimación=0.3) por componente y "
+    + "por los pesos del IV: social con subpesos_social (uniper y dispersión siguen en "
+    + "estimación Fase 0), peligro con 0.4·pendiente + 0.6·combustible, capacidad directa. "
+    + "El combustible distingue fuente: Sentinel-2=aproximación (0.6; no es el mapa "
+    + "calibrado), cubierta OSM de respaldo=aproximación débil (0.45), sin dato=estimación. "
     + "Etiquetas: >=0.75 alta, >=0.5 media, <0.5 baja.",
   sensibilidad_nota: "rango_iv = [min, max] del IV del núcleo al barrer los pesos del IV "
     + "(rejilla paso 0.05, cada peso en [0.15, 0.60], suma 1); ver "
     + "data/sensibilidad_pesos.json y scripts/sensibilidad-pesos.mjs.",
   satelite_pendiente_remedicion: [...SATELITE_PENDIENTE_REMEDICION],
-  satelite_nota: "Tras corregir las coordenadas de Fase 0 (desplazadas hasta 57 km), los "
-    + "NDVI/NDMI cacheados (medidos con buffer 1 km sobre la coordenada ANTIGUA) solo siguen "
-    + "siendo válidos para A Rúa y O Barco. Los núcleos listados usan el RESPALDO por cubierta "
-    + "OSM (regenerada en la coordenada real) hasta re-medir con Sentinel-2/Earth Engine.",
+  satelite_nota: "NDVI/NDMI RE-MEDIDOS con scripts/fetch-satelite.py (Earth Engine) sobre las "
+    + "coordenadas corregidas: período PRE-incendio 2025-06-01 a 2025-07-31, buffer 1 km, "
+    + "CLOUDY_PIXEL_PERCENTAGE<20 + máscara SCL, mediana temporal. Los núcleos listados en "
+    + "satelite_pendiente_remedicion (si hay alguno) usan el respaldo por cubierta OSM.",
   ndmi_amplitud: NDMI_AMP,
   ndmi_rango_fijo: NDMI_RANGO_FIJO,
   ndvi_rango_fijo: NDVI_RANGO_FIJO,

@@ -23,7 +23,7 @@ const MapaVulnerabilidad = dynamic(
     }
 );
 
-const COMARCA_DEFECTO_ID = "valdeorras"; //FUTURO... variable global residual. quitar
+const COMARCA_ESTATICA = "valdeorras"; //FUTURO... variable global residual. quitar
 
 export default function ExploradorMapa({
     comarcas, //comarcas disponibles
@@ -61,7 +61,10 @@ export default function ExploradorMapa({
 
             <div className="contexto">
                 <span className="comarca">
-                    Comarca: <strong>{comarcaActual.nombre}</strong> / Municipio: <strong>{MUNICIPIO}</strong> ({PROVINCIA})
+                    Comarca: <strong>{comarcaActual.nombre}</strong> 
+                    {/*solo muestra el municipio si es Valdeorras. FUTURO... Preguntar a Lucas por el Municipio.*/}
+                    {comarcaActual.id === COMARCA_ESTATICA && 
+                    (<>/ Municipio: <strong>{MUNICIPIO}</strong></>) } ({PROVINCIA})
                 </span>
                 <span className="distintivo">
                     Demostrador · Datos reales <em>(IGE · OSM · Sentinel-2)</em>
@@ -70,7 +73,7 @@ export default function ExploradorMapa({
         </header>
 
         {/*FUTURO... QUITAR AVISO */}
-        {comarcaActual.id !== COMARCA_DEFECTO_ID && (
+        {comarcaActual.id !== COMARCA_ESTATICA && (
             <p className="aviso-comarca" role="status">
             Aún no hay datos de vulnerabilidad para <strong>{comarcaActual.nombre}</strong>; solo Valdeorras
             (comarca piloto) tiene núcleos cargados. El buscador de momento solo desplaza el mapa.

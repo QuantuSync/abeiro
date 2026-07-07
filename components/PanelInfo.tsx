@@ -44,6 +44,27 @@ function nivelConfianza(c: number): { etiqueta: string; explica: string } {
   return { etiqueta: "baja", explica: "predominan estimaciones provisionales" };
 }
 
+// rango_iv puede llegar como array real (import directo del JSON) o como string
+// JSON "[47,52]" (MapLibre serializa las propiedades array/objeto de las
+// features al pasarlas por el evento de clic). Se normaliza a [min, max] o null.
+function parseRangoIV(r: unknown): [number, number] | null {
+  let v = r;
+  if (typeof v === "string") {
+    try { v = JSON.parse(v); } catch { return null; }
+  }
+  if (Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === "number" && Number.isFinite(n))) {
+    return [v[0], v[1]];
+  }
+  return null;
+}
+
+// Valor legible o marcador neutro "sin dato" (no inventa datos: si el valor no
+// existe o viene vacío, lo señala explícitamente).
+function oSinDato(valor: unknown, sufijo = ""): string {
+  if (valor === null || valor === undefined || valor === "") return "sin dato";
+  return `${valor}${sufijo}`;
+}
+
 // Modos de ruta de escape. Estructura preparada para el futuro: activar un modo
 // "proximamente" será cambiar su `estado` a "activo" y conectar su `onActivar`,
 // sin rehacer la interfaz.
@@ -102,15 +123,16 @@ export default function PanelInfo({
 
       {nucleo.confianza != null && (() => {
         const nc = nivelConfianza(nucleo.confianza);
+        const rango = parseRangoIV(nucleo.rango_iv);
         return (
           <p className={`confianza conf-${nc.etiqueta}`}>
             Confianza del dato: <strong>{nc.etiqueta}</strong> — {nc.explica}.
-            {nucleo.rango_iv && (
+            {rango && (
               <span
                 className="conf-rango"
                 title="Rango del IV al variar los pesos provisionales del índice (análisis de sensibilidad)"
               >
-                {" "}Según los pesos, el IV varía entre {nucleo.rango_iv[0]} y {nucleo.rango_iv[1]}.
+                {" "}Según los pesos, el IV varía entre {rango[0]} y {rango[1]}.
               </span>
             )}
           </p>
@@ -147,15 +169,15 @@ export default function PanelInfo({
         </div>
         <div>
           <dt>Hogares unipersonales (mayores)</dt>
-          <dd>{nucleo.pct_hogares_uniper_mayores}%</dd>
+          <dd>{nucleo.pct_hogares_uniper_mayores != null ? `${nucleo.pct_hogares_uniper_mayores}%` : "sin dato"}</dd>
         </div>
         <div>
           <dt>Dispersión</dt>
-          <dd className="cap">{nucleo.dispersion}</dd>
+          <dd className="cap">{oSinDato(nucleo.dispersion)}</dd>
         </div>
         <div>
           <dt>Distancia a servicios</dt>
-          <dd>{nucleo.distancia_servicios_km} km</dd>
+          <dd>{nucleo.distancia_servicios_km != null ? `${nucleo.distancia_servicios_km} km` : "sin dato"}</dd>
         </div>
         <div>
           <dt>
@@ -176,7 +198,7 @@ export default function PanelInfo({
         </div>
         <div>
           <dt>Cobertura móvil</dt>
-          <dd className="cap">{nucleo.cobertura_movil}</dd>
+          <dd className="cap">{oSinDato(nucleo.cobertura_movil)}</dd>
         </div>
       </dl>
 

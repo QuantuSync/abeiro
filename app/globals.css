@@ -232,12 +232,19 @@ body {
   width: 352px;
   max-width: calc(100vw - 24px);
   max-height: calc(100% - 24px);
+  /* Solo scroll vertical: nunca barra horizontal (el contenido ajusta al ancho). */
+  overflow-x: hidden;
   overflow-y: auto;
   background: var(--panel-bg);
   border: 1px solid var(--borde);
   border-radius: 12px;
   box-shadow: var(--sombra);
   padding: 1.05rem 1.15rem 1.2rem;
+}
+/* Ningún hijo del panel puede exceder su ancho. */
+.panel * {
+  min-width: 0;
+  max-width: 100%;
 }
 .panel .cerrar {
   position: absolute;
@@ -359,13 +366,20 @@ body {
   color: var(--texto-suave);
   margin: 0;
   line-height: 1.4;
+  /* En flexbox un hijo con texto no encoge sin min-width:0; sin esto el badge
+     de procedencia empuja el valor fuera del panel. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .datos dd {
   margin: 0;
   font-weight: 600;
   text-align: right;
-  flex: none;
-  white-space: nowrap;
+  /* No fijar el ancho: el valor conserva su espacio pero puede ajustar si es
+     largo, en vez de recortarse (p. ej. "648" no debe quedar en "64"). */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .datos .cap {
   text-transform: capitalize;
@@ -387,7 +401,11 @@ body {
   padding: 0.05rem 0.35rem;
   border-radius: 999px;
   vertical-align: middle;
-  white-space: nowrap;
+  /* Los badges largos ("PENDIENTE REAL · COMBUSTIBLE SENTINEL-2") ajustan a
+     varias líneas en vez de forzar el ancho del panel. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
   margin: 1px 0;
 }
 .origen.real {
@@ -740,12 +758,18 @@ body {
   width: 460px;
   max-width: calc(100vw - 24px);
   max-height: calc(100% - 24px);
+  /* Solo scroll vertical: la tabla ajusta al ancho (table-layout: fixed). */
+  overflow-x: hidden;
   overflow-y: auto;
   background: var(--panel-bg);
   border: 1px solid var(--borde);
   border-radius: 12px;
   box-shadow: var(--sombra);
   padding: 1rem 1.1rem 1.1rem;
+}
+.validacion * {
+  min-width: 0;
+  max-width: 100%;
 }
 .validacion .cerrar {
   position: absolute;
@@ -789,6 +813,9 @@ body {
 .tabla-val {
   width: 100%;
   border-collapse: collapse;
+  /* Reparto de anchos controlado: la tabla nunca fuerza scroll horizontal; los
+     nombres de núcleo ajustan a varias líneas si hace falta. */
+  table-layout: fixed;
   font-size: 0.875rem;
 }
 .tabla-val th,
@@ -796,7 +823,17 @@ body {
   text-align: left;
   padding: 0.32rem 0.4rem;
   border-bottom: 1px solid var(--borde);
+  overflow-wrap: anywhere;
 }
+/* Anchos por columna: #, Núcleo (flexible), IV, Categoría, 2025, Frente. */
+.tabla-val th:nth-child(1),
+.tabla-val td:nth-child(1) { width: 1.6rem; }
+.tabla-val th:nth-child(3),
+.tabla-val td:nth-child(3) { width: 2.8rem; }
+.tabla-val th:nth-child(5),
+.tabla-val td:nth-child(5) { width: 4.2rem; }
+.tabla-val th:nth-child(6),
+.tabla-val td:nth-child(6) { width: 5rem; }
 .tabla-val th {
   font-size: 0.875rem;
   text-transform: uppercase;
@@ -810,7 +847,6 @@ body {
 .tabla-val .iv {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 .tabla-val .iv .punto {
   display: inline-block;
@@ -837,7 +873,9 @@ body {
   font-weight: 700;
   padding: 0.08rem 0.4rem;
   border-radius: 999px;
-  white-space: nowrap;
+  /* En la columna estrecha "2025" el badge ajusta en vez de forzar ancho. */
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .badge-af.dentro {
   background: #9c2a18;

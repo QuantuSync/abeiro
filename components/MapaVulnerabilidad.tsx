@@ -110,7 +110,7 @@ export default function MapaVulnerabilidad({ comarca }: { comarca?: Comarca }) {
     const map = new maplibregl.Map({
       container: contenedor.current,
       style: ESTILO_BASE,
-      center: CENTRO,
+      center: centroInicial,
       zoom: ZOOM_INICIAL,
       minZoom: MIN_ZOOM,
       maxZoom: MAX_ZOOM,

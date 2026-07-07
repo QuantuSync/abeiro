@@ -1,7 +1,7 @@
 //FUTURO... si metes mas funciones, quizas renombra a mapaCamara.ts
 import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import type { FeatureCollection, Point } from "geojson";
-import type { NucleoProps } from "@/components/PanelInfo";
+import type { NucleoProps } from "@/lib/tipos";
 
 // "Ruta de escape en coche": pasa a la lente de evacuación, resalta la ruta y
 // encuadra el trayecto núcleo -> destino seguro DENTRO de Valdeorras.

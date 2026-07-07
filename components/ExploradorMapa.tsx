@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import type { Comarca } from "@/lib/tipos";
 import BuscadorComarcas from "@/components/BuscadorComarcas";
 
@@ -24,14 +25,28 @@ const MapaVulnerabilidad = dynamic(
 
 const COMARCA_DEFECTO_ID = "valdeorras"; //FUTURO... variable global residual. quitar
 
-export default function ExploradorMapa({ comarcas }: { comarcas: Comarca[] }) {
+export default function ExploradorMapa({
+    comarcas, //comarcas disponibles
+    comarcaInicial, //la inicial
+    }: {
+    comarcas: Comarca[];
+    comarcaInicial: Comarca;
+}) {
     // Estado compartido entre BuscadorComarcas y el MapaVulnerabilidad. Indica la comarca actual.
-    const [comarcaActual, setComarcaActual] = useState<Comarca>(
-        () => comarcas.find((c) => c.id === COMARCA_DEFECTO_ID) ?? comarcas[0]
-    );
+    const [comarcaActual, setComarcaActual] = useState<Comarca>(comarcaInicial);
+
+    const router = useRouter();
+    const pathname = usePathname();
 
     const MUNICIPIO = 'Larouco'
     const PROVINCIA = 'Ourense'
+
+    function cambiarComarca(c: Comarca) {
+        setComarcaActual(c);
+        // replace, no push: cambiar de comarca no debe llenar el historial de
+        // "atrás" con una entrada por cada búsqueda.
+        router.replace(`${pathname}?comarca=${c.id}`, { scroll: false });
+    }
 
     return (
         <>
@@ -42,7 +57,7 @@ export default function ExploradorMapa({ comarcas }: { comarcas: Comarca[] }) {
             </div>
             
             {/* Buscador con las comarcas de Orense. Recibe el setComarca para actualizar con el input del usuario. */}
-            <BuscadorComarcas comarcas={comarcas} valor={comarcaActual} onChange={setComarcaActual} />
+            <BuscadorComarcas comarcas={comarcas} valor={comarcaActual} onChange={cambiarComarca} />
 
             <div className="contexto">
                 <span className="comarca">

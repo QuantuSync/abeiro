@@ -1,7 +1,7 @@
 // lib/mapaCapas.ts (nuevo)
 import maplibregl, { Map as MapLibreMap, GeoJSONSource } from "maplibre-gl";
 // FUTURO... Lib depender de components no tiene sentido
-import type { NucleoProps } from "@/components/PanelInfo";
+import type { NucleoProps } from "@/lib/tipos";
 import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
 
 export function configurarCapas(map: MapLibreMap) {

@@ -1,0 +1,157 @@
+{
+  "metadata": {
+    "descripcion": "Calibración EXPLORATORIA del IV y sus componentes contra la afectación física del incendio EMSR837 (agosto 2025). AUC (Mann-Whitney) con IC bootstrap.",
+    "n_nucleos": 12,
+    "n_bootstrap": 2000,
+    "advertencia_n": "n=12: los AUC son INESTABLES y los IC anchos. Resultado exploratorio, no validación concluyente. Con afect_fisica solo hay 1 positivo (Freixido).",
+    "advertencia_concepto": "El IV mide VULNERABILIDAD ante un incendio, no probabilidad de ignición. Estar en el perímetro valida sobre todo la EXPOSICIÓN / peligro biofísico; NO valida la vulnerabilidad social (necesita otra clase de evidencia). Se espera peligro > IV > social en poder discriminante.",
+    "pesos_no_adoptados": "La optimización de pesos por AUC es solo DIAGNÓSTICA: con n=12 es sobreajuste (ver loo_pesos_optimos_desv). Los pesos del índice siguen siendo los provisionales declarados; NO se han cambiado.",
+    "capacidad_invertida": "El predictor 'capacidad_respuesta_inv' es 100−capacidad, para que 'más score = más afectación esperada' sea comparable con los demás."
+  },
+  "auc_por_resultado": {
+    "afect_fisica": {
+      "etiqueta": "Dentro del perímetro (afect_fisica)",
+      "n_positivos": 1,
+      "n_negativos": 11,
+      "predictores": {
+        "iv": {
+          "etiqueta": "IV (índice completo)",
+          "auc": 0.818,
+          "bootstrap_mediana": 0.818,
+          "ic95": [
+            0.545,
+            1
+          ],
+          "bootstrap_validos": 1256,
+          "bootstrap_descartados": 744
+        },
+        "peligro_biofisico": {
+          "etiqueta": "Peligro biofísico",
+          "auc": 0.864,
+          "bootstrap_mediana": 0.864,
+          "ic95": [
+            0.65,
+            1
+          ],
+          "bootstrap_validos": 1256,
+          "bootstrap_descartados": 744
+        },
+        "score_social": {
+          "etiqueta": "Sensibilidad social",
+          "auc": 0.818,
+          "bootstrap_mediana": 0.818,
+          "ic95": [
+            0.545,
+            1
+          ],
+          "bootstrap_validos": 1256,
+          "bootstrap_descartados": 744
+        },
+        "capacidad_respuesta_inv": {
+          "etiqueta": "Capacidad de respuesta (invertida, 100−cap)",
+          "auc": 0.455,
+          "bootstrap_mediana": 0.455,
+          "ic95": [
+            0.182,
+            0.75
+          ],
+          "bootstrap_validos": 1256,
+          "bootstrap_descartados": 744
+        }
+      }
+    },
+    "afect_o_borde": {
+      "etiqueta": "Dentro o a ≤500 m (afect_fisica || borde_500m)",
+      "n_positivos": 6,
+      "n_negativos": 6,
+      "predictores": {
+        "iv": {
+          "etiqueta": "IV (índice completo)",
+          "auc": 0.431,
+          "bootstrap_mediana": 0.429,
+          "ic95": [
+            0.056,
+            0.844
+          ],
+          "bootstrap_validos": 1999,
+          "bootstrap_descartados": 1
+        },
+        "peligro_biofisico": {
+          "etiqueta": "Peligro biofísico",
+          "auc": 0.375,
+          "bootstrap_mediana": 0.371,
+          "ic95": [
+            0.047,
+            0.75
+          ],
+          "bootstrap_validos": 1999,
+          "bootstrap_descartados": 1
+        },
+        "score_social": {
+          "etiqueta": "Sensibilidad social",
+          "auc": 0.528,
+          "bootstrap_mediana": 0.543,
+          "ic95": [
+            0.167,
+            0.906
+          ],
+          "bootstrap_validos": 1999,
+          "bootstrap_descartados": 1
+        },
+        "capacidad_respuesta_inv": {
+          "etiqueta": "Capacidad de respuesta (invertida, 100−cap)",
+          "auc": 0.389,
+          "bootstrap_mediana": 0.375,
+          "ic95": [
+            0.037,
+            0.778
+          ],
+          "bootstrap_validos": 1999,
+          "bootstrap_descartados": 1
+        }
+      }
+    }
+  },
+  "diagnostico_pesos": {
+    "afect_fisica": {
+      "etiqueta": "Dentro del perímetro (afect_fisica)",
+      "auc_pesos_base": 0.818,
+      "auc_pesos_optimos": 0.909,
+      "pesos_optimos_in_sample": {
+        "peligro": 0.25,
+        "social": 0.6,
+        "cap": 0.15
+      },
+      "loo_pesos_optimos_media": {
+        "peligro": 0.25,
+        "social": 0.6,
+        "cap": 0.15
+      },
+      "loo_pesos_optimos_desv": {
+        "peligro": 0,
+        "social": 0.01,
+        "cap": 0.01
+      }
+    },
+    "afect_o_borde": {
+      "etiqueta": "Dentro o a ≤500 m (afect_fisica || borde_500m)",
+      "auc_pesos_base": 0.431,
+      "auc_pesos_optimos": 0.5,
+      "pesos_optimos_in_sample": {
+        "peligro": 0.15,
+        "social": 0.6,
+        "cap": 0.25
+      },
+      "loo_pesos_optimos_media": {
+        "peligro": 0.16,
+        "social": 0.6,
+        "cap": 0.24
+      },
+      "loo_pesos_optimos_desv": {
+        "peligro": 0.03,
+        "social": 0,
+        "cap": 0.03
+      }
+    }
+  }
+}

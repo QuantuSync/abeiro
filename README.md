@@ -207,12 +207,25 @@ La componente de **peligro biofísico** combina pendiente real y combustible apr
     con `scripts/fetch-satelite.py` (Earth Engine). Si algún núcleo quedara sin píxeles
     válidos (nubes), cae automáticamente al respaldo por cubierta OSM y se lista en
     `metadata.satelite_pendiente_remedicion`.
+  - **Caso Petín (verificado):** tiene el NDVI/NDMI más bajos (0.357 / −0.031), por debajo
+    de los urbanos. Se comprobó la composición de cubierta OSM de su buffer: **61% forest,
+    35% residencial** (el propio Petín), 4% viñedo; **0% agua/río Sil, 0% roca**, y A Rúa
+    (a 1,75 km) queda fuera. El polígono `forest` de OSM etiqueta laderas de **solana con
+    monte ralo y seco** en verano; el satélite (NDVI bajo + NDMI negativo = vegetación seca)
+    lo mide mejor que la etiqueta OSM. Dato **correcto**: es justo el caso donde el satélite
+    corrige a la cubierta OSM (`metadata.nota_petin`).
   - **No es** el mapa de combustible calibrado (fotoguía + LiDAR), que es una fase aparte;
     pero ahora se basa en **medición directa de satélite** (cantidad y humedad de vegetación),
     no en etiquetas de cubierta.
 - `peligro_biofisico = 0.40·score_pendiente + 0.60·combustibilidad` (pesos provisionales).
   Con satélite, los 12 núcleos tienen combustible real (incluido Vilamartín, que no tenía
   cubierta OSM).
+
+> **Limitación para el escalado** (`metadata.nota_escalado`): el límite inferior del rango
+> fijo NDMI (**−0.05**) queda cerca del mínimo observado (Petín −0.031). Al ampliar la
+> muestra a más comarca —con zonas más secas o quemados antiguos— podría quedarse corto y
+> saturar por recorte; se documenta como limitación conocida, **no se reajusta ahora**
+> (reajustarlo a la muestra rompería la comparabilidad de la escala, ver Tarea 2 abajo).
 
 Los ficheros del IGE vienen en **ISO-8859-1**. El procesador parte de `data/nucleos.base.json`
 (línea base reproducible, con las componentes aún estimadas), los lee como `latin1`,
@@ -326,6 +339,42 @@ En el mapa, el perímetro se pinta en granate y los núcleos dentro del área ll
 oscuro; el panel muestra el estado de afectación marcado como dato Copernicus EMS con su
 limitación.
 
+### Calibración (exploratoria) contra EMSR837
+
+`scripts/calibracion-emsr837.mjs` contrasta el poder discriminante del IV y de sus
+componentes frente a la afectación real, con el **AUC** (Mann-Whitney) de cada predictor y
+su **intervalo de confianza por bootstrap** (2000 remuestreos), contra dos variables de
+resultado: `afect_fisica` (dentro del perímetro) y `afect_fisica || borde_500m` (dentro o
+a ≤ 500 m). Salida: `data/calibracion_emsr837.json`.
+
+> ⚠️ **Resultado EXPLORATORIO, no validación concluyente.** Con **n = 12** los AUC son
+> muy inestables y los IC anchísimos (cruzan 0.5 de lado a lado). Con `afect_fisica` solo
+> hay **1 núcleo dentro del perímetro** (Freixido), así que ese AUC es casi un caso
+> degenerado. Nada de leer un AUC puntual como robusto.
+
+**Distinción conceptual crítica:** el IV mide **vulnerabilidad ante un incendio** (quién
+sufriría si ocurre), **no probabilidad de ignición** ni dónde empieza el fuego. Que un
+núcleo caiga dentro del perímetro de **un** incendio valida sobre todo la **exposición /
+peligro biofísico**, no la **vulnerabilidad social** (un urbano afectado y una aldea
+envejecida afectada cuentan igual como "afectado"). Los resultados lo confirman:
+
+| Variable de resultado | Mejor predictor | AUC (IC95 bootstrap) | Lectura |
+|---|---|---|---|
+| `afect_fisica` (1 dentro) | Peligro biofísico | 0.86 [0.65, 1.00] | Peligro > IV ≈ social > capacidad; **coherente con la hipótesis** (la exposición manda), pero con 1 positivo no es concluyente. |
+| `afect ∨ borde ≤500 m` (6/6) | todos ≈ azar | 0.38–0.53, IC ~[0.05, 0.9] | **Ningún predictor discrimina.** El borde del frente fue cuestión de **geografía del incendio** (por dónde entró el 16-08), no del combustible del núcleo: Pradorramisquedo tiene el mayor peligro (65) y quedó a 5,5 km sin arder. |
+
+- **Lo que queda (débilmente) respaldado:** el **peligro biofísico** discrimina la
+  afectación *física* mejor que el resto — lo esperable, porque es la componente de
+  exposición.
+- **Lo que NO valida este incendio:** la **vulnerabilidad social**. Un solo incendio no es
+  la prueba adecuada para la parte social; necesita otra clase de evidencia
+  (evacuaciones/confinamientos reales, varios eventos).
+- **Diagnóstico de pesos (no adoptado):** si se optimizaran los pesos para maximizar el AUC
+  de *este* incendio, el óptimo se pega a `social = 0.60` (el máximo de la rejilla), lo que
+  **no tiene sentido** para predecir afectación física — señal clara de **sobreajuste** a
+  n = 12. Los pesos del índice **siguen siendo los provisionales declarados**; la
+  calibración informa, no decide.
+
 ## Capa de evacuación estática (corazón de la misión, NO es parte del IV)
 
 No "dónde arde" sino "por dónde se sale vivo". Para cada núcleo se calcula la **ruta real de
@@ -401,6 +450,7 @@ ejecutan a mano y cachean en `data/`):
 | `evacuacion.json` + `rutas_evacuacion.geojson` | `python scripts/evacuacion_osm.py` | Solo la 1ª vez (descarga el extracto; luego usa `data/osm_valdeorras.json`) |
 | `nucleos_afectacion_fisica.json` | `python scripts/afectacion_emsr837.py` | No (delineaciones EMS locales en `data/emsr837/`) |
 | `sensibilidad_pesos.json` | `node scripts/sensibilidad-pesos.mjs` | No |
+| `calibracion_emsr837.json` | `node scripts/calibracion-emsr837.mjs` | No |
 
 Tras regenerar cualquier caché, vuelve a ejecutar `node scripts/procesar-ige.mjs` para
 recomponer `nucleos.json`, y `npm test` para validar la integridad. Los scripts Python

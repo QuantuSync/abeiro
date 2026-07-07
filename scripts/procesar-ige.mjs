@@ -387,6 +387,17 @@ base.metadata = {
   // usan para normalizar.
   ndmi_rango_observado_referencia: NDMI_OBSERVADO,
   ndvi_rango_observado_referencia: NDVI_OBSERVADO,
+  nota_petin: "Petín tiene el NDVI/NDMI más bajos (0.357 / −0.031), por debajo de los "
+    + "urbanos. Verificado (composición de cubierta OSM del buffer): 61% forest, 35% "
+    + "residencial (el propio Petín), 4% viñedo; 0% agua/río Sil y 0% roca; A Rúa (a 1,75 km) "
+    + "no entra en el buffer. El polígono 'forest' de OSM etiqueta laderas de solana con "
+    + "monte ralo/seco: el satélite (NDVI bajo + NDMI negativo = vegetación seca) lo mide "
+    + "mejor que la etiqueta OSM. Dato correcto; la coordenada ya es el nodo place de OSM.",
+  nota_escalado: "Limitaciones conocidas para cuando se amplíe la muestra a más comarca: "
+    + "(a) el límite inferior del rango fijo NDMI [−0.05] queda cerca del mínimo observado "
+    + "(Petín −0.031) y podría quedarse corto con zonas más secas o quemados antiguos; "
+    + "documentado, no se cambia ahora. (b) La calibración contra EMSR837 "
+    + "(data/calibracion_emsr837.json) es EXPLORATORIA con n=12: gana valor con más muestra.",
   fuente_edad_concellos: "data/padron_edad_concellos.csv",
   fuente_accesos: "data/accesos_osm.json (OpenStreetMap, ODbL).",
   fuente_peligro: "data/pendiente_dem.json (EU-DEM 25 m) + data/ndvi_sentinel2.json + "

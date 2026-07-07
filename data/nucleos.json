@@ -9,10 +9,10 @@
   },
   "metadata": {
     "descripcion": "DATOS DE PRUEBA (inventados pero coherentes) para la Fase 0 de ABEIRO. NO son datos reales. Núcleos de la comarca piloto de Valdeorras / zona de Larouco (Ourense).",
-    "indice": "Índice de Vulnerabilidad (0-100). Combina peligro biofísico, sensibilidad social (envejecimiento, aislamiento, dispersión) y capacidad de respuesta (accesos, cobertura).",
+    "indice": "Índice de Vulnerabilidad (0-100). Se COMPONE directamente desde las tres componentes normalizadas 0-100: iv = 0.4·peligro_biofisico + 0.35·score_social + 0.25·(100 − capacidad_respuesta). Más capacidad de respuesta BAJA el IV. Ya no se ancla al iv inventado de Fase 0 (conservado como iv_fase0 solo para comparación). Pesos provisionales, no calibrados.",
     "fuente": "Generado para Fase 0. Sustituir por fuentes abiertas en Fase 1.",
     "privacidad": "Solo indicadores agregados y no identificativos. Ninguna identidad nominal.",
-    "fase": "Fase 1: población real (Nomenclátor IGE 2025), % de mayores de 65 real (Padrón IGE 2022, proxy concello) y capacidad de respuesta por vías de salida real (OpenStreetMap/Overpass) para los núcleos del piloto.",
+    "fase": "Fase 1: población real (Nomenclátor IGE 2025), % de mayores de 65 real (Padrón IGE 2022, proxy concello) y capacidad de respuesta por vías de salida real (OpenStreetMap/Overpass) para los núcleos del piloto. IV compuesto desde componentes (sin ancla de Fase 0).",
     "edad_nota": "pct_mayores_65 es fracción 0-1, proxy a nivel concello (2022); la población es real por aldea (2025).",
     "capacidad_nota": "capacidad_respuesta se deriva de las vías de salida OSM PONDERADAS por clase (primary/secondary/tertiary=1.0; unclassified/residential=0.5; track=0.2).",
     "peligro_nota": "peligro_biofisico = 0.4*score_pendiente + 0.6*combustibilidad. Pendiente: EU-DEM 25 m (REAL). Combustible: SATÉLITE Sentinel-2 — biomasa = NDVI normalizado al rango observado [0.348,0.75] *100; combustibilidad = biomasa * (1±0.3) segun NDMI invertido normalizado a [0.013,0.269]. El NDVI sustituye a la cubierta OSM como medida de cantidad de vegetación (OSM queda solo de respaldo). APROXIMACIÓN; aún no es el mapa calibrado (fotoguía + LiDAR), pero se basa en medición directa de satélite, no en etiquetas.",
@@ -21,6 +21,14 @@
       "sensibilidad_social": 0.35,
       "capacidad_respuesta": 0.25
     },
+    "pesos_iv_nota": "iv = peligro_biofisico·0.4 + score_social·0.35 + (100 − capacidad_respuesta)·0.25. Dirección: más peligro y más sensibilidad social SUBEN el IV; más capacidad de respuesta lo BAJA (entra invertida). Pesos PROVISIONALES; calibración ROC/AUC contra el incendio de 2025 en fase posterior.",
+    "subpesos_social": {
+      "mayores_65": 0.45,
+      "hogares_unipersonales": 0.2,
+      "dispersion": 0.2,
+      "poblacion": 0.15
+    },
+    "social_nota": "score_social (0-100) = 0.45·mayores_65 + 0.2·hogares_unipersonales + 0.2·dispersion + 0.15·poblacion. mayores_65: fracción normalizada al rango fijo [0.15,0.55] (REAL, proxy concello Padrón 2022). hogares_unipersonales: % normalizado a [0,50] (ESTIMACIÓN Fase 0). dispersion: categórica muy baja/baja/media/alta/muy alta -> 0/25/50/75/100 (ESTIMACIÓN Fase 0). poblacion: escala log invertida 100 − 25·log10(hab), 1 hab->100, 10.000 hab->0 (REAL, Nomenclátor 2025).",
     "pesos_via": {
       "primary": 1,
       "secondary": 1,
@@ -49,7 +57,7 @@
         "id": "larouco",
         "nombre": "Larouco",
         "concello": "Larouco",
-        "iv": 78,
+        "iv": 64,
         "poblacion": 350,
         "pct_mayores_65": 0.443,
         "pct_hogares_uniper_mayores": 28,
@@ -90,7 +98,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 78,
+        "score_social": 60,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",
@@ -106,7 +117,7 @@
         "id": "seadur",
         "nombre": "Seadur",
         "concello": "Larouco",
-        "iv": 80,
+        "iv": 73,
         "poblacion": 59,
         "pct_mayores_65": 0.443,
         "pct_hogares_uniper_mayores": 37,
@@ -146,7 +157,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 80,
+        "score_social": 71,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",
@@ -162,7 +176,7 @@
         "id": "freixido",
         "nombre": "Freixido",
         "concello": "Larouco",
-        "iv": 72,
+        "iv": 71,
         "poblacion": 39,
         "pct_mayores_65": 0.443,
         "pct_hogares_uniper_mayores": 33,
@@ -202,7 +216,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 72,
+        "score_social": 70,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",
@@ -218,7 +235,7 @@
         "id": "pradorramisquedo",
         "nombre": "Pradorramisquedo",
         "concello": "Larouco",
-        "iv": 81,
+        "iv": 79,
         "poblacion": 15,
         "pct_mayores_65": 0.416,
         "pct_hogares_uniper_mayores": 44,
@@ -257,7 +274,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 81,
+        "score_social": 78,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",
@@ -273,7 +293,7 @@
         "id": "portomourisco",
         "nombre": "Portomourisco",
         "concello": "Petín",
-        "iv": 63,
+        "iv": 64,
         "poblacion": 35,
         "pct_mayores_65": 0.341,
         "pct_hogares_uniper_mayores": 21,
@@ -311,7 +331,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 63,
+        "score_social": 49,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",
@@ -327,7 +350,7 @@
         "id": "petin",
         "nombre": "Petín",
         "concello": "Petín",
-        "iv": 43,
+        "iv": 41,
         "poblacion": 597,
         "pct_mayores_65": 0.341,
         "pct_hogares_uniper_mayores": 18,
@@ -368,7 +391,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 43,
+        "score_social": 38,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",
@@ -384,7 +410,7 @@
         "id": "a-rua",
         "nombre": "A Rúa",
         "concello": "A Rúa",
-        "iv": 27,
+        "iv": 28,
         "poblacion": 4119,
         "pct_mayores_65": 0.317,
         "pct_hogares_uniper_mayores": 14,
@@ -425,7 +451,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 27,
+        "score_social": 31,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",
@@ -441,7 +470,7 @@
         "id": "o-barco",
         "nombre": "O Barco de Valdeorras",
         "concello": "O Barco de Valdeorras",
-        "iv": 23,
+        "iv": 22,
         "poblacion": 11101,
         "pct_mayores_65": 0.222,
         "pct_hogares_uniper_mayores": 12,
@@ -483,7 +512,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 23,
+        "score_social": 13,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",
@@ -499,7 +531,7 @@
         "id": "vilardesilva",
         "nombre": "Vilardesilva",
         "concello": "Rubiá",
-        "iv": 69,
+        "iv": 70,
         "poblacion": 30,
         "pct_mayores_65": 0.396,
         "pct_hogares_uniper_mayores": 31,
@@ -537,7 +569,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 69,
+        "score_social": 65,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",
@@ -553,7 +588,7 @@
         "id": "casaio",
         "nombre": "Casaio",
         "concello": "Carballeda de Valdeorras",
-        "iv": 70,
+        "iv": 66,
         "poblacion": 249,
         "pct_mayores_65": 0.356,
         "pct_hogares_uniper_mayores": 29,
@@ -592,7 +627,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 70,
+        "score_social": 56,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",
@@ -608,7 +646,7 @@
         "id": "a-medua",
         "nombre": "A Medua",
         "concello": "Carballeda de Valdeorras",
-        "iv": 69,
+        "iv": 75,
         "poblacion": 25,
         "pct_mayores_65": 0.356,
         "pct_hogares_uniper_mayores": 35,
@@ -646,7 +684,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 69,
+        "score_social": 67,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",
@@ -662,7 +703,7 @@
         "id": "vilamartin",
         "nombre": "Vilamartín de Valdeorras",
         "concello": "Vilamartín de Valdeorras",
-        "iv": 56,
+        "iv": 57,
         "poblacion": 648,
         "pct_mayores_65": 0.405,
         "pct_hogares_uniper_mayores": 17,
@@ -701,7 +742,10 @@
         "dato_combustible_aprox": true,
         "combustible_sin_dato": false,
         "combustible_fuente": "Sentinel-2 NDVI+NDMI",
-        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR)."
+        "fuente_peligro": "Pendiente: EU-DEM 25 m (real). Combustible: Sentinel-2 — NDVI (biomasa) modulado por NDMI (humedad), verano 2025. Medición directa de satélite; aún no es el mapa de combustible calibrado (fotoguía + LiDAR).",
+        "iv_fase0": 56,
+        "score_social": 45,
+        "dato_social_parcial": true
       },
       "geometry": {
         "type": "Point",

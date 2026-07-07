@@ -193,10 +193,40 @@ node scripts/procesar-ige.mjs                 # regenera data/nucleos.json desde
 
 En el mapa, los núcleos con **edad real** se marcan con un anillo verde; el panel de cada
 núcleo muestra la procedencia de cada dato: **real** (verde), **aproximación** (ámbar,
-combustible) o **estimación** (gris). El **Índice de Vulnerabilidad** combina las tres
-componentes con pesos provisionales `peligro 0.40 · social 0.35 · capacidad 0.25`
-(`metadata.pesos_iv`); su **calibración supervisada** (ROC/AUC contra el incendio de 2025)
-es una fase posterior.
+combustible) o **estimación** (gris).
+
+### Composición del índice
+
+El **Índice de Vulnerabilidad** se **compone directamente desde las tres componentes**
+normalizadas 0–100 (ya no se calcula como delta sobre el valor inventado de Fase 0):
+
+```
+iv = 0.40 · peligro_biofisico + 0.35 · score_social + 0.25 · (100 − capacidad_respuesta)
+```
+
+Dirección de cada subíndice: más peligro biofísico y más sensibilidad social **suben** el
+IV; más capacidad de respuesta lo **baja** (entra invertida como `100 − capacidad`). El
+`score_social` (0–100) se deriva de forma explícita de las variables sociales, con
+subpesos documentados en `metadata.subpesos_social`:
+
+```
+score_social = 0.45 · mayores_65 + 0.20 · hogares_unipersonales
+             + 0.20 · dispersion + 0.15 · poblacion
+```
+
+- `mayores_65`: fracción de mayores de 65, normalizada al rango fijo [0.15, 0.55]
+  (**real**, proxy concello, Padrón IGE 2022).
+- `hogares_unipersonales`: % de hogares unipersonales de mayores, normalizado a [0, 50]
+  (**estimación** de Fase 0, aún sin fuente censal).
+- `dispersion`: categórica muy baja/baja/media/alta/muy alta → 0/25/50/75/100
+  (**estimación** de Fase 0).
+- `poblacion`: escala logarítmica invertida `100 − 25·log10(hab)` — menos vecinos, más
+  sensibilidad (**real**, Nomenclátor IGE 2025).
+
+Los pesos (`peligro 0.40 · social 0.35 · capacidad 0.25`, `metadata.pesos_iv`) son
+**provisionales**; su **calibración supervisada** (ROC/AUC contra el incendio de 2025) es
+una fase posterior. El valor antiguo anclado a Fase 0 se conserva en cada núcleo como
+`iv_fase0`, solo como columna de comparación (no se pinta en el mapa).
 
 ### Categorías
 

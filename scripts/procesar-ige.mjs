@@ -19,11 +19,19 @@
 //   * % MAYORES 65: proxy a nivel CONCELLO (Padrón 2022) aplicado a sus aldeas.
 //     pct_mayores_65 se guarda como fracción 0-1.
 //   * Se excluyen aldeas con 0 habitantes. Nombres leídos en latin1 -> UTF-8.
-//   * IV: se recalcula SOLO la componente social, como delta desde la base:
-//       iv = iv0 + PESO_SOCIAL * (pct_real - pct0) * 100
-//     dejando intactas peligro biofísico y capacidad de respuesta. El peso es
-//     PROVISIONAL (no calibrado); la calibración supervisada (ROC/AUC) es fase
-//     posterior. Si un concello no tiene edad disponible, el núcleo conserva iv0.
+//   * IV: se COMPONE directamente desde las tres componentes normalizadas 0-100
+//     (ya sin anclar al iv inventado de Fase 0):
+//       iv = PESO_PELIGRO·peligro_biofisico + PESO_SOCIAL·score_social
+//            + PESO_CAP·(100 − capacidad_respuesta)
+//     Dirección de cada subíndice (documentada también en metadata):
+//       - peligro_biofisico   0-100: MÁS peligro    -> MÁS IV (positivo)
+//       - score_social        0-100: MÁS sensibilidad -> MÁS IV (positivo)
+//       - capacidad_respuesta 0-100: MÁS capacidad  -> MENOS IV (entra invertida
+//         como 100 − capacidad).
+//     Los pesos son PROVISIONALES (no calibrados); la calibración supervisada
+//     (ROC/AUC contra el incendio de 2025) es fase posterior. El IV antiguo de
+//     Fase 0 (delta sobre iv0 inventado) se conserva como `iv_fase0` SOLO como
+//     columna de comparación: no se pinta en el mapa.
 // =============================================================================
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -39,6 +47,60 @@ const FICHEROS_CONCELLO = [5, 9, 10, 11, 12, 13, 14, 15, 16];
 const PESO_SOCIAL = 0.35;  // peso provisional de la sensibilidad social en el IV
 const PESO_CAP = 0.25;     // peso provisional de la capacidad de respuesta en el IV
 const PESO_PELIGRO = 0.40; // peso provisional del peligro biofísico en el IV
+
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
+const clamp100 = (v) => Math.max(0, Math.min(100, v));
+
+// -----------------------------------------------------------------------------
+// SCORE SOCIAL (0-100): sensibilidad social del núcleo, compuesta de forma
+// explícita desde las variables disponibles. Subpesos PROVISIONALES (suman 1),
+// documentados en metadata.subpesos_social. Procedencia de cada variable:
+//   - mayores_65: REAL por proxy de concello (Padrón IGE 2022).
+//   - hogares_unipersonales: ESTIMACIÓN de Fase 0 (aún sin fuente censal).
+//   - dispersion: ESTIMACIÓN de Fase 0 (categórica).
+//   - poblacion: REAL por aldea (Nomenclátor IGE 2025).
+// -----------------------------------------------------------------------------
+const SUBPESOS_SOCIAL = {
+  mayores_65: 0.45,            // envejecimiento: la variable social principal
+  hogares_unipersonales: 0.20, // personas mayores que viven solas
+  dispersion: 0.20,            // hábitat disperso = aviso y rescate más difíciles
+  poblacion: 0.15,             // tamaño demográfico (menos vecinos = menos autoayuda)
+};
+
+// % de mayores de 65 (fracción 0-1) -> 0-100 con rango FIJO [0.15, 0.55]:
+// 0.15 ≈ mínimo urbano español; 0.55 = envejecimiento extremo de aldea gallega.
+const RANGO_MAYORES_65 = [0.15, 0.55];
+// % de hogares unipersonales de mayores (0-100) -> 0-100 con rango FIJO [0, 50].
+const RANGO_UNIPER = [0, 50];
+// Dispersión categórica -> 0-100 (más dispersión = más sensibilidad).
+const SCORE_DISPERSION = { "muy baja": 0, "baja": 25, "media": 50, "alta": 75, "muy alta": 100 };
+// Tamaño demográfico -> 0-100 en escala logarítmica INVERTIDA: menos población,
+// más sensibilidad (menos vecinos para avisar/ayudar). 1 hab -> 100; 10 -> 75;
+// 100 -> 50; 1.000 -> 25; ≥10.000 -> 0.
+const scorePoblacion = (pob) =>
+  clamp100(100 - 25 * Math.log10(Math.max(1, pob)));
+
+// pctMayores en fracción 0-1; pctUniper en % 0-100; dispersion categórica; pob en hab.
+function scoreSocial({ pctMayores, pctUniper, dispersion, poblacion }) {
+  const sMayores = clamp01((pctMayores - RANGO_MAYORES_65[0]) / (RANGO_MAYORES_65[1] - RANGO_MAYORES_65[0])) * 100;
+  const sUniper = clamp01((pctUniper - RANGO_UNIPER[0]) / (RANGO_UNIPER[1] - RANGO_UNIPER[0])) * 100;
+  const sDisp = SCORE_DISPERSION[dispersion] ?? 50; // categoría desconocida: neutra
+  const sPob = scorePoblacion(poblacion);
+  return Math.round(
+    SUBPESOS_SOCIAL.mayores_65 * sMayores
+    + SUBPESOS_SOCIAL.hogares_unipersonales * sUniper
+    + SUBPESOS_SOCIAL.dispersion * sDisp
+    + SUBPESOS_SOCIAL.poblacion * sPob
+  );
+}
+
+// IV (0-100) compuesto directamente desde las tres componentes. La capacidad de
+// respuesta entra INVERTIDA (100 − cap): más capacidad debe BAJAR el IV.
+function calcularIV(peligro, social, capacidad) {
+  return Math.round(clamp100(
+    PESO_PELIGRO * peligro + PESO_SOCIAL * social + PESO_CAP * (100 - capacidad)
+  ));
+}
 
 // Peligro biofísico (0-100) = combinación de PENDIENTE (real) y COMBUSTIBLE
 // (aproximación). Pesos provisionales documentados.
@@ -327,7 +389,22 @@ for (const feat of base.features) {
     p.dato_combustible_aprox = false;
   }
 
-  p.iv = Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial + deltaCap + deltaPeligro)));
+  // --- IV: composición directa desde las tres componentes (sin ancla Fase 0) ---
+  // El valor antiguo (delta sobre el iv0 inventado de Fase 0) se conserva como
+  // iv_fase0, SOLO para comparación; no se pinta en el mapa.
+  p.iv_fase0 = Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial + deltaCap + deltaPeligro)));
+
+  // score_social explícito (0-100). Las variables uniper y dispersión siguen
+  // siendo estimaciones de Fase 0: queda registrado en los flags de procedencia.
+  p.score_social = scoreSocial({
+    pctMayores: p.pct_mayores_65,
+    pctUniper: p.pct_hogares_uniper_mayores,
+    dispersion: p.dispersion,
+    poblacion: p.poblacion,
+  });
+  p.dato_social_parcial = true; // mayores_65 y población reales; uniper y dispersión, estimación Fase 0
+
+  p.iv = calcularIV(p.peligro_biofisico, p.score_social, p.capacidad_respuesta);
 
   informe.push({
     nucleo: p.nombre,
@@ -337,15 +414,24 @@ for (const feat of base.features) {
     comb: p.combustibilidad ?? "—",
     fuente: p.combustible_fuente ?? "—",
     pel: p.peligro_biofisico,
+    social: p.score_social,
+    cap: p.capacidad_respuesta,
+    iv_fase0: p.iv_fase0,
     iv: p.iv,
   });
 }
 
 base.metadata = {
   ...base.metadata,
+  indice: "Índice de Vulnerabilidad (0-100). Se COMPONE directamente desde las tres "
+    + "componentes normalizadas 0-100: iv = " + PESO_PELIGRO + "·peligro_biofisico + "
+    + PESO_SOCIAL + "·score_social + " + PESO_CAP + "·(100 − capacidad_respuesta). "
+    + "Más capacidad de respuesta BAJA el IV. Ya no se ancla al iv inventado de Fase 0 "
+    + "(conservado como iv_fase0 solo para comparación). Pesos provisionales, no calibrados.",
   fase: "Fase 1: población real (Nomenclátor IGE 2025), % de mayores de 65 real "
     + "(Padrón IGE 2022, proxy concello) y capacidad de respuesta por vías de salida "
-    + "real (OpenStreetMap/Overpass) para los núcleos del piloto.",
+    + "real (OpenStreetMap/Overpass) para los núcleos del piloto. IV compuesto desde "
+    + "componentes (sin ancla de Fase 0).",
   edad_nota: "pct_mayores_65 es fracción 0-1, proxy a nivel concello (2022); la "
     + "población es real por aldea (2025).",
   capacidad_nota: "capacidad_respuesta se deriva de las vías de salida OSM PONDERADAS "
@@ -358,6 +444,19 @@ base.metadata = {
     + "de vegetación (OSM queda solo de respaldo). APROXIMACIÓN; aún no es el mapa calibrado "
     + "(fotoguía + LiDAR), pero se basa en medición directa de satélite, no en etiquetas.",
   pesos_iv: { peligro_biofisico: PESO_PELIGRO, sensibilidad_social: PESO_SOCIAL, capacidad_respuesta: PESO_CAP },
+  pesos_iv_nota: "iv = peligro_biofisico·" + PESO_PELIGRO + " + score_social·" + PESO_SOCIAL
+    + " + (100 − capacidad_respuesta)·" + PESO_CAP + ". Dirección: más peligro y más "
+    + "sensibilidad social SUBEN el IV; más capacidad de respuesta lo BAJA (entra invertida). "
+    + "Pesos PROVISIONALES; calibración ROC/AUC contra el incendio de 2025 en fase posterior.",
+  subpesos_social: SUBPESOS_SOCIAL,
+  social_nota: "score_social (0-100) = " + SUBPESOS_SOCIAL.mayores_65 + "·mayores_65 + "
+    + SUBPESOS_SOCIAL.hogares_unipersonales + "·hogares_unipersonales + "
+    + SUBPESOS_SOCIAL.dispersion + "·dispersion + " + SUBPESOS_SOCIAL.poblacion + "·poblacion. "
+    + "mayores_65: fracción normalizada al rango fijo [" + RANGO_MAYORES_65 + "] (REAL, proxy "
+    + "concello Padrón 2022). hogares_unipersonales: % normalizado a [" + RANGO_UNIPER + "] "
+    + "(ESTIMACIÓN Fase 0). dispersion: categórica muy baja/baja/media/alta/muy alta -> "
+    + "0/25/50/75/100 (ESTIMACIÓN Fase 0). poblacion: escala log invertida "
+    + "100 − 25·log10(hab), 1 hab->100, 10.000 hab->0 (REAL, Nomenclátor 2025).",
   pesos_via: PESOS_VIA,
   ndmi_amplitud: NDMI_AMP,
   ndmi_rango_observado: [NDMI_MIN, NDMI_MAX],
@@ -374,13 +473,24 @@ writeFileSync(join(DATA, "nucleos.json"), JSON.stringify(base, null, 2) + "\n", 
 // Informe: combustible basado en satélite (NDVI=biomasa, NDMI=humedad).
 console.log(`NDVI rango [${NDVI_MIN}, ${NDVI_MAX}] | NDMI rango [${NDMI_MIN}, ${NDMI_MAX}] | amplitud ±${NDMI_AMP}`);
 console.log("--- Combustible SATÉLITE por núcleo ---");
-console.log(`${"núcleo".padEnd(26)} NDVI   NDMI   biomasa  comb  peligro  IV   fuente`);
+console.log(`${"núcleo".padEnd(26)} NDVI   NDMI   biomasa  comb  fuente`);
 for (const r of informe) {
   console.log(
     `${r.nucleo.padEnd(26)} ${String(r.ndvi).padStart(5)}  ${String(r.ndmi).padStart(5)}  `
-    + `${String(r.biomasa).padStart(5)}  ${String(r.comb).padStart(4)}  ${String(r.pel).padStart(5)}  `
-    + `${String(r.iv).padStart(3)}   ${r.fuente}`
+    + `${String(r.biomasa).padStart(5)}  ${String(r.comb).padStart(4)}  ${r.fuente}`
   );
 }
 const conSat = informe.filter((r) => r.fuente === "Sentinel-2 NDVI+NDMI").length;
 console.log(`\nCombustible por satélite (NDVI+NDMI): ${conSat}/12`);
+
+// Informe: composición del IV y comparación con el valor anclado de Fase 0.
+console.log("\n--- IV compuesto desde componentes (vs. iv_fase0 anclado) ---");
+console.log(`${"núcleo".padEnd(26)} peligro  social  cap   IV_fase0  IV   Δ`);
+for (const r of [...informe].sort((a, b) => b.iv - a.iv)) {
+  const delta = r.iv - r.iv_fase0;
+  console.log(
+    `${r.nucleo.padEnd(26)} ${String(r.pel).padStart(5)}  ${String(r.social).padStart(6)}  `
+    + `${String(r.cap).padStart(4)}  ${String(r.iv_fase0).padStart(7)}  ${String(r.iv).padStart(3)}  `
+    + `${delta >= 0 ? "+" : ""}${delta}`
+  );
+}

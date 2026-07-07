@@ -121,6 +121,20 @@ function peligroBiofisico(grados, combustibilidad) {
 // AMP = amplitud máxima de la modulación por humedad (NDMI), ±30%, provisional.
 const NDMI_AMP = 0.30;
 
+// -----------------------------------------------------------------------------
+// Rangos FÍSICOS FIJOS de normalización de los índices de satélite (con recorte
+// fuera de rango). Antes se normalizaba al rango observado de los 12 núcleos,
+// pero con n=12 la escala dependía de la muestra: añadir un núcleo cambiaba
+// todos los valores. Con rango fijo la escala es estable y comparable.
+//   NDVI [0.15, 0.80]: 0.15 ≈ suelo desnudo/urbano (por debajo apenas hay
+//     vegetación fotosintética); 0.80 ≈ vegetación densa y vigorosa (bosque
+//     atlántico en verano rara vez lo supera a 1 km de resolución).
+//   NDMI [-0.05, 0.35]: -0.05 ≈ vegetación/superficie muy seca o suelo desnudo;
+//     0.35 ≈ dosel bien hidratado. Valores típicos de Sentinel-2 en verano.
+// -----------------------------------------------------------------------------
+const NDVI_RANGO_FIJO = [0.15, 0.80];
+const NDMI_RANGO_FIJO = [-0.05, 0.35];
+
 // Factor de inflamabilidad por humedad (NDMI invertido, normalizado al rango
 // observado): NDMI bajo (seco) -> >1; alto (húmedo) -> <1.
 function factorNDMI(ndmi, ndmiMin, ndmiMax) {
@@ -266,13 +280,16 @@ const combustible = cargaCache("combustible_osm.json"); // peligro: cubierta (OS
 const ndmi = cargaCache("ndmi_sentinel2.json");     // peligro: humedad vegetación (Sentinel-2)
 const ndvi = cargaCache("ndvi_sentinel2.json");     // peligro: biomasa vegetación (Sentinel-2)
 
-// Rangos observados (para normalizar al conjunto de núcleos).
-const rango = (obj, k) => {
+// Normalización con RANGOS FIJOS documentados (con recorte fuera de rango).
+// Los rangos observados de la muestra se calculan solo como referencia histórica.
+const [NDMI_MIN, NDMI_MAX] = NDMI_RANGO_FIJO;
+const [NDVI_MIN, NDVI_MAX] = NDVI_RANGO_FIJO;
+const rangoObservado = (obj, k) => {
   const v = Object.values(obj).map((x) => x[k]).filter((n) => n != null);
-  return v.length ? [Math.min(...v), Math.max(...v)] : [0, 1];
+  return v.length ? [Math.min(...v), Math.max(...v)] : null;
 };
-const [NDMI_MIN, NDMI_MAX] = rango(ndmi, "ndmi");
-const [NDVI_MIN, NDVI_MAX] = rango(ndvi, "ndvi");
+const NDMI_OBSERVADO = rangoObservado(ndmi, "ndmi");
+const NDVI_OBSERVADO = rangoObservado(ndvi, "ndvi");
 
 const informe = [];
 
@@ -438,11 +455,13 @@ base.metadata = {
     + "por clase (primary/secondary/tertiary=1.0; unclassified/residential=0.5; track=0.2).",
   peligro_nota: "peligro_biofisico = " + PESO_PENDIENTE + "*score_pendiente + " + PESO_COMBUST
     + "*combustibilidad. Pendiente: EU-DEM 25 m (REAL). Combustible: SATÉLITE Sentinel-2 — "
-    + "biomasa = NDVI normalizado al rango observado [" + NDVI_MIN + "," + NDVI_MAX + "] *100; "
-    + "combustibilidad = biomasa * (1±" + NDMI_AMP + ") segun NDMI invertido normalizado a ["
-    + NDMI_MIN + "," + NDMI_MAX + "]. El NDVI sustituye a la cubierta OSM como medida de cantidad "
-    + "de vegetación (OSM queda solo de respaldo). APROXIMACIÓN; aún no es el mapa calibrado "
-    + "(fotoguía + LiDAR), pero se basa en medición directa de satélite, no en etiquetas.",
+    + "biomasa = NDVI normalizado al rango FÍSICO FIJO [" + NDVI_MIN + "," + NDVI_MAX + "] *100 "
+    + "(con recorte fuera de rango); combustibilidad = biomasa * (1±" + NDMI_AMP + ") segun NDMI "
+    + "invertido normalizado al rango FIJO [" + NDMI_MIN + "," + NDMI_MAX + "]. Rangos fijos para "
+    + "que la escala no dependa de la muestra de núcleos (antes se usaba el rango observado). "
+    + "El NDVI sustituye a la cubierta OSM como medida de cantidad de vegetación (OSM queda solo "
+    + "de respaldo). APROXIMACIÓN; aún no es el mapa calibrado (fotoguía + LiDAR), pero se basa "
+    + "en medición directa de satélite, no en etiquetas.",
   pesos_iv: { peligro_biofisico: PESO_PELIGRO, sensibilidad_social: PESO_SOCIAL, capacidad_respuesta: PESO_CAP },
   pesos_iv_nota: "iv = peligro_biofisico·" + PESO_PELIGRO + " + score_social·" + PESO_SOCIAL
     + " + (100 − capacidad_respuesta)·" + PESO_CAP + ". Dirección: más peligro y más "
@@ -459,8 +478,12 @@ base.metadata = {
     + "100 − 25·log10(hab), 1 hab->100, 10.000 hab->0 (REAL, Nomenclátor 2025).",
   pesos_via: PESOS_VIA,
   ndmi_amplitud: NDMI_AMP,
-  ndmi_rango_observado: [NDMI_MIN, NDMI_MAX],
-  ndvi_rango_observado: [NDVI_MIN, NDVI_MAX],
+  ndmi_rango_fijo: NDMI_RANGO_FIJO,
+  ndvi_rango_fijo: NDVI_RANGO_FIJO,
+  // Rangos observados en la muestra actual: SOLO referencia histórica, no se
+  // usan para normalizar.
+  ndmi_rango_observado_referencia: NDMI_OBSERVADO,
+  ndvi_rango_observado_referencia: NDVI_OBSERVADO,
   fuente_edad_concellos: "data/padron_edad_concellos.csv",
   fuente_accesos: "data/accesos_osm.json (OpenStreetMap, ODbL).",
   fuente_peligro: "data/pendiente_dem.json (EU-DEM 25 m) + data/ndvi_sentinel2.json + "
@@ -471,7 +494,8 @@ base.metadata = {
 writeFileSync(join(DATA, "nucleos.json"), JSON.stringify(base, null, 2) + "\n", "utf8");
 
 // Informe: combustible basado en satélite (NDVI=biomasa, NDMI=humedad).
-console.log(`NDVI rango [${NDVI_MIN}, ${NDVI_MAX}] | NDMI rango [${NDMI_MIN}, ${NDMI_MAX}] | amplitud ±${NDMI_AMP}`);
+console.log(`NDVI rango fijo [${NDVI_MIN}, ${NDVI_MAX}] (observado: ${JSON.stringify(NDVI_OBSERVADO)}) | `
+  + `NDMI rango fijo [${NDMI_MIN}, ${NDMI_MAX}] (observado: ${JSON.stringify(NDMI_OBSERVADO)}) | amplitud ±${NDMI_AMP}`);
 console.log("--- Combustible SATÉLITE por núcleo ---");
 console.log(`${"núcleo".padEnd(26)} NDVI   NDMI   biomasa  comb  fuente`);
 for (const r of informe) {

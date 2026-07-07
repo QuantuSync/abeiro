@@ -160,11 +160,15 @@ La componente de **peligro biofísico** combina pendiente real y combustible apr
   (`COPERNICUS/S2_SR_HARMONIZED`, vía Google Earth Engine, verano 2025), combinando *cuánto*
   material hay y *cómo de seco* está:
   - **Biomasa (NDVI):** el NDVI medio (1 km) mide directamente la **cantidad** de vegetación.
-    `biomasa = NDVI_normalizado([0.348, 0.750]) × 100`. Cache: `data/ndvi_sentinel2.json`.
+    `biomasa = NDVI_normalizado([0.15, 0.80]) × 100`, con recorte fuera de rango. El rango
+    es **físico fijo** (0.15 ≈ suelo desnudo/urbano; 0.80 ≈ vegetación densa), no el rango
+    observado de la muestra: así la escala no depende de los 12 núcleos y añadir uno nuevo
+    no cambia los demás (`metadata.ndvi_rango_fijo`). Cache: `data/ndvi_sentinel2.json`.
   - **Inflamabilidad (NDMI):** el NDMI medio (1 km) modula por **humedad**:
     `combustibilidad = biomasa × (1 ± 0.30)`, con el factor según el NDMI invertido y
-    normalizado al rango observado `[0.013, 0.269]` (seco → ×1.30; húmedo → ×0.70). Cache:
-    `data/ndmi_sentinel2.json`.
+    normalizado al rango **físico fijo** `[−0.05, 0.35]` con recorte (−0.05 ≈ muy seco;
+    0.35 ≈ dosel bien hidratado; `metadata.ndmi_rango_fijo`). Seco → ×1.30; húmedo → ×0.70.
+    Cache: `data/ndmi_sentinel2.json`.
   - Al ser multiplicativo: mucha biomasa + seca = máximo; mucha + húmeda = media; **poca
     biomasa = baja** esté seca o no → los núcleos urbanos (A Rúa, O Barco) quedan con
     combustible bajo pese a su NDMI seco.

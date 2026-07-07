@@ -37,6 +37,18 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+// Toda la lógica PURA del índice (pesos, score social, IV, combustible,
+// normalización de nombres) vive en lib/indice.mjs, compartida con los tests
+// y con scripts/sensibilidad-pesos.mjs.
+import {
+  PESO_SOCIAL, PESO_CAP, PESO_PELIGRO, PESO_PENDIENTE, PESO_COMBUST,
+  NDMI_AMP, NDVI_RANGO_FIJO, NDMI_RANGO_FIJO,
+  SUBPESOS_SOCIAL, RANGO_MAYORES_65, RANGO_UNIPER,
+  scorePendiente, peligroBiofisico, factorNDMI, combustibleSatelite,
+  scoreSocial, calcularIV,
+  PESOS_VIA, salidasPonderadas, capDeSalidas,
+  norm, sinEspacios,
+} from "../lib/indice.mjs";
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const DATA = join(DIR, "..", "data");
@@ -44,172 +56,12 @@ const DATA = join(DIR, "..", "data");
 // Ficheros del Nomenclátor por concello (población real por aldea).
 const FICHEROS_CONCELLO = [5, 9, 10, 11, 12, 13, 14, 15, 16];
 
-const PESO_SOCIAL = 0.35;  // peso provisional de la sensibilidad social en el IV
-const PESO_CAP = 0.25;     // peso provisional de la capacidad de respuesta en el IV
-const PESO_PELIGRO = 0.40; // peso provisional del peligro biofísico en el IV
-
-const clamp01 = (v) => Math.max(0, Math.min(1, v));
-const clamp100 = (v) => Math.max(0, Math.min(100, v));
-
-// -----------------------------------------------------------------------------
-// SCORE SOCIAL (0-100): sensibilidad social del núcleo, compuesta de forma
-// explícita desde las variables disponibles. Subpesos PROVISIONALES (suman 1),
-// documentados en metadata.subpesos_social. Procedencia de cada variable:
-//   - mayores_65: REAL por proxy de concello (Padrón IGE 2022).
-//   - hogares_unipersonales: ESTIMACIÓN de Fase 0 (aún sin fuente censal).
-//   - dispersion: ESTIMACIÓN de Fase 0 (categórica).
-//   - poblacion: REAL por aldea (Nomenclátor IGE 2025).
-// -----------------------------------------------------------------------------
-const SUBPESOS_SOCIAL = {
-  mayores_65: 0.45,            // envejecimiento: la variable social principal
-  hogares_unipersonales: 0.20, // personas mayores que viven solas
-  dispersion: 0.20,            // hábitat disperso = aviso y rescate más difíciles
-  poblacion: 0.15,             // tamaño demográfico (menos vecinos = menos autoayuda)
-};
-
-// % de mayores de 65 (fracción 0-1) -> 0-100 con rango FIJO [0.15, 0.55]:
-// 0.15 ≈ mínimo urbano español; 0.55 = envejecimiento extremo de aldea gallega.
-const RANGO_MAYORES_65 = [0.15, 0.55];
-// % de hogares unipersonales de mayores (0-100) -> 0-100 con rango FIJO [0, 50].
-const RANGO_UNIPER = [0, 50];
-// Dispersión categórica -> 0-100 (más dispersión = más sensibilidad).
-const SCORE_DISPERSION = { "muy baja": 0, "baja": 25, "media": 50, "alta": 75, "muy alta": 100 };
-// Tamaño demográfico -> 0-100 en escala logarítmica INVERTIDA: menos población,
-// más sensibilidad (menos vecinos para avisar/ayudar). 1 hab -> 100; 10 -> 75;
-// 100 -> 50; 1.000 -> 25; ≥10.000 -> 0.
-const scorePoblacion = (pob) =>
-  clamp100(100 - 25 * Math.log10(Math.max(1, pob)));
-
-// pctMayores en fracción 0-1; pctUniper en % 0-100; dispersion categórica; pob en hab.
-function scoreSocial({ pctMayores, pctUniper, dispersion, poblacion }) {
-  const sMayores = clamp01((pctMayores - RANGO_MAYORES_65[0]) / (RANGO_MAYORES_65[1] - RANGO_MAYORES_65[0])) * 100;
-  const sUniper = clamp01((pctUniper - RANGO_UNIPER[0]) / (RANGO_UNIPER[1] - RANGO_UNIPER[0])) * 100;
-  const sDisp = SCORE_DISPERSION[dispersion] ?? 50; // categoría desconocida: neutra
-  const sPob = scorePoblacion(poblacion);
-  return Math.round(
-    SUBPESOS_SOCIAL.mayores_65 * sMayores
-    + SUBPESOS_SOCIAL.hogares_unipersonales * sUniper
-    + SUBPESOS_SOCIAL.dispersion * sDisp
-    + SUBPESOS_SOCIAL.poblacion * sPob
-  );
-}
-
-// IV (0-100) compuesto directamente desde las tres componentes. La capacidad de
-// respuesta entra INVERTIDA (100 − cap): más capacidad debe BAJAR el IV.
-function calcularIV(peligro, social, capacidad) {
-  return Math.round(clamp100(
-    PESO_PELIGRO * peligro + PESO_SOCIAL * social + PESO_CAP * (100 - capacidad)
-  ));
-}
-
-// Peligro biofísico (0-100) = combinación de PENDIENTE (real) y COMBUSTIBLE
-// (aproximación). Pesos provisionales documentados.
-const PESO_PENDIENTE = 0.40; // contribución de la pendiente al peligro
-const PESO_COMBUST = 0.60;   // contribución de la combustibilidad al peligro
-
-// Pendiente (grados) -> subíndice 0-100. ~35° o más = máximo (propagación muy
-// acelerada). Lineal saturado, provisional.
-const scorePendiente = (grados) =>
-  Math.max(0, Math.min(100, Math.round((grados / 35) * 100)));
-
-// Peligro biofísico a partir de pendiente (grados) y combustibilidad (0-100).
-function peligroBiofisico(grados, combustibilidad) {
-  const sp = scorePendiente(grados);
-  return Math.round(PESO_PENDIENTE * sp + PESO_COMBUST * combustibilidad);
-}
-
-// AMP = amplitud máxima de la modulación por humedad (NDMI), ±30%, provisional.
-const NDMI_AMP = 0.30;
-
-// -----------------------------------------------------------------------------
-// Rangos FÍSICOS FIJOS de normalización de los índices de satélite (con recorte
-// fuera de rango). Antes se normalizaba al rango observado de los 12 núcleos,
-// pero con n=12 la escala dependía de la muestra: añadir un núcleo cambiaba
-// todos los valores. Con rango fijo la escala es estable y comparable.
-//   NDVI [0.15, 0.80]: 0.15 ≈ suelo desnudo/urbano (por debajo apenas hay
-//     vegetación fotosintética); 0.80 ≈ vegetación densa y vigorosa (bosque
-//     atlántico en verano rara vez lo supera a 1 km de resolución).
-//   NDMI [-0.05, 0.35]: -0.05 ≈ vegetación/superficie muy seca o suelo desnudo;
-//     0.35 ≈ dosel bien hidratado. Valores típicos de Sentinel-2 en verano.
-// -----------------------------------------------------------------------------
-const NDVI_RANGO_FIJO = [0.15, 0.80];
-const NDMI_RANGO_FIJO = [-0.05, 0.35];
-
-// Factor de inflamabilidad por humedad (NDMI invertido, normalizado al rango
-// observado): NDMI bajo (seco) -> >1; alto (húmedo) -> <1.
-function factorNDMI(ndmi, ndmiMin, ndmiMax) {
-  const norm = ndmiMax > ndmiMin
-    ? Math.max(0, Math.min(1, (ndmi - ndmiMin) / (ndmiMax - ndmiMin)))
-    : 0.5;
-  return 1 + NDMI_AMP * (1 - 2 * norm); // 0(seco)->1+AMP ; 1(húmedo)->1-AMP
-}
-
-// COMBUSTIBLE BASADO EN SATÉLITE (Sentinel-2). El NDVI mide CUÁNTA biomasa hay
-// (cantidad de material) y el NDMI modula la INFLAMABILIDAD (cómo de seco está):
-//   biomasa      = NDVI normalizado al rango observado * 100      (0-100)
-//   combustible  = biomasa * factorNDMI                            (0-100)
-// => Mucha biomasa + seca = máximo; mucha biomasa + húmeda = media; poca biomasa
-//    = baja esté seca o no (multiplicativo: 0 de biomasa -> 0). Esto mantiene a
-//    los núcleos urbanos (NDVI bajo) con combustible bajo pese a NDMI seco.
-function combustibleSatelite(ndvi, ndmi, ndviMin, ndviMax, ndmiMin, ndmiMax) {
-  const biomasaNorm = ndviMax > ndviMin
-    ? Math.max(0, Math.min(1, (ndvi - ndviMin) / (ndviMax - ndviMin)))
-    : 0.5;
-  const biomasa = biomasaNorm * 100;
-  const factor = factorNDMI(ndmi, ndmiMin, ndmiMax);
-  return {
-    biomasa: Math.round(biomasa),
-    factor,
-    combustibilidad: Math.max(0, Math.min(100, Math.round(biomasa * factor))),
-  };
-}
-
-// RESPALDO: combustible por cubierta OSM modulada por NDMI (solo para núcleos
-// sin dato de satélite).
-function combustibleOSM(combOSM, ndmi, ndmiMin, ndmiMax) {
-  const factor = factorNDMI(ndmi, ndmiMin, ndmiMax);
-  return { factor, combustibilidad: Math.max(0, Math.min(100, Math.round(combOSM * factor))) };
-}
-
-// Peso por CLASE de vía al contar salidas. Una pista forestal no es una vía de
-// evacuación fiable ante un incendio (puede estar cortada, sin asfaltar,
-// intransitable con humo), así que cuenta mucho menos que una carretera.
-//   - primary/secondary/tertiary  -> 1.0  (carretera asfaltada: salida plena)
-//   - unclassified/residential    -> 0.5  (vía menor: peso intermedio)
-//   - track                       -> 0.2  (pista forestal: peso bajo)
-const PESOS_VIA = {
-  primary: 1.0, secondary: 1.0, tertiary: 1.0,
-  unclassified: 0.5, residential: 0.5,
-  track: 0.2,
-};
-const PESO_VIA_DEFECTO = 0.5; // clases no listadas: peso intermedio prudente
-
-// Recuento PONDERADO de salidas a partir del desglose por tipo (OSM).
-const salidasPonderadas = (porTipo = {}) =>
-  Object.entries(porTipo).reduce(
-    (acc, [tipo, n]) => acc + n * (PESOS_VIA[tipo] ?? PESO_VIA_DEFECTO), 0);
-
-// Capacidad de respuesta (0-100) a partir del recuento (ponderado) de salidas.
-// Mapeo PROVISIONAL lineal saturado (~40 salidas plenas -> 100). Mayor capacidad
-// = menor vulnerabilidad (entra en el IV con signo negativo).
-const capDeSalidas = (vias) =>
-  Math.max(0, Math.min(100, Math.round(vias * 2.5)));
-
-// --- utilidades CSV / normalización ------------------------------------------
+// --- utilidades CSV -----------------------------------------------------------
 
 function campos(linea) {
   const m = linea.match(/("(?:[^"]|"")*"|[^,]+)/g);
   return m ? m.map((s) => s.replace(/^"|"$/g, "").replace(/""/g, '"')) : [];
 }
-
-function norm(nombre) {
-  let s = nombre.trim().toLowerCase();
-  const art = s.match(/^(.*),\s*(o|a|os|as)$/); // "rúa, a" -> "a rúa"
-  if (art) s = `${art[2]} ${art[1]}`;
-  s = s.normalize("NFD").replace(/[̀-ͯ]/g, ""); // sin tildes
-  return s.replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
-}
-const sinEspacios = (s) => norm(s).replace(/ /g, "");
 
 // --- 1) % mayores por concello (CSV) -----------------------------------------
 

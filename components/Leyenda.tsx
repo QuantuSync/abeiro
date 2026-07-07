@@ -10,7 +10,7 @@ export default function Leyenda({ lente }: { lente: Lente }) {
   const cats = evac ? CATEGORIAS_EVAC : CATEGORIAS_IV;
 
   return (
-    <div className="leyenda" aria-label={evac ? "Leyenda de dificultad de evacuación" : "Leyenda del Índice de Vulnerabilidad"}>
+    <section className="leyenda" aria-label={evac ? "Leyenda de dificultad de evacuación" : "Leyenda del Índice de Vulnerabilidad"}>
       <h3>{evac ? "Dificultad de evacuación" : "Índice de Vulnerabilidad"}</h3>
       <ul>
         {cats.map((c) => (
@@ -49,6 +49,6 @@ export default function Leyenda({ lente }: { lente: Lente }) {
           </p>
         </>
       )}
-    </div>
+    </section>
   );
 }

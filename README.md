@@ -19,14 +19,16 @@ construye en fases posteriores.
 Mapa web ([MapLibre GL](https://maplibre.org/)) de la comarca piloto de
 **Valdeorras / Larouco** (Ourense) que pinta el **Índice de Vulnerabilidad** por núcleo
 de población con **datos reales** (IGE · OpenStreetMap · Sentinel-2 · EU-DEM · Copernicus
-EMS). Los 12 núcleos del piloto tienen ya dato real en sus cinco componentes (población,
-envejecimiento, capacidad de respuesta y pendiente reales; combustible aproximado por
-satélite). Incluye:
+EMS). Los 12 núcleos del piloto tienen dato real o aproximado en sus componentes
+(población, envejecimiento, capacidad de respuesta y pendiente reales; combustible
+aproximado por cubierta OSM, con medición Sentinel-2 pendiente de repetir tras la
+corrección de coordenadas — ver más abajo). Incluye:
 
 - Mapa interactivo con basemap **CARTO Voyager** (neutro pero con buen contraste y
   legibilidad de carreteras y topónimos, sin claves de API), pensado para que personas
   mayores distingan sin esfuerzo pueblos, carreteras y colores de riesgo.
-- Núcleos coloreados según su Índice de Vulnerabilidad (escala verde → rojo).
+- Núcleos coloreados según su Índice de Vulnerabilidad (escala amarillo → granate,
+  segura para daltonismo, con redundancia por tamaño y grosor de borde).
 - **Dos lentes** intercambiables —**Vulnerabilidad** y **Evacuación** (rutas reales de
   salida por carretera)— que no se funden en un único número.
 - **Leyenda** que cambia según la lente activa.
@@ -71,6 +73,7 @@ Abre **http://localhost:3000** en el navegador.
 npm run build   # build de producción
 npm run start   # sirve el build de producción (tras npm run build)
 npm run lint    # linting
+npm test        # tests unitarios (Vitest)
 ```
 
 ## Despliegue en Vercel
@@ -86,31 +89,39 @@ npm run lint    # linting
 ```
 abeiro/
 ├─ app/
-│  ├─ layout.tsx          # layout raíz y metadatos
+│  ├─ layout.tsx          # layout raíz y metadatos (fuentes locales next/font/local)
+│  ├─ fonts/              # woff2 variables de Inter y Playfair Display (build sin red)
 │  ├─ page.tsx            # página principal (carga el mapa en cliente)
 │  └─ globals.css         # estilos e identidad visual
 ├─ components/
-│  ├─ MapaVulnerabilidad.tsx  # mapa MapLibre + capas + interacción + selector de lente
+│  ├─ MapaVulnerabilidad.tsx  # estado e interacción del mapa + selector de lente
 │  ├─ Leyenda.tsx             # leyenda (cambia según la lente activa)
 │  ├─ PanelInfo.tsx           # panel de detalle de un núcleo (vulnerabilidad + evacuación)
 │  └─ PanelValidacion.tsx     # panel de validación (afectación física 2025)
 ├─ lib/
 │  ├─ vulnerabilidad.ts   # categorías, paleta y expresión de color del IV
-│  └─ evacuacion.ts       # dificultad de evacuación, paleta y expresión de color
+│  ├─ evacuacion.ts       # dificultad de evacuación, paleta y expresión de color
+│  ├─ indice.mjs          # lógica PURA del índice (pesos, score social, IV, confianza)
+│  ├─ datos.ts            # fusión núcleos + afectación + evacuación (tipos incluidos)
+│  ├─ mapa-config.ts      # estilo base, centro/zoom y capas por lente
+│  └─ capas-mapa.ts       # creación de fuentes y capas MapLibre (funciones puras)
 ├─ data/                  # núcleos + cachés de fuentes (IGE / OSM / Sentinel-2 / DEM / EMS)
 │  ├─ nucleos.json            # GeoJSON de núcleos con el IV y la procedencia de cada dato
 │  ├─ nucleos.base.json       # línea base reproducible (antes de cruzar fuentes)
-│  ├─ evacuacion.json         # rutas de evacuación por núcleo
+│  ├─ evacuacion.json         # rutas de evacuación por núcleo (con ratio_rodeo)
+│  ├─ sensibilidad_pesos.json # análisis de sensibilidad de los pesos del IV
 │  └─ ...                     # accesos_osm, ndvi/ndmi_sentinel2, pendiente_dem, afectación…
 ├─ public/
 │  ├─ rutas_evacuacion.geojson   # líneas de evacuación para el mapa
 │  └─ perimetro_emsr837.geojson  # perímetro quemado 2025 (Copernicus EMS)
+├─ tests/                 # tests unitarios (Vitest): índice, paletas, evacuación, datos
 └─ scripts/
    ├─ procesar-ige.mjs         # regenera nucleos.json desde base + IGE + OSM + DEM
-   ├─ fetch-accesos-osm.mjs    # red viaria OSM -> accesos_osm.json
-   ├─ fetch-peligro.mjs        # pendiente EU-DEM + combustible (Sentinel-2)
+   ├─ fetch-accesos-osm.mjs    # red viaria OSM -> accesos_osm.json (Overpass o --extracto)
+   ├─ fetch-peligro.mjs        # pendiente EU-DEM + cubierta OSM
    ├─ afectacion_emsr837.py    # cruce con el perímetro Copernicus EMS 2025
-   ├─ evacuacion_osm.py        # grafo viario + rutas de evacuación
+   ├─ evacuacion_osm.py        # grafo viario + rutas de evacuación + sanity check de rodeo
+   ├─ sensibilidad-pesos.mjs   # barrido de pesos del IV -> sensibilidad_pesos.json
    └─ verificar-mapa.mjs       # verificación headless (Playwright)
 ```
 
@@ -121,6 +132,19 @@ sensibilidad social (envejecimiento, hogares unipersonales de edad avanzada, dis
 y capacidad de respuesta (accesos, cobertura). En fases posteriores se calibrará como
 modelo supervisado contra el resultado humano observado en el incendio de 2025
 (qué aldeas se evacuaron/confinaron), no con pesos elegidos a mano, y se medirá con ROC/AUC.
+
+### Coordenadas reales de los núcleos
+
+Las coordenadas de Fase 0 de 8 de los 12 núcleos estaban **desplazadas entre 8 y 57 km**
+de su posición real (Larouco aparecía 26 km al norte; Pradorramisquedo, que pertenece a
+Viana do Bolo, a 57 km). Se corrigieron con los **nodos `place` de OpenStreetMap**
+(consulta Overpass; `fuente_coordenadas` por núcleo en `data/nucleos.base.json`) y se
+regeneraron todas las cachés que dependen de la posición: accesos, pendiente, cubierta
+OSM, afectación EMSR837 y evacuación. Consecuencia importante: los **NDVI/NDMI de
+Sentinel-2 cacheados se midieron sobre las coordenadas antiguas**, así que quedan
+invalidados para 10 núcleos (`metadata.satelite_pendiente_remedicion`), que usan el
+respaldo por cubierta OSM hasta re-medir con Earth Engine; solo A Rúa y O Barco (que
+apenas se movieron) conservan el dato de satélite.
 
 ### Datos reales integrados (Fase 1, en curso)
 
@@ -174,7 +198,11 @@ La componente de **peligro biofísico** combina pendiente real y combustible apr
     combustible bajo pese a su NDMI seco.
   - **El NDVI sustituye a la cubierta OSM** como medida de cantidad de vegetación (el satélite
     la mide; OSM solo la etiquetaba, y mezclarlos sería doble conteo). La **cubierta OSM
-    (`data/combustible_osm.json`) queda solo como respaldo** para núcleos sin satélite.
+    (`data/combustible_osm.json`) queda como respaldo** para núcleos sin satélite.
+  - **Estado actual:** tras la corrección de coordenadas, la medición Sentinel-2 solo
+    sigue siendo válida para A Rúa y O Barco; los otros 10 núcleos usan el **respaldo por
+    cubierta OSM** (regenerada en la coordenada real) hasta re-ejecutar la medición con
+    Earth Engine (`metadata.satelite_pendiente_remedicion`).
   - **No es** el mapa de combustible calibrado (fotoguía + LiDAR), que es una fase aparte;
     pero ahora se basa en **medición directa de satélite** (cantidad y humedad de vegetación),
     no en etiquetas de cubierta.
@@ -234,13 +262,40 @@ una fase posterior. El valor antiguo anclado a Fase 0 se conserva en cada núcle
 
 ### Categorías
 
-| Categoría   | Rango IV | Color      |
-|-------------|----------|------------|
-| Muy baja    | 0–20     | 🟢 verde   |
-| Baja        | 20–40    | 🟡 verde claro |
-| Media       | 40–60    | 🟡 amarillo |
-| Alta        | 60–80    | 🟠 naranja |
-| Muy alta    | 80–100   | 🔴 rojo oscuro |
+La escala es **secuencial y segura para daltonismo** (ColorBrewer **YlOrRd**): varía sobre
+todo en luminosidad, de modo que se lee con deuteranopia/protanopia (la antigua rampa
+verde→rojo no). Además del color, el mapa añade **redundancia no cromática**: el tamaño
+del círculo escala con el IV y el borde se engrosa en las categorías Alta y Muy alta.
+
+| Categoría   | Rango IV | Color |
+|-------------|----------|-------|
+| Muy baja    | 0–20     | 🟡 amarillo pálido `#ffffb2` |
+| Baja        | 20–40    | 🟡 ámbar `#fecc5c` |
+| Media       | 40–60    | 🟠 naranja `#fd8d3c` |
+| Alta        | 60–80    | 🔴 rojo `#f03b20` |
+| Muy alta    | 80–100   | 🟥 granate `#bd0026` |
+
+### Sensibilidad de los pesos y confianza del dato
+
+Como los pesos del IV son provisionales, `scripts/sensibilidad-pesos.mjs` mide cuánto
+dependen los resultados de esa elección: barre una **rejilla de pesos** (paso 0.05, cada
+peso en [0.15, 0.60], suma 1; 69 combinaciones) y recalcula el IV de los 12 núcleos con
+cada una. Resultados (`data/sensibilidad_pesos.json`):
+
+- **El ranking es estable**: correlación de Spearman media de **0.97** contra el ranking
+  con los pesos base — el orden de los núcleos apenas depende de los pesos elegidos.
+- Cada núcleo lleva su **`rango_iv` [min, max]** (visible en el panel): los extremos del
+  índice al variar los pesos. Núcleos cerca de un borde de categoría (Seadur, A Medua,
+  A Rúa) cambian de categoría en >50 % de las combinaciones y deben leerse con cautela;
+  los extremos (Pradorramisquedo, O Barco) casi nunca cambian.
+
+Además cada núcleo lleva un campo **`confianza`** (0–1) derivado de los flags de
+procedencia: real = 1, aproximación = 0.6, estimación = 0.3, promediado por componente
+(con los subpesos del score social y los pesos pendiente/combustible del peligro) y
+ponderado por los pesos del IV (`metadata.confianza_nota`). El panel lo muestra como
+«Confianza del dato: alta / media / baja», y en aldeas de **menos de 50 habitantes**
+añade el aviso de que el % de mayores es un proxy del concello y puede no representar
+bien la aldea.
 
 ## Capa de afectación física 2025 (validación, NO es parte del índice)
 
@@ -275,9 +330,10 @@ servicios: **A Rúa** y **O Barco de Valdeorras**). Es una capa nueva e independ
 no se toca.
 
 - **Método** (`scripts/evacuacion_osm.py`): se descarga **una vez** un extracto OSM de las
-  carreteras del bbox de Valdeorras (vía Overpass; cache `data/osm_valdeorras.json`,
-  gitignored) y se construye el **grafo viario en local con `networkx`** (≈258k nodos). El
-  build de la web **no** depende de llamadas en vivo: lee los resultados estáticos.
+  carreteras del bbox de Valdeorras ampliado al sur hasta Viana do Bolo (vía Overpass;
+  cache `data/osm_valdeorras.json`, gitignored) y se construye el **grafo viario en local
+  con `networkx`** (≈320k nodos). El build de la web **no** depende de llamadas en vivo:
+  lee los resultados estáticos.
 - **Ponderación por tipo de vía:** velocidad y *fiabilidad* por clase (asfalto fiable, pista
   forestal lenta y poco fiable: una ruta que solo va por pista **no** es salida segura). La
   ruta elegida es la más rápida; se reporta el % por pista y una fiabilidad media 0–1.
@@ -285,22 +341,28 @@ no se toca.
   **nº de rutas alternativas independientes** (conectividad de aristas al conjunto de
   destinos = redundancia; 1 = sin redundancia, más vulnerable). Resultado en
   `data/evacuacion.json`; líneas para el mapa en `public/rutas_evacuacion.geojson`.
+- **Sanity check de rodeo:** por núcleo se reporta `ratio_rodeo = dist_carretera /
+  dist_recta` (haversine al destino) y el script lista como WARNING las rutas con ratio
+  \> 3 (delatan aristas OSM ausentes, grafo mal conectado o coordenadas erróneas — así se
+  destapó el desplazamiento de coordenadas de Fase 0: Larouco→A Rúa daba 43,7 km y con la
+  coordenada real da 7,8 km, rodeo 1,16). Actualmente todas las rutas tienen rodeo ≤ 2.
 - **Limitación:** evacuación **estática** — todavía no considera el fuego (qué vías quedan
   cortadas), ni el tráfico ni la hora. Es el primer paso verificable, sin motor de fuego.
 
-En el mapa, las rutas se dibujan en verde (fiable) → naranja (depende de pista), con los
-destinos seguros marcados en azul; el panel muestra destino, distancia, tiempo, redundancia
-y % de pista.
+En el mapa, las rutas se dibujan en azul (fiable) → naranja → rojo (depende de pista), con
+los destinos seguros marcados en azul oscuro; el panel muestra destino, distancia, tiempo,
+redundancia y % de pista.
 
 ## Dos lentes del mapa (vulnerabilidad y evacuación NO se funden)
 
 La interfaz tiene un **selector** que alterna entre dos visualizaciones independientes del
 mismo mapa. Son cosas distintas y **no se combinan en un único número**:
 
-- **Vulnerabilidad:** colorea por el Índice de Vulnerabilidad (verde→rojo). Muestra el
-  anillo de edad real y el perímetro quemado 2025.
-- **Evacuación:** colorea por la **dificultad de evacuación** (azul=fácil → rojo=difícil,
-  paleta distinta a propósito) y dibuja las rutas. La dificultad (`lib/evacuacion.ts`) deriva
+- **Vulnerabilidad:** colorea por el Índice de Vulnerabilidad (amarillo→granate, YlOrRd).
+  Muestra el anillo de edad real y el perímetro quemado 2025.
+- **Evacuación:** colorea por la **dificultad de evacuación** (azul=fácil → gris →
+  rojo=difícil, ColorBrewer RdBu, paleta distinta a propósito de la del IV) y dibuja las
+  rutas. La dificultad (`lib/evacuacion.ts`) deriva
   **solo** de la capa de evacuación:
   `dificultad = 0.35·tiempo + 0.45·redundancia + 0.20·pista` (0–100, pesos provisionales),
   con `tiempo = min(100, tiempo_min/45·100)`, `redundancia` = 1 ruta → 100 (crítico), 2 → 40,
@@ -308,9 +370,37 @@ mismo mapa. Son cosas distintas y **no se combinan en un único número**:
   es el mayor riesgo. **No recalcula ni toca el IV.**
 
 El **panel** de cada núcleo muestra **siempre las dos lecturas separadas**, en bloques
-«Vulnerabilidad» y «Evacuación», para que se vea que un núcleo puede ser medio en una y
-crítico en la otra (p. ej. **Vilamartín**: IV 56 *media*, evacuación 64 *difícil*; o
-**Pradorramisquedo**: alto en ambas). La **leyenda** cambia según la lente activa.
+«Vulnerabilidad» y «Evacuación», para que se vea que un núcleo puede ser alto en una y
+bajo en la otra (p. ej. **Vilardesilva**: IV 70 *alta* pero evacuación 29 *fácil*; en
+cambio **Pradorramisquedo** es el peor en ambas: IV 73 y evacuación 53, con 54 minutos
+hasta el destino seguro). La **leyenda** cambia según la lente activa.
+
+## Desarrollo
+
+```bash
+npm run dev     # servidor de desarrollo (http://localhost:3000)
+npm test        # tests unitarios (Vitest)
+npm run lint    # linting
+npm run build   # build de producción (sin red: fuentes locales y datos cacheados)
+```
+
+Regeneración de cada dataset (el build **no** llama a ninguna API; estos scripts se
+ejecutan a mano y cachean en `data/`):
+
+| Dataset | Comando | ¿Red? |
+|---|---|---|
+| `nucleos.json` (IV, confianza) | `node scripts/procesar-ige.mjs` | No (lee cachés) |
+| `accesos_osm.json` | `node scripts/fetch-accesos-osm.mjs --extracto` | No (usa el extracto local) |
+| — variante Overpass | `node scripts/fetch-accesos-osm.mjs --force` | Sí (Overpass) |
+| `pendiente_dem.json` + `combustible_osm.json` | `node scripts/fetch-peligro.mjs --force` | Sí (opentopodata + Overpass) |
+| `ndvi/ndmi_sentinel2.json` | script de Google Earth Engine (externo) | Sí (GEE; **pendiente de re-medir** tras la corrección de coordenadas) |
+| `evacuacion.json` + `rutas_evacuacion.geojson` | `python scripts/evacuacion_osm.py` | Solo la 1ª vez (descarga el extracto; luego usa `data/osm_valdeorras.json`) |
+| `nucleos_afectacion_fisica.json` | `python scripts/afectacion_emsr837.py` | No (delineaciones EMS locales en `data/emsr837/`) |
+| `sensibilidad_pesos.json` | `node scripts/sensibilidad-pesos.mjs` | No |
+
+Tras regenerar cualquier caché, vuelve a ejecutar `node scripts/procesar-ige.mjs` para
+recomponer `nucleos.json`, y `npm test` para validar la integridad. Los scripts Python
+requieren `networkx` (evacuación) y `shapely` + `pyproj` (afectación).
 
 ## Privacidad (RGPD)
 
@@ -318,6 +408,19 @@ La identidad nominal de personas vulnerables queda **fuera** del sistema. Solo s
 indicadores agregados y no identificativos (proporción de mayores, hogares unipersonales
 de edad avanzada, dispersión, distancia a servicios).
 
-## Licencia
+## Licencia y datos
 
-Proyecto open source bajo licencia libre. Ámbito: Galicia.
+- **Código:** licencia [MIT](LICENSE).
+- **Datos derivados de OpenStreetMap** (accesos, red viaria de evacuación, cubierta de
+  respaldo, coordenadas de núcleos): © colaboradores de OpenStreetMap, bajo
+  [ODbL 1.0](https://www.openstreetmap.org/copyright).
+- **Datos del IGE** (Nomenclátor 2025, Padrón 2022): reutilización según las
+  [condiciones del Instituto Galego de Estatística](https://www.ige.gal/web/mostrar_paxina.jsp?paxina=001001004&idioma=es)
+  (datos abiertos con cita de la fuente).
+- **Copernicus** — imágenes **Sentinel-2** y delineaciones **EMS EMSR837**: uso libre con
+  atribución según la [política de datos de Copernicus](https://www.copernicus.eu/en/access-data)
+  y las [condiciones de Copernicus EMS](https://emergency.copernicus.eu/mapping/ems/cite-and-reuse-modified-copernicus-service-information).
+- **EU-DEM 25 m**: producto de la Agencia Europea de Medio Ambiente (Copernicus Land),
+  [reutilización libre con atribución](https://land.copernicus.eu/en/data-policy).
+
+Ámbito del proyecto: Galicia.

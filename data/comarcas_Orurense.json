@@ -8,7 +8,7 @@
   { "id": "limia", "nombre": "A Limia", "capital": "Xinzo de Limia", "centro": [-7.7239, 42.0611] },
   { "id": "ourense", "nombre": "Ourense", "capital": "Ourense", "centro": [-7.8639, 42.3358] },
   { "id": "trives", "nombre": "Terra de Trives", "capital": "A Pobra de Trives", "centro": [-7.2333, 42.3333] },
-  { "id": "valdeorras", "nombre": "Valdeorras", "capital": "O Barco de Valdeorras", "centro": [-6.9831, 42.4164] },
+  { "id": "valdeorras", "nombre": "Valdeorras", "capital": "O Barco de Valdeorras", "centro": [-7.05, 42.48] },
   { "id": "verin", "nombre": "Verín", "capital": "Verín", "centro": [-7.4386, 41.9358] },
   { "id": "viana", "nombre": "Viana", "capital": "Viana do Bolo", "centro": [-7.1, 42.1667] }
 ]

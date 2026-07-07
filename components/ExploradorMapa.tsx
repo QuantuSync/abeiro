@@ -37,19 +37,20 @@ export default function ExploradorMapa({ comarcas }: { comarcas: Comarca[] }) {
         <>
         <header className="cabecera">
             <div className="marca">
-            <span className="logo">ABEIRO</span>
-            <span className="claim">Protección ante incendios forestales · Galicia</span>
+                <span className="logo">ABEIRO</span>
+                <span className="claim">Protección ante incendios forestales · Galicia</span>
             </div>
+            
             {/* Buscador con las comarcas de Orense. Recibe el setComarca para actualizar con el input del usuario. */}
             <BuscadorComarcas comarcas={comarcas} valor={comarcaActual} onChange={setComarcaActual} />
 
             <div className="contexto">
-            <span className="comarca">
-                Comarca: <strong>{comarcaActual.nombre}</strong> / Municipio: <strong>{MUNICIPIO}</strong> ({PROVINCIA})
-            </span>
-            <span className="distintivo">
-                Demostrador · Datos reales <em>(IGE · OSM · Sentinel-2)</em>
-            </span>
+                <span className="comarca">
+                    Comarca: <strong>{comarcaActual.nombre}</strong> / Municipio: <strong>{MUNICIPIO}</strong> ({PROVINCIA})
+                </span>
+                <span className="distintivo">
+                    Demostrador · Datos reales <em>(IGE · OSM · Sentinel-2)</em>
+                </span>
             </div>
         </header>
 

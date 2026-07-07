@@ -182,23 +182,26 @@ export function configurarInteraccionNucleos(
     setSeleccionado: (props: NucleoProps | null) => void
 ) {
 
+    // si haces click en el nucleo te lo selecciona (muestra panelInfo en Mapa Vulenarbilidad)
     map.on("click", capaId, (e) => {
-            const f = e.features?.[0];
-            if (!f) return;
-            setSeleccionado(f.properties as unknown as NucleoProps);
-            });
+        const f = e.features?.[0];
+        if (!f) return;
+        setSeleccionado(f.properties as unknown as NucleoProps);
+    });
     
     // Clic en zona vacía cierra el panel.
     map.on("click", (e) => {
-    const hits = map.queryRenderedFeatures(e.point, { layers: [capaId] });
-    if (hits.length === 0) setSeleccionado(null);
+        const hits = map.queryRenderedFeatures(e.point, { layers: [capaId] });
+        // si haces click fuera, MapaVulnerabilidad deja de mostrar PanelInfo
+        if (hits.length === 0) setSeleccionado(null); 
     });
 
+    // cambia el cursor al pasar por encima
     map.on("mouseenter", capaId, () => {
-    map.getCanvas().style.cursor = "pointer";
+        map.getCanvas().style.cursor = "pointer";
     });
     map.on("mouseleave", capaId, () => {
-    map.getCanvas().style.cursor = "";
+        map.getCanvas().style.cursor = "";
     });
 
 

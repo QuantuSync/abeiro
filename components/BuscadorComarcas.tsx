@@ -12,8 +12,8 @@ function normalizar(s: string): string {
 }
 
 export default function BuscadorComarcas({
-        comarcas,
-        valor,
+        comarcas, //comarcas existentes en esa provincia
+        valor, //comarcaActual
         onChange, //setComarcaActual
     }: {
         comarcas: Comarca[];
@@ -78,7 +78,7 @@ export default function BuscadorComarcas({
             ref={inputRef}
             type="text"
             className="buscador-input"
-            placeholder={`Ir a comarca: ${valor.nombre}`}
+            placeholder={`Ir a comarca: ${valor.nombre}`} //comarca actual
             value={texto}
             onChange={(e) => {
                 setTexto(e.target.value);

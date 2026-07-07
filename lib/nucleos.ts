@@ -7,8 +7,7 @@ import type {
 } from "geojson";
 
 
-// FUTURO... esto hay que refactorizarlo. no tiene sentido depender de components
-import type { NucleoProps } from "@/components/PanelInfo";
+import type {NucleoProps} from "@/lib/tipos";
 import { dificultadEvac } from "@/lib/evacuacion";
 
 

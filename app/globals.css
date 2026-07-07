@@ -305,6 +305,41 @@ body {
   font-size: 0.95rem;
 }
 
+/* Confianza del dato (derivada de los flags de procedencia) */
+.confianza {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin: 0.5rem 0;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--borde);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--texto);
+}
+.confianza.conf-alta strong {
+  color: #7fd0a0;
+}
+.confianza.conf-media strong {
+  color: var(--oro-claro);
+}
+.confianza.conf-baja strong {
+  color: #e0a06c;
+}
+.confianza .conf-rango {
+  color: var(--texto-suave);
+}
+/* Aviso para aldeas muy pequeñas (proxy de edad débil) */
+.aviso-proxy {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin: 0.5rem 0;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(224, 160, 108, 0.4);
+  background: rgba(224, 160, 108, 0.08);
+  color: #e0c4a8;
+}
+
 .datos {
   display: grid;
   grid-template-columns: 1fr;

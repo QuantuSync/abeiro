@@ -18,6 +18,8 @@ export interface NucleoProps {
   iv: number;
   iv_fase0?: number; // IV antiguo anclado a Fase 0 (solo comparación)
   score_social?: number;
+  confianza?: number; // 0-1, desde los flags de procedencia (metadata.confianza_nota)
+  rango_iv?: [number, number]; // [min, max] del IV al variar los pesos (sensibilidad)
   poblacion: number;
   pct_mayores_65: number; // fracción 0-1
   pct_hogares_uniper_mayores: number;

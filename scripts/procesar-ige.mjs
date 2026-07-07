@@ -45,7 +45,7 @@ import {
   NDMI_AMP, NDVI_RANGO_FIJO, NDMI_RANGO_FIJO,
   SUBPESOS_SOCIAL, RANGO_MAYORES_65, RANGO_UNIPER,
   scorePendiente, peligroBiofisico, factorNDMI, combustibleSatelite,
-  scoreSocial, calcularIV,
+  scoreSocial, calcularIV, confianzaNucleo,
   PESOS_VIA, salidasPonderadas, capDeSalidas,
   norm, sinEspacios,
 } from "../lib/indice.mjs";
@@ -127,6 +127,9 @@ const base = JSON.parse(readFileSync(join(DATA, "nucleos.base.json"), "utf8"));
 const cargaCache = (f) => existsSync(join(DATA, f))
   ? JSON.parse(readFileSync(join(DATA, f), "utf8")).nucleos || {} : {};
 const accesos = cargaCache("accesos_osm.json");     // capacidad de respuesta
+// Análisis de sensibilidad de pesos (scripts/sensibilidad-pesos.mjs): si existe,
+// aporta rango_iv = [min, max] del IV de cada núcleo al variar los pesos.
+const sensibilidad = cargaCache("sensibilidad_pesos.json");
 const pendiente = cargaCache("pendiente_dem.json"); // peligro: pendiente (real)
 const combustible = cargaCache("combustible_osm.json"); // peligro: cubierta (OSM, respaldo)
 const ndmi = cargaCache("ndmi_sentinel2.json");     // peligro: humedad vegetación (Sentinel-2)
@@ -295,6 +298,20 @@ for (const feat of base.features) {
 
   p.iv = calcularIV(p.peligro_biofisico, p.score_social, p.capacidad_respuesta);
 
+  // Confianza del dato (0-1) desde los flags de procedencia (fórmula en
+  // lib/indice.mjs y metadata.confianza_nota).
+  p.confianza = confianzaNucleo({
+    edadReal: !!p.dato_edad_real,
+    poblacionReal: !!p.dato_poblacion_real,
+    capacidadReal: !!p.dato_capacidad_real,
+    pendienteReal: !!p.dato_pendiente_real,
+    combustibleAprox: !!p.dato_combustible_aprox,
+  });
+
+  // Rango del IV bajo variación de pesos (análisis de sensibilidad), si existe.
+  const sens = sensibilidad[p.id];
+  if (sens?.rango_iv) p.rango_iv = sens.rango_iv;
+
   informe.push({
     nucleo: p.nombre,
     ndvi: nv?.ndvi ?? "—",
@@ -349,6 +366,14 @@ base.metadata = {
     + "0/25/50/75/100 (ESTIMACIÓN Fase 0). poblacion: escala log invertida "
     + "100 − 25·log10(hab), 1 hab->100, 10.000 hab->0 (REAL, Nomenclátor 2025).",
   pesos_via: PESOS_VIA,
+  confianza_nota: "confianza (0-1) por núcleo = ponderación de los flags de procedencia "
+    + "(real=1, aproximación=0.6, estimación=0.3) por componente y por los pesos del IV: "
+    + "social con subpesos_social (uniper y dispersión siguen en estimación Fase 0), "
+    + "peligro con 0.4·pendiente + 0.6·combustible, capacidad directa. "
+    + "Etiquetas: >=0.75 alta, >=0.5 media, <0.5 baja.",
+  sensibilidad_nota: "rango_iv = [min, max] del IV del núcleo al barrer los pesos del IV "
+    + "(rejilla paso 0.05, cada peso en [0.15, 0.60], suma 1); ver "
+    + "data/sensibilidad_pesos.json y scripts/sensibilidad-pesos.mjs.",
   satelite_pendiente_remedicion: [...SATELITE_PENDIENTE_REMEDICION],
   satelite_nota: "Tras corregir las coordenadas de Fase 0 (desplazadas hasta 57 km), los "
     + "NDVI/NDMI cacheados (medidos con buffer 1 km sobre la coordenada ANTIGUA) solo siguen "

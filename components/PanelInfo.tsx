@@ -36,6 +36,14 @@ function Origen({ real, texto }: { real: boolean | "aprox"; texto: string }) {
   return <span className={`origen ${clase}`} title={texto}>{texto}</span>;
 }
 
+// Nivel legible de la confianza (mismos umbrales que nivelConfianza en
+// lib/indice.mjs; la fórmula está en metadata.confianza_nota).
+function nivelConfianza(c: number): { etiqueta: string; explica: string } {
+  if (c >= 0.75) return { etiqueta: "alta", explica: "la mayoría de las variables son medidas reales" };
+  if (c >= 0.5) return { etiqueta: "media", explica: "mezcla datos reales con aproximaciones y estimaciones" };
+  return { etiqueta: "baja", explica: "predominan estimaciones provisionales" };
+}
+
 // Modos de ruta de escape. Estructura preparada para el futuro: activar un modo
 // "proximamente" será cambiar su `estado` a "activo" y conectar su `onActivar`,
 // sin rehacer la interfaz.
@@ -91,6 +99,30 @@ export default function PanelInfo({
           </span>
         </div>
       </div>
+
+      {nucleo.confianza != null && (() => {
+        const nc = nivelConfianza(nucleo.confianza);
+        return (
+          <p className={`confianza conf-${nc.etiqueta}`}>
+            Confianza del dato: <strong>{nc.etiqueta}</strong> — {nc.explica}.
+            {nucleo.rango_iv && (
+              <span
+                className="conf-rango"
+                title="Rango del IV al variar los pesos provisionales del índice (análisis de sensibilidad)"
+              >
+                {" "}Según los pesos, el IV varía entre {nucleo.rango_iv[0]} y {nucleo.rango_iv[1]}.
+              </span>
+            )}
+          </p>
+        );
+      })()}
+
+      {nucleo.poblacion < 50 && (
+        <p className="aviso-proxy">
+          Aldea muy pequeña ({nucleo.poblacion} hab.): el % de mayores es un proxy del
+          concello y puede no representar bien a sus vecinos.
+        </p>
+      )}
 
       <dl className="datos">
         <div>

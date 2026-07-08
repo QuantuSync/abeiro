@@ -1,6 +1,6 @@
 // Tests de lib/calibracion.mjs: AUC (Mann-Whitney) y bootstrap.
 import { describe, expect, it } from "vitest";
-import { auc, aucBootstrap, rng } from "@/lib/calibracion.mjs";
+import { auc, aucBootstrap, rng, spearman } from "@/lib/calibracion.mjs";
 
 describe("auc", () => {
   it("separación perfecta -> AUC = 1", () => {
@@ -43,6 +43,21 @@ describe("auc", () => {
   it("sin positivos o sin negativos -> null (AUC indefinido)", () => {
     expect(auc([1, 2, 3], [false, false, false])).toBeNull();
     expect(auc([1, 2, 3], [true, true, true])).toBeNull();
+  });
+});
+
+describe("spearman", () => {
+  it("relación monótona creciente perfecta -> 1", () => {
+    expect(spearman([1, 2, 3, 4], [10, 20, 30, 40])).toBeCloseTo(1, 6);
+  });
+  it("monótona decreciente perfecta -> -1", () => {
+    expect(spearman([1, 2, 3, 4], [40, 30, 20, 10])).toBeCloseTo(-1, 6);
+  });
+  it("monótona no lineal sigue siendo 1 (usa rangos)", () => {
+    expect(spearman([1, 2, 3, 4], [1, 4, 9, 16])).toBeCloseTo(1, 6);
+  });
+  it("array constante -> null (indefinida)", () => {
+    expect(spearman([1, 2, 3], [5, 5, 5])).toBeNull();
   });
 });
 

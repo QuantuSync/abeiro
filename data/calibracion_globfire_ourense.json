@@ -1,0 +1,140 @@
+{
+  "metadata": {
+    "descripcion": "Recalibración exploratoria del IV contra la afectación histórica GlobFire (2001-2021) en Ourense. AUC (Mann-Whitney) con IC bootstrap; Spearman vs n_afectaciones; recalibración de pesos con validación cruzada 5-fold.",
+    "n_nucleos": 650,
+    "n_bootstrap": 2000,
+    "k_fold": 5,
+    "advertencia_concepto": "El IV mide VULNERABILIDAD, no ignición. El incendio valida sobre todo el PELIGRO biofísico (exposición); la vulnerabilidad social necesita otra evidencia. Con n grande el IC es estrecho: ese es el salto de valor frente al piloto.",
+    "fuente_resultado": "GlobFire MODIS ~500 m: proxy de grandes incendios, no registro oficial de la Xunta. Se descartaron perímetros con geometría degenerada (ver afectacion_*).",
+    "pesos_no_adoptados": "La recalibración por CV es una RECOMENDACIÓN fundamentada, NO se adopta: los pesos del índice siguen siendo los provisionales declarados. La decisión queda para revisión humana (ver gap_sobreajuste: train − validación).",
+    "pesos_base": {
+      "peligro": 0.4,
+      "social": 0.35,
+      "cap": 0.25
+    }
+  },
+  "auc_binario": {
+    "afectado_hist": {
+      "etiqueta": "Afectado (buffer 250 m)",
+      "n_positivos": 100,
+      "n_negativos": 550,
+      "predictores": {
+        "iv": {
+          "etiqueta": "IV (índice completo)",
+          "auc": 0.679,
+          "ic95": [
+            0.626,
+            0.735
+          ]
+        },
+        "peligro_biofisico": {
+          "etiqueta": "Peligro biofísico",
+          "auc": 0.617,
+          "ic95": [
+            0.557,
+            0.678
+          ]
+        },
+        "score_social": {
+          "etiqueta": "Sensibilidad social",
+          "auc": 0.636,
+          "ic95": [
+            0.577,
+            0.695
+          ]
+        },
+        "capacidad_respuesta_inv": {
+          "etiqueta": "Capacidad de respuesta (100−cap)",
+          "auc": 0.726,
+          "ic95": [
+            0.675,
+            0.777
+          ]
+        }
+      }
+    },
+    "afectado_borde_500m": {
+      "etiqueta": "Borde <=500 m",
+      "n_positivos": 162,
+      "n_negativos": 488,
+      "predictores": {
+        "iv": {
+          "etiqueta": "IV (índice completo)",
+          "auc": 0.637,
+          "ic95": [
+            0.588,
+            0.687
+          ]
+        },
+        "peligro_biofisico": {
+          "etiqueta": "Peligro biofísico",
+          "auc": 0.59,
+          "ic95": [
+            0.536,
+            0.644
+          ]
+        },
+        "score_social": {
+          "etiqueta": "Sensibilidad social",
+          "auc": 0.591,
+          "ic95": [
+            0.541,
+            0.64
+          ]
+        },
+        "capacidad_respuesta_inv": {
+          "etiqueta": "Capacidad de respuesta (100−cap)",
+          "auc": 0.681,
+          "ic95": [
+            0.635,
+            0.729
+          ]
+        }
+      }
+    }
+  },
+  "spearman_n_afectaciones": {
+    "iv": {
+      "etiqueta": "IV (índice completo)",
+      "spearman": 0.22
+    },
+    "peligro_biofisico": {
+      "etiqueta": "Peligro biofísico",
+      "spearman": 0.146
+    },
+    "score_social": {
+      "etiqueta": "Sensibilidad social",
+      "spearman": 0.166
+    },
+    "capacidad_respuesta_inv": {
+      "etiqueta": "Capacidad de respuesta (100−cap)",
+      "spearman": 0.284
+    }
+  },
+  "recalibracion_cv": {
+    "afectado_hist": {
+      "etiqueta": "Afectado (buffer 250 m)",
+      "auc_pesos_base": 0.679,
+      "pesos_optimos_cv": {
+        "peligro": 0.25,
+        "social": 0.15,
+        "cap": 0.6
+      },
+      "auc_val_optimos": 0.723,
+      "auc_train_optimos": 0.722,
+      "gap_sobreajuste": -0.002
+    },
+    "afectado_borde_500m": {
+      "etiqueta": "Borde <=500 m",
+      "auc_pesos_base": 0.637,
+      "pesos_optimos_cv": {
+        "peligro": 0.25,
+        "social": 0.15,
+        "cap": 0.6
+      },
+      "auc_val_optimos": 0.679,
+      "auc_train_optimos": 0.676,
+      "gap_sobreajuste": -0.002
+    }
+  }
+}

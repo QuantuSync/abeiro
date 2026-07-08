@@ -125,6 +125,13 @@ describe("scoreSocial", () => {
     expect(scorePoblacion(1000)).toBe(25);
     expect(scorePoblacion(10000)).toBe(0);
   });
+  it("sin uniper/dispersión (escalado) renormaliza a mayores+población", () => {
+    // Solo mayores (real) + población: extremos siguen dando 100 y 0.
+    expect(scoreSocial({ pctMayores: 0.55, poblacion: 1, pctUniper: null, dispersion: null })).toBe(100);
+    expect(scoreSocial({ pctMayores: 0.15, poblacion: 10000, pctUniper: null, dispersion: null })).toBe(0);
+    // Renormalización: mayores=100, población=50 -> (0.45·100+0.15·50)/(0.60) = 87.5 -> 88.
+    expect(scoreSocial({ pctMayores: 0.55, poblacion: 100, pctUniper: null, dispersion: null })).toBe(88);
+  });
 });
 
 describe("capacidad desde vías de salida", () => {
@@ -163,5 +170,12 @@ describe("confianzaNucleo", () => {
     });
     expect(todoReal).toBeGreaterThan(todoEstim);
     expect(todoEstim).toBeCloseTo(0.3, 2); // todo en estimación = nivel mínimo
+  });
+  it("socialCompleto=false (escalado) sube la confianza social (sin estimaciones Fase 0)", () => {
+    // Con uniper/dispersión ausentes (no penalizan como estimación), la confianza
+    // es mayor que con el social completo del piloto, a igualdad del resto.
+    const escala = confianzaNucleo({ ...base, combustible: "satelite", socialCompleto: false });
+    const piloto = confianzaNucleo({ ...base, combustible: "satelite", socialCompleto: true });
+    expect(escala).toBeGreaterThan(piloto);
   });
 });

@@ -64,3 +64,4 @@ data/osm_valdeorras.json
 __pycache__/
 *.pyc
 .venv/
+data/osm_ourense_vias.json

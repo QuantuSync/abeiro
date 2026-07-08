@@ -459,6 +459,41 @@ satélite usa un **venv** con `earthengine-api` (`python -m venv .venv &&
 .venv/Scripts/pip install earthengine-api`) — es una dependencia de re-medición que se
 ejecuta a mano, no forma parte del build.
 
+## Escalado a Ourense (calibración a escala)
+
+El demostrador se validó con 12 núcleos de Valdeorras. Para convertir el índice de
+"demostrador honesto" en "índice contrastado contra el historial real de incendios" se está
+escalando a la **provincia de Ourense** (piloto de Galicia). Este hito trabaja **solo la
+lente de vulnerabilidad** (la evacuación, cara de rutear a escala, queda para un hito
+posterior). La arquitectura generaliza el pipeline de 12 núcleos fijos a una lista dinámica.
+
+### Fase 1 — Lista maestra de núcleos (hecho)
+
+`data/nucleos_ourense.json` es la lista maestra de **entidades singulares de población de
+Ourense**, construida cruzando tres fuentes abiertas (cada dato con su procedencia):
+
+- **Coordenadas + nombre + tipo:** Nomenclátor Geográfico Básico de España (**NGBE/IGN**),
+  vía WFS INSPIRE `gn:NamedPlace` (licencia CC-BY 4.0 IGN). El NGBE da 3.705 "Entidad
+  singular" en Ourense (coincide con el dato oficial del INE, ~3.700).
+  Caché: `data/ngbe_ourense_raw.json` (`scripts/fetch-nomenclator-ourense.py`).
+- **Población + parroquia:** **Nomenclátor IGE 2025** (`data/Fichero1.txt`, toda la
+  provincia 32), por entidad singular.
+- **Concello:** el NGBE no trae municipio, así que se asigna por *point-in-polygon* con los
+  **límites municipales de OpenStreetMap** (`admin_level=8`, `ref:ine`=codmun; ODbL).
+  Caché: `data/limites_concellos_ourense.geojson` (`scripts/fetch-limites-concellos.py`).
+
+`scripts/construir-nucleos-ourense.py` hace el cruce por `(concello, nombre normalizado)`:
+**3.376 entidades casadas** de 3.705 (91 %; 327 sin casar por grafías divergentes
+gallego/castellano, reportadas), cubriendo **los 92 concellos**. Marca `activo` a las de
+**≥ 50 habitantes → 650 núcleos**, que es el subconjunto de trabajo del primer barrido de
+calibración. Reparto de población (entidades casadas): 141 despobladas, 2.585 de 1–49 hab,
+353 de 50–99, 168 de 100–199, 96 de 200–499, 20 de 500–999, 13 de ≥1000.
+
+> Fases siguientes (en curso): componentes del IV en lote (NDVI/NDMI Sentinel-2, pendiente
+> MDT del CNIG, cubierta OSM regional), afectación histórica con **GlobFire** (JRC/CE,
+> 2001–2021) y recalibración de los pesos con validación cruzada. La evacuación a escala,
+> el LiDAR y los perímetros oficiales de la Xunta quedan como trabajo posterior.
+
 ## Privacidad (RGPD)
 
 La identidad nominal de personas vulnerables queda **fuera** del sistema. Solo se usan

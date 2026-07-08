@@ -601,17 +601,43 @@ el **impacto humano** (evacuaciones/confinamientos), que es exactamente el dato 
 pedirá a **AXEGA** (ver *Ingesta de datos de evacuación*). Salida:
 `data/confound_ourense.json`.
 
-### Fase 5 — Mapa a escala (mínimo viable, hecho)
+### Fase 5 — Mapa a escala (hecho)
 
-La ruta **`/ourense`** pinta los 650 núcleos con **clustering de MapLibre**
-(`components/MapaOurense.tsx`): a zoom provincial se agrupan (no se bloquea el navegador) y
-se despliegan al acercarse, coloreados por IV (paleta accesible YlOrRd) con borde reforzado
-en los que tienen historial de incendios. Datos en `public/nucleos_ourense.geojson`
-(`scripts/exportar-geojson-ourense.mjs`). La demo original de Valdeorras (`/`) queda intacta.
+La ruta **`/ourense`** navega en dos niveles: de lejos, **coropleta por concello** (IV medio,
+paleta accesible; `public/concellos_ourense.geojson`) con **drill-down** al pinchar; al
+acercarse, los **683 núcleos con clustering de MapLibre** coloreados por IV, con borde
+reforzado en los que tienen historial de incendios. Panel de detalle completo (componentes,
+procedencia por variable, confianza) y leyenda con avisos (núcleos <50 hab excluidos,
+afectación proxy GlobFire). La demo original de Valdeorras (`/`) queda intacta.
+
+### Ingesta de datos de evacuación (andamiaje para AXEGA)
+
+La calibración contra GlobFire mide exposición, no vulnerabilidad social; validar la parte
+social requiere una variable de **impacto humano**: evacuaciones/confinamientos. El sistema
+queda **listo para enchufar esos datos** cuando lleguen (p. ej. de AXEGA):
+
+- **Esquema** (documentado y con plantilla ficticia en `data/evacuaciones_ejemplo.json`):
+  por registro `codmun` (obligatorio), `nucleo_nombre` (opcional), `fecha`, `tipo`
+  (`evacuacion`/`confinamiento`), `personas`, `evento`, `fuente`.
+- **Ingesta** (`scripts/ingesta-evacuaciones.mjs`): cruza los registros con la lista maestra
+  y produce por núcleo `evacuado_hist` y `n_evacuaciones`, análogos a `afectado_hist` de
+  GlobFire.
+- **Calibración parametrizada** (`scripts/calibracion-ourense.mjs`): la **misma maquinaria**
+  (AUC, IC bootstrap, Spearman, validación cruzada) corre contra GlobFire **o** contra
+  evacuación sin reescribir nada.
+
+Cuando existan los datos reales:
+```bash
+# 1) colocar los datos de AXEGA en data/evacuaciones.json (mismo esquema que el ejemplo)
+node scripts/ingesta-evacuaciones.mjs            # -> data/evacuacion_resultado_ourense.json
+node scripts/calibracion-ourense.mjs evacuacion  # -> calibración contra impacto humano
+```
+Los datos reales de AXEGA y los derivados de la plantilla ficticia están **gitignorados** (no
+se versionan); solo la plantilla del esquema (`evacuaciones_ejemplo.json`) forma parte del repo.
 
 > Queda pendiente (siguiente hito): **evacuación a escala** (rutas para miles de núcleos),
 > **LiDAR PNOA** para el combustible, **perímetros oficiales de la Xunta** (frente a la
-> aproximación GlobFire) y el **pulido del mapa** (drill-down por concello, panel completo).
+> aproximación GlobFire) y los **datos reales de AXEGA** para validar la vulnerabilidad social.
 
 ## Privacidad (RGPD)
 

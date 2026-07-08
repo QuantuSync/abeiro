@@ -65,3 +65,8 @@ __pycache__/
 *.pyc
 .venv/
 data/osm_ourense_vias.json
+
+# Datos reales de evacuacion (AXEGA) y derivados de la plantilla ficticia
+data/evacuaciones.json
+data/evacuacion_resultado_ourense.json
+data/calibracion_evacuacion_ourense.json

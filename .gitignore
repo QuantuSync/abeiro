@@ -44,9 +44,9 @@ Thumbs.db
 scripts/_*.png
 
 # Herramientas de asistencia (no forman parte del proyecto)
-.claude/
-CLAUDE.md
-CLAUDE_*.md
+.assistant/
+.aider*
+*.local.md
 
 # Copernicus EMS EMSR837 — descargas y perímetro crudo (pesados; reproducibles vía script)
 data/emsr837/

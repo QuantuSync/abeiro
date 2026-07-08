@@ -765,10 +765,155 @@ body {
   font-size: 0.92rem;
 }
 
+/* ---- Panel de filtros (interacción; no modal, siempre accesible) ---- */
+.filtros {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 7;
+  max-width: calc(100vw - 24px);
+}
+.filtros-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.45rem 0.85rem;
+  background: var(--superficie);
+  color: var(--primario);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--sombra);
+}
+.filtros-toggle.con-filtro {
+  border-color: var(--acento);
+  color: var(--acento-suave);
+}
+.filtros-conteo {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #fff;
+  background: var(--primario);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+.filtros-toggle.con-filtro .filtros-conteo {
+  background: var(--acento);
+}
+.filtros-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 288px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 96px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  box-shadow: var(--sombra);
+  padding: 0.85rem 0.95rem 0.95rem;
+}
+.filtros-panel * { min-width: 0; max-width: 100%; }
+.filtros-resumen {
+  margin: 0 0 0.7rem;
+  font-size: 0.9375rem;
+  color: var(--texto);
+}
+.filtros-resumen strong {
+  font-family: var(--titulo);
+  font-size: 1.15rem;
+  color: var(--primario);
+}
+.filtros-grupo {
+  border: none;
+  border-top: 1px solid var(--borde);
+  margin: 0;
+  padding: 0.6rem 0 0;
+}
+.filtros-grupo legend {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--texto-suave);
+  padding: 0;
+  margin-bottom: 0.4rem;
+}
+.filtros-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 6px;
+  background: var(--superficie-2);
+  color: var(--texto);
+  font-size: 0.9375rem;
+  cursor: pointer;
+  user-select: none;
+}
+.chip.on {
+  background: var(--primario);
+  border-color: var(--primario);
+  color: #fff;
+  font-weight: 600;
+}
+/* La casilla nativa se oculta visualmente pero sigue accesible por teclado. */
+.chip input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.chip:focus-within {
+  outline: 3px solid var(--acento);
+  outline-offset: 1px;
+}
+.filtros-nota {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--texto-suave);
+  line-height: 1.35;
+}
+.filtros-grupo[disabled] legend {
+  opacity: 0.6;
+}
+.filtros-limpiar {
+  margin-top: 0.85rem;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 6px;
+  background: var(--superficie-2);
+  color: var(--texto);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.filtros-limpiar:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.filtros-limpiar:not(:disabled):hover {
+  background: var(--bg);
+  border-color: var(--acento);
+}
+
 /* ---- Botón y panel de validación ---- */
 .btn-validacion {
   position: absolute;
-  top: 12px;
+  top: 64px;
   left: 12px;
   z-index: 6;
   background: var(--primario);

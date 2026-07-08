@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   CATS, POBS, VIAS, ETIQUETA_CAT, ETIQUETA_POB, ETIQUETA_VIA,
-  FILTROS_DEFECTO, filtrando,
+  filtrando,
   type Filtros, type CatKey, type PobKey, type ViaKey, type Afect,
 } from "@/lib/filtros";
 
@@ -115,7 +115,7 @@ export default function PanelFiltros({
 
           <button
             className="filtros-limpiar"
-            onClick={() => onChange({ ...FILTROS_DEFECTO, categorias: [...CATS], poblacion: [...POBS], vias: [...VIAS] })}
+            onClick={() => onChange({ categorias: [], poblacion: [], afectacion: "todos", vias: [] })}
             disabled={!activo}
           >
             Limpiar filtros

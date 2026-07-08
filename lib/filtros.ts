@@ -24,16 +24,20 @@ export const ETIQUETA_POB: Record<PobKey, string> = {
 };
 export const ETIQUETA_VIA: Record<ViaKey, string> = { "1": "1 (crítico)", "2": "2", "3+": "3 o más" };
 
+// Estado NEUTRO: nada seleccionado + afectación "todos". Modelo "seleccionar
+// para incluir": sin nada elegido no se filtra (se ven todos los núcleos); al
+// elegir uno o más buckets, se restringe SOLO a los elegidos. Un multiselección
+// vacío es neutro (no descarta a nadie), no "no pasa nada".
 export const FILTROS_DEFECTO: Filtros = {
-  categorias: [...CATS], poblacion: [...POBS], afectacion: "todos", vias: [...VIAS],
+  categorias: [], poblacion: [], afectacion: "todos", vias: [],
 };
 
-// ¿Hay algún filtro activo (distinto del estado por defecto)?
+// ¿Hay algún filtro activo (que restrinja)? Un conjunto vacío es neutro.
 export function filtrando(f: Filtros): boolean {
-  return f.categorias.length < CATS.length
-    || f.poblacion.length < POBS.length
+  return f.categorias.length > 0
+    || f.poblacion.length > 0
     || f.afectacion !== "todos"
-    || f.vias.length < VIAS.length;
+    || f.vias.length > 0;
 }
 
 // Buckets deterministas.
@@ -61,16 +65,22 @@ export interface OpcionesFiltro {
   soporteVias: boolean; // el filtro de vías solo aplica donde hay capa de evacuación
 }
 
-// ¿El núcleo cumple TODOS los filtros activos? Los destinos seguros (es_destino)
-// son puntos de referencia y no se filtran (siempre visibles como contexto).
+// ¿El núcleo cumple TODOS los filtros ACTIVOS (AND)? Cada filtro se evalúa solo
+// si tiene selección (conjunto no vacío) o valor distinto de "todos"; si está
+// neutro, no descarta a nadie. Los destinos seguros (es_destino) son puntos de
+// referencia y no se filtran (siempre visibles como contexto).
 export function pasaFiltros(p: NucleoFiltrable, f: Filtros, opts: OpcionesFiltro): boolean {
   if (p.es_destino) return true;
-  if (p.iv != null && !f.categorias.includes(categoriaBucket(p.iv))) return false;
-  if (p.poblacion != null && !f.poblacion.includes(poblacionTramo(p.poblacion))) return false;
-  const afectado = !!p[opts.campoAfectacion];
-  if (f.afectacion === "si" && !afectado) return false;
-  if (f.afectacion === "no" && afectado) return false;
-  if (opts.soporteVias && p.rutas_alternativas != null
+  if (f.categorias.length > 0 && p.iv != null
+      && !f.categorias.includes(categoriaBucket(p.iv))) return false;
+  if (f.poblacion.length > 0 && p.poblacion != null
+      && !f.poblacion.includes(poblacionTramo(p.poblacion))) return false;
+  if (f.afectacion !== "todos") {
+    const afectado = !!p[opts.campoAfectacion];
+    if (f.afectacion === "si" && !afectado) return false;
+    if (f.afectacion === "no" && afectado) return false;
+  }
+  if (opts.soporteVias && f.vias.length > 0 && p.rutas_alternativas != null
       && !f.vias.includes(viasBucket(p.rutas_alternativas))) return false;
   return true;
 }

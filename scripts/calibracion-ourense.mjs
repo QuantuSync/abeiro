@@ -34,6 +34,20 @@ const FUENTES = {
     ],
     continua: "n_afectaciones",
     valida: "EXPOSICIÓN/localización, no vulnerabilidad social (ver confound_ourense.json).",
+    // Metadata conceptual rica volcada al JSON versionado (no perder la interpretación).
+    extra: {
+      advertencia_concepto: "El IV mide VULNERABILIDAD, no ignición. El incendio valida sobre "
+        + "todo la EXPOSICIÓN/localización del paisaje (aislamiento), NO la vulnerabilidad social "
+        + "(ver confound_ourense.json). Con n grande el IC es estrecho: ese es el salto de valor "
+        + "frente al piloto (n=12).",
+      confound: "El mejor predictor es la capacidad de respuesta invertida (~0.73), no el peligro "
+        + "(~0.61). No es causal: es confound espacial de AISLAMIENTO (los núcleos aislados, con "
+        + "pocas salidas, caen en zona de grandes incendios). La fracción de monte sola no predice "
+        + "(AUC 0.42) y estratificar por monte no elimina el poder de los componentes; el eje es la "
+        + "distancia a lo urbano. Ver data/confound_ourense.json.",
+      fuente_resultado: "GlobFire MODIS ~500 m: proxy de grandes incendios, no registro oficial "
+        + "de la Xunta. Se descartaron 43 perímetros con geometría degenerada (ver afectacion_*).",
+    },
   },
   evacuacion: {
     fichero: "evacuacion_resultado_ourense.json",
@@ -42,6 +56,11 @@ const FUENTES = {
     binarias: [{ clave: "evacuado_hist", etiqueta: "Evacuado/confinado alguna vez", campo: "evacuado_hist" }],
     continua: "n_evacuaciones",
     valida: "IMPACTO HUMANO: es la variable que SÍ permite validar la vulnerabilidad social.",
+    extra: {
+      fuente_resultado: "Evacuaciones/confinamientos (decisión humana de emergencia). A diferencia "
+        + "de GlobFire (exposición del paisaje), es la variable de resultado que permite validar la "
+        + "componente SOCIAL del índice.",
+    },
   },
 };
 
@@ -155,8 +174,10 @@ const salida = {
       + `con IC bootstrap; Spearman vs ${cfg.continua}; recalibración por validación cruzada ${K_FOLD}-fold.`,
     variable_resultado: which, valida: cfg.valida,
     n_nucleos: nucleos.length, n_bootstrap: N_BOOT, k_fold: K_FOLD, pesos_base: pesosBase,
-    pesos_no_adoptados: "La recalibración por CV es una RECOMENDACIÓN; los pesos del índice "
-      + "siguen siendo los provisionales declarados. Decisión para revisión humana.",
+    pesos_no_adoptados: "La recalibración por CV es una RECOMENDACIÓN fundamentada, NO se adopta: "
+      + "los pesos del índice siguen siendo los provisionales declarados. Decisión para revisión "
+      + "humana (ver gap_sobreajuste: train − validación).",
+    ...(cfg.extra || {}),
   },
   auc_binario: tabla, spearman_continua: spear, recalibracion_cv: cv,
 };

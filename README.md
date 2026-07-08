@@ -482,10 +482,10 @@ Ourense**, construida cruzando tres fuentes abiertas (cada dato con su procedenc
   **límites municipales de OpenStreetMap** (`admin_level=8`, `ref:ine`=codmun; ODbL).
   Caché: `data/limites_concellos_ourense.geojson` (`scripts/fetch-limites-concellos.py`).
 
-`scripts/construir-nucleos-ourense.py` hace el cruce por `(concello, nombre normalizado)`:
-**3.376 entidades casadas** de 3.705 (91 %; 327 sin casar por grafías divergentes
-gallego/castellano, reportadas), cubriendo **los 92 concellos**. Marca `activo` a las de
-**≥ 50 habitantes → 650 núcleos**, que es el subconjunto de trabajo del primer barrido de
+`scripts/construir-nucleos-ourense.py` hace el cruce por `(concello, nombre normalizado)` más
+un rescate aproximado (ver más abajo): **3.663 entidades casadas** de 3.705, cubriendo **los
+92 concellos**. Marca `activo` a las de **≥ 50 habitantes → 683 núcleos** (650 por el cruce
+exacto + 33 rescatados por grafía), que son el subconjunto de trabajo del primer barrido de
 calibración. Reparto de población (entidades casadas): 141 despobladas, 2.585 de 1–49 hab,
 353 de 50–99, 168 de 100–199, 96 de 200–499, 20 de 500–999, 13 de ≥1000.
 
@@ -505,13 +505,13 @@ calibración. Reparto de población (entidades casadas): 141 despobladas, 2.585 
 > están entre las **más** vulnerables; se excluyen del primer barrido por coste (81 % de las
 > entidades), no porque importen menos. Es deuda a saldar al escalar a producto.
 
-### Fase 2 — Componentes del IV en lote (650 núcleos, hecho)
+### Fase 2 — Componentes del IV en lote (683 núcleos, hecho)
 
 - **Peligro biofísico** (`scripts/fetch-peligro-ourense.py`): una sola pasada de Earth
   Engine mide NDVI/NDMI (Sentinel-2 pre-incendio, buffer 1 km) y **pendiente** (SRTM 30 m,
   `ee.Terrain.slope`). El MDT del CNIG es teselado por hojas MTN desde un portal SPA (no
-  automatizable sin fricción) y opentopodata no escala a 650×buffer; SRTM en EE es el
-  respaldo escalable de elevación (misma pasada), documentado como tal. 650/650 medidos.
+  automatizable sin fricción) y opentopodata no escala a 683×buffer; SRTM en EE es el
+  respaldo escalable de elevación (misma pasada), documentado como tal. 683/683 medidos.
 - **Sensibilidad social**: población del IGE (lista maestra) + **% de mayores de 65 de los
   92 concellos** desde el Padrón del **INE** (tabla 33866 de Ourense;
   `scripts/fetch-padron-ourense.py`). A escala no hay hogares unipersonales ni dispersión por
@@ -526,11 +526,11 @@ calibración. Reparto de población (entidades casadas): 141 despobladas, 2.585 
 
 ### Fase 3 — Afectación histórica (GlobFire, hecho)
 
-`scripts/fetch-globfire-ourense.py` cruza los 650 núcleos con los perímetros finales de
+`scripts/fetch-globfire-ourense.py` cruza los 683 núcleos con los perímetros finales de
 **GlobFire** (`JRC/GWIS/GlobFire/v2/FinalPerimeters`, MODIS, 2001–2021) en Earth Engine.
 De los 1.641 perímetros del ámbito se descartaron **43 con geometría degenerada** (área
-infinita) que contenían cualquier punto y daban 650/650 afectados espurios; con los 1.598
-válidos y buffers por núcleo (250 m afectado, 500 m borde): **100/650 afectados**, 162 en
+infinita) que contenían cualquier punto y daban afectados espurios (100 %); con los 1.598
+válidos y buffers por núcleo (250 m afectado, 500 m borde): **103/683 afectados**, 167 en
 borde, `n_afectaciones` 0–4. Salida: `data/afectacion_globfire_ourense.json`.
 
 > **Limitación (declarada en metadata):** GlobFire deriva de MODIS (~500 m): capta bien los
@@ -538,36 +538,39 @@ borde, `n_afectaciones` 0–4. Salida: `data/afectacion_globfire_ourense.json`.
 > bordes y omite los pequeños. Es un **proxy** del historial de grandes incendios, no el
 > registro oficial de la Xunta.
 
-### Fase 4 — Calibración con muestra real (n=650, hecho)
+### Fase 4 — Calibración con muestra real (n=683, hecho)
 
-`scripts/calibracion-globfire-ourense.mjs` contrasta el IV y sus componentes contra la
-afectación histórica. Con **n=650 los IC bootstrap son estrechos** (±0,05): ese es el salto
-de valor frente al piloto (n=12). AUC (Mann-Whitney) contra *afectado* (buffer 250 m):
+`scripts/calibracion-ourense.mjs globfire` contrasta el IV y sus componentes contra la
+afectación histórica (el script es genérico y parametrizado por variable de resultado; ver
+*Ingesta de datos de evacuación*). Con **n=683 los IC bootstrap son estrechos** (±0,05): ese
+es el salto de valor frente al piloto (n=12). AUC (Mann-Whitney) contra *afectado* (buffer
+250 m):
 
 | Predictor | AUC (IC95) |
 |---|---|
 | **Capacidad de respuesta** (100−cap) | **0,73 [0,68–0,78]** |
-| IV (índice completo) | 0,68 [0,63–0,73] |
-| Sensibilidad social | 0,64 [0,58–0,69] |
-| Peligro biofísico | 0,62 [0,56–0,68] |
+| IV (índice completo) | 0,69 [0,64–0,74] |
+| Sensibilidad social | 0,65 [0,59–0,71] |
+| Peligro biofísico | 0,61 [0,55–0,67] |
 
 **Interpretación honesta (y contraintuitiva):**
-- Ningún componente es un predictor *fuerte* (todos 0,6–0,73); el IV combinado queda en 0,68.
+- Ningún componente es un predictor *fuerte* (todos 0,61–0,73); el IV combinado queda en 0,69.
 - El **mejor predictor es la capacidad de respuesta invertida** (pocas vías de salida), no el
   peligro biofísico —que resulta el **más débil**—. No es que la capacidad *cause* el
-  incendio: es un **confound espacial** (los núcleos aislados, con pocas salidas, están en el
-  monte, que es donde arde). El peligro biofísico discrimina peor de lo esperado, en parte
-  porque el NDVI de 2025 tiene poca varianza entre núcleos (casi todo Ourense es forestal) y
-  el buffer de 1 km mezcla la aldea con su entorno.
+  incendio: es un **confound espacial de aislamiento** (los núcleos aislados, con pocas
+  salidas, caen en zona de grandes incendios). El peligro biofísico discrimina peor de lo
+  esperado, en parte porque el NDVI de 2025 tiene poca varianza entre núcleos (casi todo
+  Ourense es forestal) y el buffer de 1 km mezcla la aldea con su entorno (ver la nota del
+  confound, abajo, que lo mide).
 - **La hipótesis peligro > social no se cumplió**: con GlobFire (grandes incendios MODIS) la
   señal del peligro no se reforzó. La distinción conceptual sigue en pie: el incendio valida
   **exposición/localización**, no la **vulnerabilidad social** (que un solo tipo de evento no
   puede validar).
 - **Recalibración (recomendación, NO adoptada):** la validación cruzada 5-fold es estable
-  (gap train−validación ≈ 0, sin sobreajuste con n=650) y sugiere pesos
-  `{peligro 0,25 · social 0,15 · capacidad 0,60}`, que suben el AUC de 0,68 a 0,72. **No se
-  adoptan**: optimizarían la predicción de *dónde arde* (ignición/exposición y su confound
-  espacial), no de *quién es vulnerable si arde*, que es el propósito del IV. Los pesos siguen
+  (gap train−validación ≈ 0, sin sobreajuste con n=683) y sugiere pesos que suben el peso de
+  la capacidad (AUC de 0,69 a ~0,73). **No se adoptan**: optimizarían la predicción de *dónde
+  arde* (ignición/exposición y su confound espacial), no de *quién es vulnerable si arde*, que
+  es el propósito del IV. Los pesos siguen
   siendo los **provisionales declarados**; la decisión queda para revisión humana.
 
 Salida: `data/calibracion_globfire_ourense.json`.
@@ -635,9 +638,27 @@ node scripts/calibracion-ourense.mjs evacuacion  # -> calibración contra impact
 Los datos reales de AXEGA y los derivados de la plantilla ficticia están **gitignorados** (no
 se versionan); solo la plantilla del esquema (`evacuaciones_ejemplo.json`) forma parte del repo.
 
-> Queda pendiente (siguiente hito): **evacuación a escala** (rutas para miles de núcleos),
-> **LiDAR PNOA** para el combustible, **perímetros oficiales de la Xunta** (frente a la
-> aproximación GlobFire) y los **datos reales de AXEGA** para validar la vulnerabilidad social.
+## Mejoras futuras
+
+El trabajo técnico que no depende de datos externos está cerrado. Lo que queda son mejoras
+que dependen de **datos o interlocutores externos**, no de deuda técnica pendiente:
+
+- **Datos de evacuación/confinamiento de AXEGA** — la variable de impacto humano que permite
+  **validar la vulnerabilidad social** del índice (la calibración contra GlobFire mide
+  exposición del paisaje, no vulnerabilidad). El andamiaje de ingesta y calibración ya está
+  listo; solo falta el dato.
+- **Perímetros oficiales de incendio de la Xunta** — mejorarían sobre GlobFire (MODIS ~500 m,
+  proxy de grandes incendios) para la afectación histórica.
+- **LiDAR PNOA (MDSnV) y MDT-CNIG** — darían combustible y pendiente más finos que la
+  aproximación por satélite (Sentinel-2) y SRTM 30 m usados a escala.
+- **Evacuación a escala provincial** — la lente de rutas (hoy solo en la demo de Valdeorras)
+  para los ~683 núcleos; el ruteo masivo quedó fuera de este hito por coste.
+- **Los 4 núcleos ≥50 hab sin rescatar** (Fonsillón 331 hab, Ponte Barxas, Lavandeira,
+  Cimadevila) — el NGBE no los recoge como entidad singular; a confirmar con conocimiento
+  local y coordenadas de otra fuente.
+- **Las entidades <50 hab** (81 % del total) — excluidas del primer barrido por coste, pese a
+  ser de las más vulnerables según la propia tesis del índice; deuda a saldar al pasar a
+  producto.
 
 ## Privacidad (RGPD)
 

@@ -185,11 +185,11 @@ export default function MapaOurense() {
 
           <div className="factores">
             <div className="factor">
-              <span>Peligro biofísico <span className="origen aprox" title="Sentinel-2 NDVI+NDMI · pendiente SRTM">aprox · satélite</span></span>
+              <span>Peligro biofísico <span className="origen aprox" title="Combustible Sentinel-2 NDVI+NDMI (aproximación) · pendiente SRTM 30 m (respaldo del MDT-CNIG)">aprox · satélite/SRTM</span></span>
               <Barra valor={sel.peligro_biofisico} color="#d9534f" /><strong>{sel.peligro_biofisico}</strong>
             </div>
             <div className="factor">
-              <span>Sensibilidad social <span className="origen real" title="% mayores 65 (Padrón INE) + población (IGE)">real · IGE/INE</span></span>
+              <span>Sensibilidad social <span className="origen real" title="Población real (IGE) + % mayores 65 real del Padrón INE aplicado como proxy por concello">real · IGE/INE (proxy edad)</span></span>
               <Barra valor={sel.score_social} color="#c8a44a" /><strong>{sel.score_social}</strong>
             </div>
             <div className="factor">

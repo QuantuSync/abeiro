@@ -1,17 +1,20 @@
 {
   "metadata": {
-    "descripcion": "Recalibración exploratoria del IV contra la afectación histórica GlobFire (2001-2021) en Ourense. AUC (Mann-Whitney) con IC bootstrap; Spearman vs n_afectaciones; recalibración de pesos con validación cruzada 5-fold.",
+    "descripcion": "Calibración exploratoria del IV contra afectación GlobFire (2001-2021, exposición del paisaje). AUC (Mann-Whitney) con IC bootstrap; Spearman vs n_afectaciones; recalibración por validación cruzada 5-fold.",
+    "variable_resultado": "globfire",
+    "valida": "EXPOSICIÓN/localización, no vulnerabilidad social (ver confound_ourense.json).",
     "n_nucleos": 683,
     "n_bootstrap": 2000,
     "k_fold": 5,
-    "advertencia_concepto": "El IV mide VULNERABILIDAD, no ignición. El incendio valida sobre todo el PELIGRO biofísico (exposición); la vulnerabilidad social necesita otra evidencia. Con n grande el IC es estrecho: ese es el salto de valor frente al piloto.",
-    "fuente_resultado": "GlobFire MODIS ~500 m: proxy de grandes incendios, no registro oficial de la Xunta. Se descartaron perímetros con geometría degenerada (ver afectacion_*).",
-    "pesos_no_adoptados": "La recalibración por CV es una RECOMENDACIÓN fundamentada, NO se adopta: los pesos del índice siguen siendo los provisionales declarados. La decisión queda para revisión humana (ver gap_sobreajuste: train − validación).",
     "pesos_base": {
       "peligro": 0.4,
       "social": 0.35,
       "cap": 0.25
-    }
+    },
+    "pesos_no_adoptados": "La recalibración por CV es una RECOMENDACIÓN fundamentada, NO se adopta: los pesos del índice siguen siendo los provisionales declarados. Decisión para revisión humana (ver gap_sobreajuste: train − validación).",
+    "advertencia_concepto": "El IV mide VULNERABILIDAD, no ignición. El incendio valida sobre todo la EXPOSICIÓN/localización del paisaje (aislamiento), NO la vulnerabilidad social (ver confound_ourense.json). Con n grande el IC es estrecho: ese es el salto de valor frente al piloto (n=12).",
+    "confound": "El mejor predictor es la capacidad de respuesta invertida (~0.73), no el peligro (~0.61). No es causal: es confound espacial de AISLAMIENTO (los núcleos aislados, con pocas salidas, caen en zona de grandes incendios). La fracción de monte sola no predice (AUC 0.42) y estratificar por monte no elimina el poder de los componentes; el eje es la distancia a lo urbano. Ver data/confound_ourense.json.",
+    "fuente_resultado": "GlobFire MODIS ~500 m: proxy de grandes incendios, no registro oficial de la Xunta. Se descartaron 43 perímetros con geometría degenerada (ver afectacion_*)."
   },
   "auc_binario": {
     "afectado_hist": {
@@ -93,7 +96,7 @@
       }
     }
   },
-  "spearman_n_afectaciones": {
+  "spearman_continua": {
     "iv": {
       "etiqueta": "IV (índice completo)",
       "spearman": 0.235

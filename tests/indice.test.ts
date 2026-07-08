@@ -178,4 +178,12 @@ describe("confianzaNucleo", () => {
     const piloto = confianzaNucleo({ ...base, combustible: "satelite", socialCompleto: true });
     expect(escala).toBeGreaterThan(piloto);
   });
+  it("la pendiente admite nivel string (SRTM respaldo = aproximación, no real)", () => {
+    // SRTM (aproximación) da menos confianza que un DEM real, más que estimación.
+    const real = confianzaNucleo({ ...base, pendienteReal: true, combustible: "satelite" });
+    const aprox = confianzaNucleo({ ...base, pendienteReal: "aproximacion", combustible: "satelite" });
+    const estim = confianzaNucleo({ ...base, pendienteReal: false, combustible: "satelite" });
+    expect(aprox).toBeLessThan(real);
+    expect(aprox).toBeGreaterThan(estim);
+  });
 });

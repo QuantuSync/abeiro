@@ -63,10 +63,15 @@ for (const feat of fc.features) {
   p.pendiente_grados = e.pendiente_grados;
   p.peligro_biofisico = peligroBiofisico(e.pendiente_grados, sat.combustibilidad);
   p.combustible_fuente = "Sentinel-2 NDVI+NDMI";
-  p.dato_pendiente_real = true;      // SRTM 30 m (respaldo escalable de elevación)
+  // SRTM 30 m es RESPALDO de elevación (no el MDT-CNIG de referencia): la
+  // pendiente se marca como aproximación, no como dato real, para no inducir a
+  // error sobre su procedencia.
+  p.dato_pendiente_real = false;
+  p.dato_pendiente_aprox = true;
+  p.fuente_pendiente = "SRTM 30 m (Earth Engine; respaldo del MDT-CNIG)";
   p.dato_combustible_aprox = true;
-  p.fuente_peligro = "Pendiente: SRTM 30 m (Earth Engine). Combustible: Sentinel-2 NDVI+NDMI "
-    + "(verano 2025). APROXIMACIÓN; no es el mapa de combustible calibrado.";
+  p.fuente_peligro = "Pendiente: SRTM 30 m (Earth Engine, RESPALDO del MDT-CNIG). Combustible: "
+    + "Sentinel-2 NDVI+NDMI (verano 2025). APROXIMACIÓN; no es el mapa de combustible calibrado.";
 
   // --- Sensibilidad social (mayores 65 real + población real) ---
   p.pct_mayores_65 = Number(pctMayores.toFixed(3));
@@ -90,7 +95,8 @@ for (const feat of fc.features) {
   p.iv = calcularIV(p.peligro_biofisico, p.score_social, p.capacidad_respuesta);
   p.confianza = confianzaNucleo({
     edadReal: true, poblacionReal: true, capacidadReal: true,
-    pendienteReal: true, combustible: "satelite", socialCompleto: false,
+    pendienteReal: "aproximacion", // SRTM 30 m de respaldo, no el MDT-CNIG
+    combustible: "satelite", socialCompleto: false,
   });
   n++;
 }

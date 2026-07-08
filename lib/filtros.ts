@@ -54,7 +54,6 @@ export function viasBucket(rutas: number): ViaKey {
 export interface NucleoFiltrable {
   iv?: number;
   poblacion?: number;
-  es_destino?: boolean;
   rutas_alternativas?: number | null;
   afect_fisica?: boolean;
   afectado_hist?: boolean;
@@ -67,10 +66,12 @@ export interface OpcionesFiltro {
 
 // ¿El núcleo cumple TODOS los filtros ACTIVOS (AND)? Cada filtro se evalúa solo
 // si tiene selección (conjunto no vacío) o valor distinto de "todos"; si está
-// neutro, no descarta a nadie. Los destinos seguros (es_destino) son puntos de
-// referencia y no se filtran (siempre visibles como contexto).
+// neutro, no descarta a nadie. TODOS los núcleos se filtran por igual: en
+// Valdeorras algunos (O Barco, A Rúa) sirven además de destino de evacuación,
+// pero son núcleos reales con su propio IV y responden a los filtros como el
+// resto. Si a un núcleo le falta un campo (p. ej. rutas_alternativas nulo), esa
+// dimensión se trata de forma neutra para él (no lo descarta).
 export function pasaFiltros(p: NucleoFiltrable, f: Filtros, opts: OpcionesFiltro): boolean {
-  if (p.es_destino) return true;
   if (f.categorias.length > 0 && p.iv != null
       && !f.categorias.includes(categoriaBucket(p.iv))) return false;
   if (f.poblacion.length > 0 && p.poblacion != null

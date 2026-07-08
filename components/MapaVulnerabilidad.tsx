@@ -30,18 +30,19 @@ export default function MapaVulnerabilidad() {
   const [rutaResaltada, setRutaResaltada] = useState<string | null>(null);
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_DEFECTO);
 
-  // Núcleos (no destinos) que cumplen el filtro y los que quedan fuera (para
-  // atenuarlos en el mapa). El filtro de vías aplica aquí (hay evacuación).
+  // Núcleos que cumplen el filtro y los que quedan fuera (para atenuarlos en el
+  // mapa). El conjunto base son TODOS los núcleos (incluidos O Barco y A Rúa, que
+  // además son destinos de evacuación pero núcleos reales con IV propio). El
+  // filtro de vías aplica aquí (hay capa de evacuación).
   const { visibles, total, idsFuera } = useMemo(() => {
     const opts = { campoAfectacion: "afect_fisica" as const, soporteVias: true };
-    const reales = nucleos.features.filter((f) => !f.properties.es_destino);
     const activo = filtrando(filtros);
     const fuera = activo
       ? nucleos.features.filter((f) => !pasaFiltros(f.properties, filtros, opts)).map((f) => f.properties.id)
       : [];
     return {
-      total: reales.length,
-      visibles: reales.filter((f) => pasaFiltros(f.properties, filtros, opts)).length,
+      total: nucleos.features.length,
+      visibles: nucleos.features.filter((f) => pasaFiltros(f.properties, filtros, opts)).length,
       idsFuera: fuera,
     };
   }, [filtros]);

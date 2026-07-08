@@ -6,6 +6,7 @@ import {
   FILTROS_DEFECTO, filtrando, pasaFiltros, categoriaBucket, poblacionTramo, viasBucket,
   type Filtros, type OpcionesFiltro,
 } from "@/lib/filtros";
+import { nucleos } from "@/lib/datos";
 
 const OPTS: OpcionesFiltro = { campoAfectacion: "afect_fisica", soporteVias: true };
 const OPTS_OU: OpcionesFiltro = { campoAfectacion: "afectado_hist", soporteVias: false };
@@ -94,8 +95,30 @@ describe("combinación aditiva (intersección)", () => {
   });
 });
 
-describe("destinos seguros", () => {
-  it("nunca se filtran (son referencia)", () => {
-    expect(pasaFiltros({ es_destino: true, iv: 20, poblacion: 5000 }, con({ categorias: ["alta"] }), OPTS)).toBe(true);
+// Conjunto base real de Valdeorras (12 núcleos). O Barco y A Rúa son destinos de
+// evacuación (es_destino) pero núcleos reales con IV bajo: deben contarse y
+// filtrarse como el resto (regresión: antes quedaban fuera del conjunto y eran
+// inmunes a los filtros).
+describe("conjunto base de Valdeorras (datos reales)", () => {
+  const OPTS_VAL: OpcionesFiltro = { campoAfectacion: "afect_fisica", soporteVias: true };
+  const pasa = (f: Filtros) =>
+    nucleos.features.filter((x) => pasaFiltros(x.properties, f, OPTS_VAL)).map((x) => x.properties.id);
+
+  it("el conjunto base tiene los 12 núcleos", () => {
+    expect(nucleos.features.length).toBe(12);
+  });
+  it("estado neutro: pasan los 12", () => {
+    expect(pasa(FILTROS_DEFECTO).length).toBe(12);
+  });
+  it("con 'Alta', O Barco y A Rúa (IV bajo) NO cumplen y no son inmunes", () => {
+    const ids = pasa(con({ categorias: ["alta"] }));
+    expect(ids).not.toContain("o-barco");
+    expect(ids).not.toContain("a-rua");
+    expect(ids.length).toBe(7); // los 7 de vulnerabilidad alta (IV>=60)
+  });
+  it("O Barco y A Rúa sí responden a un filtro que cumplen (población >=1000)", () => {
+    const ids = pasa(con({ poblacion: [">=1000"] }));
+    expect(ids).toContain("o-barco"); // 11101 hab
+    expect(ids).toContain("a-rua");   // 4119 hab
   });
 });

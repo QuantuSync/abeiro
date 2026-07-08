@@ -572,6 +572,35 @@ de valor frente al piloto (n=12). AUC (Mann-Whitney) contra *afectado* (buffer 2
 
 Salida: `data/calibracion_globfire_ourense.json`.
 
+#### Nota metodológica: el confound espacial, medido
+
+Que la capacidad de respuesta prediga la afectación mejor que el peligro sugiere un
+**confound espacial**. `scripts/analisis-confound-ourense.mjs` lo mide, en vez de solo
+afirmarlo, con una covariable de **exposición del paisaje** independiente del IV: la
+**fracción de monte** (árbol+matorral, ESA WorldCover, buffer 1 km;
+`fetch-exposicion-ourense.py`) y la **distancia al núcleo urbano**. Resultado (n=683):
+
+- **La fracción de monte sola NO predice la afectación** (AUC **0,42**): casi todos los
+  núcleos rurales tienen monte alrededor (mediana 0,62), poca varianza discriminante. La
+  hipótesis simple "está en el monte → arde" no se sostiene a este nivel.
+- **El confound real es el AISLAMIENTO, no el monte**: la **distancia al núcleo urbano**
+  predice la afectación (AUC 0,61, a la par del peligro) y correlaciona con la capacidad
+  invertida (Spearman 0,44) y con el IV (0,63). Los núcleos **aislados** (lejos de ciudad,
+  con pocas salidas) son los que caen en zona de grandes incendios — geografía de la
+  ruralidad, no vulnerabilidad humana.
+- **Al estratificar por tercil de monte, el poder de los componentes se mantiene** (capacidad
+  0,72 intra-tercil vs 0,73 global): su señal no venía del monte, sino del eje
+  aislamiento/ruralidad que la capacidad captura.
+- El **peligro biofísico** sí correlaciona fuerte con el monte (0,60) pero **no** predice la
+  afectación: tener vegetación alrededor no distingue quién ardió en GlobFire.
+
+**Conclusión (blindada):** la calibración contra área quemada mide **geografía de
+exposición/aislamiento**, no vulnerabilidad social. Por eso **no se recalibran los pesos**
+con GlobFire, y la **validación de la parte social requiere otra variable de resultado**:
+el **impacto humano** (evacuaciones/confinamientos), que es exactamente el dato que se
+pedirá a **AXEGA** (ver *Ingesta de datos de evacuación*). Salida:
+`data/confound_ourense.json`.
+
 ### Fase 5 — Mapa a escala (mínimo viable, hecho)
 
 La ruta **`/ourense`** pinta los 650 núcleos con **clustering de MapLibre**

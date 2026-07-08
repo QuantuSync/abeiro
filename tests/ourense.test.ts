@@ -68,6 +68,28 @@ describe("data/afectacion_globfire_ourense.json (historial de incendios)", () =>
   });
 });
 
+describe("data/exposicion_ourense.json + confound", () => {
+  const ex = leer("../data/exposicion_ourense.json");
+  const cf = leer("../data/confound_ourense.json");
+
+  it("frac_monte es una fracción 0-1 por núcleo", () => {
+    const vals = Object.values(ex.nucleos) as any[];
+    expect(vals.length).toBeGreaterThan(600);
+    for (const v of vals) {
+      expect(v.frac_monte).toBeGreaterThanOrEqual(0);
+      expect(v.frac_monte).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("el análisis del confound reporta AUC de exposición y correlaciones", () => {
+    expect(cf.auc_exposicion_sola.frac_monte.auc).toBeGreaterThan(0);
+    expect(cf.auc_exposicion_sola.dist_urbano.auc).toBeGreaterThan(0);
+    // la distancia a urbano discrimina más que la fracción de monte (confound = aislamiento)
+    expect(cf.auc_exposicion_sola.dist_urbano.auc).toBeGreaterThan(cf.auc_exposicion_sola.frac_monte.auc);
+    expect(cf.correlacion_componente_exposicion.iv.dist_urbano).toBeGreaterThan(0.4);
+  });
+});
+
 describe("public/nucleos_ourense.geojson (mapa a escala)", () => {
   const gj = leer("../public/nucleos_ourense.geojson");
 

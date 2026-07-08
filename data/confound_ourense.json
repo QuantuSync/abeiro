@@ -1,0 +1,100 @@
+{
+  "metadata": {
+    "descripcion": "Análisis del confound espacial: ¿la afectación por incendios la explica la exposición del paisaje (monte) más que la vulnerabilidad? AUC de exposición sola, correlación componentes↔exposición, y AUC estratificado por tercil de monte.",
+    "n_nucleos": 683,
+    "n_afectados": 103,
+    "lectura": "Si la exposición sola iguala/supera a los componentes y su correlación con capacidad/peligro es alta, y el AUC intra-tercil cae hacia 0.5, la afectación la manda la geografía del paisaje (ignición/exposición), no la vulnerabilidad social. Por eso NO se recalibran los pesos con GlobFire y la validación social requiere otra variable de resultado (impacto humano: evacuaciones/confinamientos, p. ej. AXEGA)."
+  },
+  "auc_exposicion_sola": {
+    "frac_monte": {
+      "etiqueta": "Fracción de monte (WorldCover)",
+      "auc": 0.424
+    },
+    "dist_urbano": {
+      "etiqueta": "Distancia a núcleo urbano (km)",
+      "auc": 0.609
+    }
+  },
+  "auc_componentes": {
+    "peligro_biofisico": {
+      "etiqueta": "Peligro biofísico",
+      "auc": 0.613
+    },
+    "score_social": {
+      "etiqueta": "Sensibilidad social",
+      "auc": 0.651
+    },
+    "capacidad_respuesta_inv": {
+      "etiqueta": "Capacidad (100−cap)",
+      "auc": 0.727
+    },
+    "iv": {
+      "etiqueta": "IV (índice)",
+      "auc": 0.691
+    }
+  },
+  "correlacion_componente_exposicion": {
+    "peligro_biofisico": {
+      "etiqueta": "Peligro biofísico",
+      "frac_monte": 0.6,
+      "dist_urbano": 0.24
+    },
+    "score_social": {
+      "etiqueta": "Sensibilidad social",
+      "frac_monte": 0.065,
+      "dist_urbano": 0.575
+    },
+    "capacidad_respuesta_inv": {
+      "etiqueta": "Capacidad (100−cap)",
+      "frac_monte": 0.082,
+      "dist_urbano": 0.444
+    },
+    "iv": {
+      "etiqueta": "IV (índice)",
+      "frac_monte": 0.216,
+      "dist_urbano": 0.633
+    }
+  },
+  "auc_estratificado_por_monte": {
+    "peligro_biofisico": {
+      "etiqueta": "Peligro biofísico",
+      "auc_global": 0.613,
+      "auc_por_tercil_monte": [
+        0.737,
+        0.623,
+        0.692
+      ],
+      "auc_medio_intra_tercil": 0.684
+    },
+    "score_social": {
+      "etiqueta": "Sensibilidad social",
+      "auc_global": 0.651,
+      "auc_por_tercil_monte": [
+        0.764,
+        0.557,
+        0.566
+      ],
+      "auc_medio_intra_tercil": 0.629
+    },
+    "capacidad_respuesta_inv": {
+      "etiqueta": "Capacidad (100−cap)",
+      "auc_global": 0.727,
+      "auc_por_tercil_monte": [
+        0.756,
+        0.753,
+        0.642
+      ],
+      "auc_medio_intra_tercil": 0.717
+    },
+    "iv": {
+      "etiqueta": "IV (índice)",
+      "auc_global": 0.691,
+      "auc_por_tercil_monte": [
+        0.801,
+        0.636,
+        0.608
+      ],
+      "auc_medio_intra_tercil": 0.682
+    }
+  }
+}

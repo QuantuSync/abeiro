@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -9,9 +9,17 @@ import { CAPAS_EVAC, CAPAS_VULN, CENTRO, ESTILO_BASE, ZOOM_INICIAL } from "@/lib
 import { anadirCapasEvacuacion, anadirCapasNucleos, anadirCapasVulnerabilidad } from "@/lib/capas-mapa";
 import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
 import { EXPRESION_COLOR_EVAC } from "@/lib/evacuacion";
+import { FILTROS_DEFECTO, filtrando, pasaFiltros, type Filtros } from "@/lib/filtros";
 import Leyenda, { type Lente } from "@/components/Leyenda";
 import PanelInfo from "@/components/PanelInfo";
 import PanelValidacion from "@/components/PanelValidacion";
+import PanelFiltros from "@/components/PanelFiltros";
+
+// Color base de las rutas por % de pista (igual que en lib/capas-mapa).
+const COLOR_RUTA_BASE = [
+  "step", ["get", "pct_track"], "#0571b0", 15, "#e08214", 30, "#ca0020",
+] as unknown as maplibregl.ExpressionSpecification;
+const GRIS_ATENUADO = "#9a958a";
 
 export default function MapaVulnerabilidad() {
   const contenedor = useRef<HTMLDivElement>(null);
@@ -20,6 +28,23 @@ export default function MapaVulnerabilidad() {
   const [mostrarValidacion, setMostrarValidacion] = useState(false);
   const [lente, setLente] = useState<Lente>("vulnerabilidad");
   const [rutaResaltada, setRutaResaltada] = useState<string | null>(null);
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_DEFECTO);
+
+  // Núcleos (no destinos) que cumplen el filtro y los que quedan fuera (para
+  // atenuarlos en el mapa). El filtro de vías aplica aquí (hay evacuación).
+  const { visibles, total, idsFuera } = useMemo(() => {
+    const opts = { campoAfectacion: "afect_fisica" as const, soporteVias: true };
+    const reales = nucleos.features.filter((f) => !f.properties.es_destino);
+    const activo = filtrando(filtros);
+    const fuera = activo
+      ? nucleos.features.filter((f) => !pasaFiltros(f.properties, filtros, opts)).map((f) => f.properties.id)
+      : [];
+    return {
+      total: reales.length,
+      visibles: reales.filter((f) => pasaFiltros(f.properties, filtros, opts)).length,
+      idsFuera: fuera,
+    };
+  }, [filtros]);
 
   useEffect(() => {
     if (!contenedor.current || mapRef.current) return;
@@ -85,15 +110,13 @@ export default function MapaVulnerabilidad() {
     }
   }, [seleccionado]);
 
-  // Aplica la lente activa: recolorea los núcleos y muestra/oculta capas.
+  // Aplica la lente activa: muestra/oculta las capas propias de cada lente.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const aplicar = () => {
       if (!map.getLayer("nucleos-punto")) return;
       const evac = lente === "evacuacion";
-      map.setPaintProperty("nucleos-punto", "circle-color",
-        (evac ? EXPRESION_COLOR_EVAC : EXPRESION_COLOR_IV) as maplibregl.ExpressionSpecification);
       for (const id of CAPAS_VULN) {
         if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", evac ? "none" : "visible");
       }
@@ -101,11 +124,52 @@ export default function MapaVulnerabilidad() {
         if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", evac ? "visible" : "none");
       }
     };
-    // Gate por existencia de capa (no por isStyleLoaded, que es false durante
-    // animaciones/carga de teselas aunque las capas ya existan).
     if (map.getLayer("nucleos-punto")) aplicar();
     else map.once("load", aplicar);
   }, [lente]);
+
+  // FOCO + FILTRO (Tareas 1 y 2): un único protagonista claro y contexto tenue.
+  // - Núcleo seleccionado: destaca; el resto se atenúa ligeramente (no invisible).
+  // - Filtrado fuera: gris y muy tenue (contexto), sin ocultarse.
+  // - En evacuación, la ruta del seleccionado destaca y las demás pasan a gris.
+  // Sin animaciones ni movimientos de cámara añadidos.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const aplicar = () => {
+      if (!map.getLayer("nucleos-punto")) return;
+      const base = (lente === "evacuacion" ? EXPRESION_COLOR_EVAC : EXPRESION_COLOR_IV) as maplibregl.ExpressionSpecification;
+      const sel = seleccionado?.id ?? null;
+      const fuera: maplibregl.ExpressionSpecification | boolean =
+        idsFuera.length ? (["in", ["get", "id"], ["literal", idsFuera]] as unknown as maplibregl.ExpressionSpecification) : false;
+      const noSel: maplibregl.ExpressionSpecification | boolean =
+        sel ? (["!=", ["get", "id"], sel] as unknown as maplibregl.ExpressionSpecification) : false;
+
+      // --- Núcleos: color (gris si filtrado fuera) y opacidad por foco ---
+      map.setPaintProperty("nucleos-punto", "circle-color",
+        (idsFuera.length ? ["case", fuera, GRIS_ATENUADO, base] : base) as maplibregl.ExpressionSpecification);
+      map.setPaintProperty("nucleos-punto", "circle-opacity",
+        ["case", fuera, 0.28, noSel, 0.55, 1] as unknown as maplibregl.ExpressionSpecification);
+      if (map.getLayer("nucleos-halo")) {
+        map.setPaintProperty("nucleos-halo", "circle-opacity",
+          ["case", fuera, 0.3, 0.92] as unknown as maplibregl.ExpressionSpecification);
+      }
+
+      // --- Rutas: foco de la seleccionada + atenuación del resto/filtradas ---
+      if (map.getLayer("rutas-evacuacion")) {
+        const atenuada: maplibregl.ExpressionSpecification =
+          ["any", fuera, noSel] as unknown as maplibregl.ExpressionSpecification;
+        map.setPaintProperty("rutas-evacuacion", "line-color",
+          ["case", atenuada, GRIS_ATENUADO, COLOR_RUTA_BASE] as unknown as maplibregl.ExpressionSpecification);
+        map.setPaintProperty("rutas-evacuacion", "line-opacity",
+          ["case", fuera, 0.18, noSel, 0.28, 1] as unknown as maplibregl.ExpressionSpecification);
+        map.setPaintProperty("rutas-casing", "line-opacity",
+          ["case", atenuada, 0.25, 0.9] as unknown as maplibregl.ExpressionSpecification);
+      }
+    };
+    if (map.getLayer("nucleos-punto")) aplicar();
+    else map.once("load", aplicar);
+  }, [seleccionado, lente, idsFuera]);
 
   // Resalta la ruta del núcleo seleccionado (glow dorado) según el estado.
   useEffect(() => {
@@ -117,10 +181,12 @@ export default function MapaVulnerabilidad() {
     else map.once("load", aplicar);
   }, [rutaResaltada]);
 
-  // Al cambiar de núcleo seleccionado (o cerrar el panel) se limpia el resaltado.
+  // En la lente de evacuación, la ruta del núcleo seleccionado se resalta (glow);
+  // al deseleccionar o en la otra lente, se limpia. Así el foco (glow + atenuación
+  // del resto) sigue siempre a la selección, sin acciones adicionales.
   useEffect(() => {
-    setRutaResaltada(null);
-  }, [seleccionado?.id]);
+    setRutaResaltada(lente === "evacuacion" && seleccionado ? seleccionado.id : null);
+  }, [seleccionado, lente]);
 
   // "Ruta de escape en coche": pasa a la lente de evacuación, resalta la ruta y
   // encuadra el trayecto núcleo -> destino seguro DENTRO de Valdeorras.
@@ -176,6 +242,14 @@ export default function MapaVulnerabilidad() {
       </div>
 
       <Leyenda lente={lente} />
+      <PanelFiltros
+        filtros={filtros}
+        onChange={setFiltros}
+        total={total}
+        visibles={visibles}
+        soporteVias={true}
+        campoAfectacionLabel="incendio 2025"
+      />
       <button
         className="btn-validacion"
         onClick={() => setMostrarValidacion((v) => !v)}

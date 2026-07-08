@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import type { FeatureCollection, Point } from "geojson";
 
 import { ESTILO_BASE } from "@/lib/mapa-config";
 import { EXPRESION_COLOR_IV, CATEGORIAS_IV, categoriaPorIV } from "@/lib/vulnerabilidad";
+import { FILTROS_DEFECTO, filtrando, pasaFiltros, type Filtros } from "@/lib/filtros";
+import PanelFiltros from "@/components/PanelFiltros";
 
 // Vista provincial de Ourense (683 núcleos activos, >=50 hab), lente de
 // VULNERABILIDAD (la evacuación queda fuera de este hito). Dos niveles:
@@ -31,10 +34,30 @@ function Barra({ valor, color }: { valor: number; color: string }) {
   return <div className="barra"><div className="barra-fill" style={{ width: `${valor}%`, backgroundColor: color }} /></div>;
 }
 
+type FCNuc = FeatureCollection<Point, NucleoOU>;
+
 export default function MapaOurense() {
   const contenedor = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const [sel, setSel] = useState<NucleoOU | null>(null);
+  const [datos, setDatos] = useState<FCNuc | null>(null);
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_DEFECTO);
+
+  // Núcleos que cumplen el filtro. Con clustering, el filtro se aplica sobre los
+  // DATOS de la fuente (setData): así clústeres y puntos reflejan el filtro, y el
+  // contador muestra cuántos quedan. Los destinos no existen en Ourense.
+  const { fcVisible, visibles, total } = useMemo(() => {
+    if (!datos) return { fcVisible: null as FCNuc | null, visibles: 0, total: 0 };
+    const opts = { campoAfectacion: "afectado_hist" as const, soporteVias: false };
+    const feats = filtrando(filtros)
+      ? datos.features.filter((f) => pasaFiltros(f.properties, filtros, opts))
+      : datos.features;
+    return {
+      fcVisible: { type: "FeatureCollection", features: feats } as FCNuc,
+      visibles: feats.length,
+      total: datos.features.length,
+    };
+  }, [datos, filtros]);
 
   useEffect(() => {
     if (!contenedor.current || mapRef.current) return;
@@ -47,7 +70,11 @@ export default function MapaOurense() {
     (window as unknown as { __mapaOurense?: MapLibreMap }).__mapaOurense = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
-    map.on("load", () => {
+    map.on("load", async () => {
+      // Se cargan los núcleos como datos (no URL) para poder filtrarlos con setData.
+      const gj = (await fetch("/nucleos_ourense.geojson").then((r) => r.json())) as FCNuc;
+      setDatos(gj);
+
       // --- Coropleta por concello (IV medio), visible de lejos --------------
       map.addSource("concellos", { type: "geojson", data: "/concellos_ourense.geojson" });
       map.addLayer({
@@ -74,7 +101,7 @@ export default function MapaOurense() {
 
       // --- Núcleos con clustering, visibles al acercar ----------------------
       map.addSource("nuc", {
-        type: "geojson", data: "/nucleos_ourense.geojson",
+        type: "geojson", data: gj,
         cluster: true, clusterRadius: 50, clusterMaxZoom: 12,
       });
       map.addLayer({
@@ -95,6 +122,7 @@ export default function MapaOurense() {
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["get", "iv"], 0, 5, 100, 10],
           "circle-color": EXPRESION_COLOR_IV as maplibregl.ExpressionSpecification,
+          "circle-opacity": 1,
           "circle-stroke-color": ["case", ["get", "afectado_hist"], "#3a0d06", "#1c1c1c"],
           "circle-stroke-width": ["case", ["get", "afectado_hist"], 2.6, 1.2],
         },
@@ -118,6 +146,11 @@ export default function MapaOurense() {
         const p = e.features?.[0]?.properties as unknown as NucleoOU;
         if (p) setSel(p);
       });
+      // Clic en zona vacía (fuera de núcleos/clústeres) cierra el panel.
+      map.on("click", (e) => {
+        const hits = map.queryRenderedFeatures(e.point, { layers: ["nucleo", "clusters"] });
+        if (hits.length === 0) setSel(null);
+      });
       for (const capa of ["concellos-fill", "clusters", "nucleo"]) {
         map.on("mouseenter", capa, () => { map.getCanvas().style.cursor = "pointer"; });
         map.on("mouseleave", capa, () => { map.getCanvas().style.cursor = ""; });
@@ -127,12 +160,45 @@ export default function MapaOurense() {
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
+  // FILTRO (Tarea 2): reduce el conjunto vía setData; clústeres y puntos se
+  // recomputan. Nada se filtra solo: solo al tocar los controles.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !fcVisible) return;
+    const src = map.getSource("nuc") as maplibregl.GeoJSONSource | undefined;
+    if (src) src.setData(fcVisible);
+  }, [fcVisible]);
+
+  // FOCO por selección (Tarea 1): el núcleo seleccionado destaca y el resto se
+  // atenúa ligeramente (contexto, no invisible). Sin movimientos de cámara.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const aplicar = () => {
+      if (!map.getLayer("nucleo")) return;
+      const sel2 = sel?.id ?? null;
+      map.setPaintProperty("nucleo", "circle-opacity",
+        (sel2 ? ["case", ["==", ["get", "id"], sel2], 1, 0.5] : 1) as unknown as maplibregl.ExpressionSpecification);
+    };
+    if (map.getLayer("nucleo")) aplicar();
+    else map.once("load", aplicar);
+  }, [sel]);
+
   const cat = sel ? categoriaPorIV(sel.iv) : null;
   const nc = sel ? nivelConfianza(sel.confianza) : null;
 
   return (
     <div className="mapa-wrap">
       <div ref={contenedor} className="mapa" />
+
+      <PanelFiltros
+        filtros={filtros}
+        onChange={setFiltros}
+        total={total}
+        visibles={visibles}
+        soporteVias={false}
+        campoAfectacionLabel="incendio (2001–2021)"
+      />
 
       {/* Leyenda: categorías del IV (paleta accesible) + avisos de alcance. */}
       <section className="leyenda" aria-label="Leyenda del Índice de Vulnerabilidad de Ourense">

@@ -308,6 +308,12 @@ export default function PanelInfo({
                 {nucleo.pct_track}% {nucleo.pct_track != null && nucleo.pct_track >= 25 && "⚠"}
               </dd>
             </div>
+            {nucleo.fiabilidad != null && (
+              <div>
+                <dt>Fiabilidad de la vía</dt>
+                <dd>{Math.round(nucleo.fiabilidad * 100)}%</dd>
+              </div>
+            )}
           </dl>
           <p className="evac-nota">
             Ruta más rápida por carretera (OSM, routing local; pistas penalizadas).

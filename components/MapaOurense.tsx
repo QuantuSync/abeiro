@@ -5,25 +5,36 @@ import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { ESTILO_BASE } from "@/lib/mapa-config";
-import { EXPRESION_COLOR_IV, categoriaPorIV } from "@/lib/vulnerabilidad";
+import { EXPRESION_COLOR_IV, CATEGORIAS_IV, categoriaPorIV } from "@/lib/vulnerabilidad";
 
-// Vista provincial de Ourense (650 núcleos activos, >=50 hab). A esta escala se
-// usa CLUSTERING de MapLibre para no bloquear el navegador: los puntos se
-// agrupan por zoom y solo se pintan individualmente al acercarse. Es la lente
-// de VULNERABILIDAD (la evacuación queda fuera de este hito).
+// Vista provincial de Ourense (683 núcleos activos, >=50 hab), lente de
+// VULNERABILIDAD (la evacuación queda fuera de este hito). Dos niveles:
+//   - Lejos: COROPLETA por concello (IV medio) para no saturar; clic = drill-down.
+//   - Cerca: los núcleos con CLUSTERING de MapLibre, coloreados por IV.
 const CENTRO: [number, number] = [-7.55, 42.20];
 const ZOOM = 8;
 
-interface Props {
+interface NucleoOU {
   id: string; nombre: string; concello: string; iv: number; poblacion: number;
-  afectado_hist: boolean; n_afectaciones: number; confianza: number;
-  peligro_biofisico?: number; score_social?: number; capacidad_respuesta?: number;
+  peligro_biofisico: number; score_social: number; capacidad_respuesta: number;
+  confianza: number; afectado_hist: boolean; n_afectaciones: number;
+}
+
+// Nivel legible de confianza (mismos umbrales que lib/indice.mjs).
+function nivelConfianza(c: number): { etiqueta: string; explica: string } {
+  if (c >= 0.75) return { etiqueta: "alta", explica: "la mayoría de las variables son medidas reales" };
+  if (c >= 0.5) return { etiqueta: "media", explica: "mezcla datos reales con aproximaciones" };
+  return { etiqueta: "baja", explica: "predominan estimaciones" };
+}
+
+function Barra({ valor, color }: { valor: number; color: string }) {
+  return <div className="barra"><div className="barra-fill" style={{ width: `${valor}%`, backgroundColor: color }} /></div>;
 }
 
 export default function MapaOurense() {
   const contenedor = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const [sel, setSel] = useState<Props | null>(null);
+  const [sel, setSel] = useState<NucleoOU | null>(null);
 
   useEffect(() => {
     if (!contenedor.current || mapRef.current) return;
@@ -37,31 +48,50 @@ export default function MapaOurense() {
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
     map.on("load", () => {
-      map.addSource("nuc", {
-        type: "geojson", data: "/nucleos_ourense.geojson",
-        cluster: true, clusterRadius: 55, clusterMaxZoom: 12,
+      // --- Coropleta por concello (IV medio), visible de lejos --------------
+      map.addSource("concellos", { type: "geojson", data: "/concellos_ourense.geojson" });
+      map.addLayer({
+        id: "concellos-fill", type: "fill", source: "concellos", maxzoom: 10.5,
+        paint: {
+          "fill-color": ["step", ["get", "iv_medio"], CATEGORIAS_IV[0].color,
+            20, CATEGORIAS_IV[1].color, 40, CATEGORIAS_IV[2].color,
+            60, CATEGORIAS_IV[3].color, 80, CATEGORIAS_IV[4].color],
+          "fill-opacity": 0.55,
+        },
+      });
+      map.addLayer({
+        id: "concellos-line", type: "line", source: "concellos", maxzoom: 10.5,
+        paint: { "line-color": "#15110a", "line-width": 0.6, "line-opacity": 0.5 },
+      });
+      map.addLayer({
+        id: "concellos-label", type: "symbol", source: "concellos", maxzoom: 10.5,
+        layout: {
+          "text-field": ["get", "concello"], "text-font": ["Noto Sans Bold"],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 8, 9, 10, 13], "text-padding": 6,
+        },
+        paint: { "text-color": "#161b18", "text-halo-color": "#ffffff", "text-halo-width": 1.8 },
       });
 
-      // Clusters: círculo dorado escalado por nº de núcleos agrupados.
+      // --- Núcleos con clustering, visibles al acercar ----------------------
+      map.addSource("nuc", {
+        type: "geojson", data: "/nucleos_ourense.geojson",
+        cluster: true, clusterRadius: 50, clusterMaxZoom: 12,
+      });
       map.addLayer({
-        id: "clusters", type: "circle", source: "nuc", filter: ["has", "point_count"],
+        id: "clusters", type: "circle", source: "nuc", filter: ["has", "point_count"], minzoom: 9,
         paint: {
-          "circle-color": "#c8a44a",
-          "circle-opacity": 0.85,
-          "circle-radius": ["step", ["get", "point_count"], 16, 10, 22, 50, 30],
+          "circle-color": "#c8a44a", "circle-opacity": 0.85,
+          "circle-radius": ["step", ["get", "point_count"], 15, 10, 20, 40, 27],
           "circle-stroke-width": 1.5, "circle-stroke-color": "#15110a",
         },
       });
       map.addLayer({
-        id: "cluster-count", type: "symbol", source: "nuc", filter: ["has", "point_count"],
+        id: "cluster-count", type: "symbol", source: "nuc", filter: ["has", "point_count"], minzoom: 9,
         layout: { "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Bold"], "text-size": 13 },
         paint: { "text-color": "#15110a" },
       });
-
-      // Núcleos individuales: color por IV (paleta accesible YlOrRd), borde más
-      // grueso y punto oscuro si tiene historial de incendios.
       map.addLayer({
-        id: "nucleo", type: "circle", source: "nuc", filter: ["!", ["has", "point_count"]],
+        id: "nucleo", type: "circle", source: "nuc", filter: ["!", ["has", "point_count"]], minzoom: 9,
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["get", "iv"], 0, 5, 100, 10],
           "circle-color": EXPRESION_COLOR_IV as maplibregl.ExpressionSpecification,
@@ -70,18 +100,25 @@ export default function MapaOurense() {
         },
       });
 
+      // Drill-down: clic en un concello encuadra su geometría.
+      map.on("click", "concellos-fill", (e) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        const coords = (f.geometry as GeoJSON.Polygon).coordinates[0] as [number, number][];
+        const b = coords.reduce((acc, c) => acc.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
+        map.fitBounds(b, { padding: 40, maxZoom: 12, duration: 700 });
+      });
       map.on("click", "clusters", (e) => {
         const f = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0];
-        const src = map.getSource("nuc") as maplibregl.GeoJSONSource;
-        src.getClusterExpansionZoom(f.properties!.cluster_id as number).then((z) => {
-          map.easeTo({ center: (f.geometry as GeoJSON.Point).coordinates as [number, number], zoom: z });
-        });
+        (map.getSource("nuc") as maplibregl.GeoJSONSource)
+          .getClusterExpansionZoom(f.properties!.cluster_id as number)
+          .then((z) => map.easeTo({ center: (f.geometry as GeoJSON.Point).coordinates as [number, number], zoom: z }));
       });
       map.on("click", "nucleo", (e) => {
-        const p = e.features?.[0]?.properties as unknown as Props;
+        const p = e.features?.[0]?.properties as unknown as NucleoOU;
         if (p) setSel(p);
       });
-      for (const capa of ["clusters", "nucleo"]) {
+      for (const capa of ["concellos-fill", "clusters", "nucleo"]) {
         map.on("mouseenter", capa, () => { map.getCanvas().style.cursor = "pointer"; });
         map.on("mouseleave", capa, () => { map.getCanvas().style.cursor = ""; });
       }
@@ -91,16 +128,42 @@ export default function MapaOurense() {
   }, []);
 
   const cat = sel ? categoriaPorIV(sel.iv) : null;
+  const nc = sel ? nivelConfianza(sel.confianza) : null;
+
   return (
     <div className="mapa-wrap">
       <div ref={contenedor} className="mapa" />
-      {sel && cat && (
+
+      {/* Leyenda: categorías del IV (paleta accesible) + avisos de alcance. */}
+      <section className="leyenda" aria-label="Leyenda del Índice de Vulnerabilidad de Ourense">
+        <h3>Índice de Vulnerabilidad</h3>
+        <ul>
+          {CATEGORIAS_IV.map((c) => (
+            <li key={c.id}>
+              <span className="swatch" style={{ backgroundColor: c.color }} />
+              <span className="etiqueta">{c.etiqueta}</span>
+              <span className="rango">{c.min}{c.max === 100 ? "–100" : `–${c.max}`}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="dato-real-nota"><span className="anillo" style={{ borderColor: "#3a0d06" }} /> Borde oscuro: con incendios 2001–2021</p>
+        <p className="aviso">
+          Aleja para ver el IV medio por <strong>concello</strong>; pincha uno para entrar.
+          Solo núcleos <strong>≥50 hab</strong> (los &lt;50, de los más vulnerables, quedan fuera
+          del primer barrido por coste). Afectación = proxy <strong>GlobFire</strong> (MODIS
+          ~500 m), no registro oficial. Pesos <strong>provisionales</strong>.
+        </p>
+      </section>
+
+      {sel && cat && nc && (
         <aside className="panel" aria-label={`Información de ${sel.nombre}`}>
           <button className="cerrar" onClick={() => setSel(null)} aria-label="Cerrar">×</button>
           <header className="panel-head">
             <h2>{sel.nombre}</h2>
             <p className="concello">Concello de {sel.concello}</p>
           </header>
+
+          <div className="bloque-titulo bt-vuln">Vulnerabilidad</div>
           <div className="iv-bloque" style={{ borderColor: cat.color }}>
             <div className="iv-num" style={{ color: cat.color }}>{sel.iv}</div>
             <div className="iv-meta">
@@ -108,22 +171,48 @@ export default function MapaOurense() {
               <span className="iv-cat" style={{ color: cat.color }}>Vulnerabilidad {cat.etiqueta.toLowerCase()}</span>
             </div>
           </div>
+
+          <p className={`confianza conf-${nc.etiqueta}`}>
+            Confianza del dato: <strong>{nc.etiqueta}</strong> — {nc.explica}.
+          </p>
+
           <dl className="datos">
-            <div><dt>Población</dt><dd>{sel.poblacion.toLocaleString("es-ES")} hab.</dd></div>
-            <div><dt>Peligro biofísico</dt><dd>{sel.peligro_biofisico ?? "—"}</dd></div>
-            <div><dt>Sensibilidad social</dt><dd>{sel.score_social ?? "—"}</dd></div>
-            <div><dt>Capacidad de respuesta</dt><dd>{sel.capacidad_respuesta ?? "—"}</dd></div>
             <div>
-              <dt>Incendios 2001–2021 (GlobFire)</dt>
-              <dd className={sel.afectado_hist ? "alerta" : ""}>
-                {sel.afectado_hist ? `${sel.n_afectaciones} vez(ces)` : "sin registro"}
-              </dd>
+              <dt>Población <span className="origen real" title="Nomenclátor IGE 2025">real · IGE</span></dt>
+              <dd>{sel.poblacion.toLocaleString("es-ES")} hab.</dd>
             </div>
           </dl>
+
+          <div className="factores">
+            <div className="factor">
+              <span>Peligro biofísico <span className="origen aprox" title="Sentinel-2 NDVI+NDMI · pendiente SRTM">aprox · satélite</span></span>
+              <Barra valor={sel.peligro_biofisico} color="#d9534f" /><strong>{sel.peligro_biofisico}</strong>
+            </div>
+            <div className="factor">
+              <span>Sensibilidad social <span className="origen real" title="% mayores 65 (Padrón INE) + población (IGE)">real · IGE/INE</span></span>
+              <Barra valor={sel.score_social} color="#c8a44a" /><strong>{sel.score_social}</strong>
+            </div>
+            <div className="factor">
+              <span>Capacidad de respuesta <span className="origen real" title="Vías de salida OpenStreetMap">real · OSM</span></span>
+              <Barra valor={sel.capacidad_respuesta} color="#2e8b57" /><strong>{sel.capacidad_respuesta}</strong>
+            </div>
+          </div>
+
+          <div className="afectacion">
+            <div className="afect-head">Incendios 2001–2021 <span className="origen aprox" title="GlobFire, MODIS ~500 m">proxy · GlobFire</span></div>
+            <div className={`afect-estado ${sel.afectado_hist ? "dentro" : "fuera"}`}>
+              {sel.afectado_hist ? `Afectado ${sel.n_afectaciones} vez(ces)` : "Sin registro de gran incendio"}
+            </div>
+            <p className="afect-nota">
+              GlobFire (MODIS ~500 m) capta grandes incendios; es un proxy, no el registro oficial
+              de la Xunta. La afectación por área quemada mide exposición del paisaje, no
+              vulnerabilidad social.
+            </p>
+          </div>
+
           <p className="disclaimer">
-            Piloto de escalado a Galicia. Vulnerabilidad con pesos <strong>provisionales</strong>,
-            no calibrados. La afectación GlobFire (MODIS ~500 m) es un proxy de grandes incendios,
-            no el registro oficial. No es herramienta operativa.
+            Piloto de escalado a Galicia (Ourense). Vulnerabilidad con pesos <strong>provisionales,
+            no calibrados</strong>. No es herramienta operativa.
           </p>
         </aside>
       )}

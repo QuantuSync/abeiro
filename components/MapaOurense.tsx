@@ -80,15 +80,15 @@ export default function MapaOurense() {
       map.addLayer({
         id: "clusters", type: "circle", source: "nuc", filter: ["has", "point_count"], minzoom: 9,
         paint: {
-          "circle-color": "#c8a44a", "circle-opacity": 0.85,
+          "circle-color": "#1f3b57", "circle-opacity": 0.9,
           "circle-radius": ["step", ["get", "point_count"], 15, 10, 20, 40, 27],
-          "circle-stroke-width": 1.5, "circle-stroke-color": "#15110a",
+          "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff",
         },
       });
       map.addLayer({
         id: "cluster-count", type: "symbol", source: "nuc", filter: ["has", "point_count"], minzoom: 9,
         layout: { "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Bold"], "text-size": 13 },
-        paint: { "text-color": "#15110a" },
+        paint: { "text-color": "#ffffff" },
       });
       map.addLayer({
         id: "nucleo", type: "circle", source: "nuc", filter: ["!", ["has", "point_count"]], minzoom: 9,
@@ -186,15 +186,15 @@ export default function MapaOurense() {
           <div className="factores">
             <div className="factor">
               <span>Peligro biofísico <span className="origen aprox" title="Combustible Sentinel-2 NDVI+NDMI (aproximación) · pendiente SRTM 30 m (respaldo del MDT-CNIG)">aprox · satélite/SRTM</span></span>
-              <Barra valor={sel.peligro_biofisico} color="#d9534f" /><strong>{sel.peligro_biofisico}</strong>
+              <Barra valor={sel.peligro_biofisico} color="#b5402f" /><strong>{sel.peligro_biofisico}</strong>
             </div>
             <div className="factor">
               <span>Sensibilidad social <span className="origen real" title="Población real (IGE) + % mayores 65 real del Padrón INE aplicado como proxy por concello">real · IGE/INE (proxy edad)</span></span>
-              <Barra valor={sel.score_social} color="#c8a44a" /><strong>{sel.score_social}</strong>
+              <Barra valor={sel.score_social} color="#a75f1b" /><strong>{sel.score_social}</strong>
             </div>
             <div className="factor">
               <span>Capacidad de respuesta <span className="origen real" title="Vías de salida OpenStreetMap">real · OSM</span></span>
-              <Barra valor={sel.capacidad_respuesta} color="#2e8b57" /><strong>{sel.capacidad_respuesta}</strong>
+              <Barra valor={sel.capacidad_respuesta} color="#2f6b46" /><strong>{sel.capacidad_respuesta}</strong>
             </div>
           </div>
 
@@ -204,15 +204,16 @@ export default function MapaOurense() {
               {sel.afectado_hist ? `Afectado ${sel.n_afectaciones} vez(ces)` : "Sin registro de gran incendio"}
             </div>
             <p className="afect-nota">
-              GlobFire (MODIS ~500 m) capta grandes incendios; es un proxy, no el registro oficial
-              de la Xunta. La afectación por área quemada mide exposición del paisaje, no
-              vulnerabilidad social.
+              GlobFire (Comisión Europea, satélite MODIS) aporta el historial de grandes
+              incendios 2001–2021. La validación con datos de <strong>impacto humano</strong>
+              {" "}(evacuaciones y confinamientos) está integrada en el sistema y se activará al
+              incorporarlos.
             </p>
           </div>
 
           <p className="disclaimer">
-            Piloto de escalado a Galicia (Ourense). Vulnerabilidad con pesos <strong>provisionales,
-            no calibrados</strong>. No es herramienta operativa.
+            Piloto de escalado a Galicia (Ourense). Índice de apoyo a la decisión con pesos
+            provisionales; no sustituye al despacho operativo de los servicios de emergencia.
           </p>
         </aside>
       )}

@@ -21,7 +21,7 @@ export default function OurensePage() {
         </div>
         <div className="contexto">
           <span className="comarca">
-            <strong>650 núcleos</strong> (≥50 hab) · lente de vulnerabilidad
+            <strong>683 núcleos</strong> (≥50 hab) · lente de vulnerabilidad
           </span>
           <span className="distintivo">
             Demostrador · pesos <em>provisionales</em>

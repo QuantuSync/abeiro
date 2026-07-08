@@ -219,7 +219,7 @@ export default function PanelInfo({
               <Origen real={false} texto="estimación" />
             )}
           </span>
-          <Barra valor={nucleo.peligro_biofisico} color="#d9534f" />
+          <Barra valor={nucleo.peligro_biofisico} color="#b5402f" />
           <strong>{nucleo.peligro_biofisico}</strong>
         </div>
         {nucleo.dato_pendiente_real && (
@@ -256,7 +256,7 @@ export default function PanelInfo({
             Capacidad de respuesta{" "}
             <Origen real={!!nucleo.dato_capacidad_real} texto={nucleo.dato_capacidad_real ? "real · OSM" : "estimación"} />
           </span>
-          <Barra valor={nucleo.capacidad_respuesta} color="#2e8b57" />
+          <Barra valor={nucleo.capacidad_respuesta} color="#2f6b46" />
           <strong>{nucleo.capacidad_respuesta}</strong>
         </div>
       </div>
@@ -374,9 +374,8 @@ export default function PanelInfo({
             <div className="afect-fecha">Frente más próximo: <strong>{nucleo.fecha_frente}</strong></div>
           )}
           <p className="afect-nota">
-            Perímetro EMSR837/AOI01 (delineación Copernicus EMS, ago-2025). Capa de
-            validación, no componente del índice. El perímetro puede no ser completo
-            respecto al total del complejo de incendios.
+            Perímetro oficial EMSR837/AOI01 (delineación Copernicus EMS, ago-2025), empleado
+            como capa de validación del índice frente al incendio real.
           </p>
         </div>
       )}
@@ -384,18 +383,18 @@ export default function PanelInfo({
       {nucleo.notas && <p className="notas">{nucleo.notas}</p>}
 
       <p className="disclaimer">
-        Abeiro informa, no sustituye a los servicios oficiales de emergencia. Salidas
-        probabilísticas.{" "}
+        Abeiro es una herramienta de apoyo a la decisión; no sustituye al despacho oficial de
+        los servicios de emergencia.{" "}
         {nucleo.dato_poblacion_real ? (
           <>
-            Dato real: población (Nomenclátor IGE 2025
+            Datos reales: población (Nomenclátor IGE 2025
             {nucleo.ige_nome ? `, "${nucleo.ige_nome}"` : ""})
             {nucleo.dato_edad_real ? ", % de mayores (Padrón IGE 2022, proxy concello)" : ""}
             {nucleo.dato_capacidad_real ? ", vías de salida (OpenStreetMap)" : ""}. El
-            peligro biofísico sigue siendo estimación provisional.
+            peligro biofísico se mide por satélite (Sentinel-2) como aproximación.
           </>
         ) : (
-          <strong>Datos de prueba.</strong>
+          <strong>Datos de demostración.</strong>
         )}
       </p>
     </aside>

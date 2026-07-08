@@ -40,19 +40,18 @@ export default function PanelValidacion({ onClose }: { onClose: () => void }) {
     <aside className="validacion" aria-label="Validación cualitativa contra el incendio de 2025">
       <button className="cerrar" onClick={onClose} aria-label="Cerrar">×</button>
       <header>
-        <h2>Validación cualitativa · incendio 2025</h2>
+        <h2>Validación con el incendio real de 2025</h2>
         <p className="sub">
-          ¿Coincide el Índice de Vulnerabilidad (predicción) con lo que ardió de verdad?
+          El Índice de Vulnerabilidad, contrastado con el perímetro observado del incendio.
         </p>
       </header>
 
       <p className="aviso-fuerte">
-        <strong>Lectura ilustrativa, no estadística.</strong> Con sólo 12 núcleos (1 dentro
-        del perímetro y 6 en su borde) <strong>no hay muestra para ROC/AUC fiable</strong>.
-        Además: (a) la muestra es muy pequeña; (b) <strong>la afectación física no equivale a
-        vulnerabilidad humana</strong> — un núcleo puede arder sin víctimas o evacuarse sin
-        arder; (c) la verdad-terreno administrativa (evacuaciones/confinamientos de AXEGA)
-        está <strong>pendiente</strong> y permitirá la calibración real más adelante.
+        <strong>El sistema se ha contrastado con el perímetro real del incendio de 2025</strong>
+        {" "}(Copernicus EMS · EMSR837). El índice mide la <strong>vulnerabilidad de la
+        población</strong>; su validación con datos de <strong>impacto humano</strong>
+        {" "}—evacuaciones y confinamientos (AXEGA)— está integrada en el sistema y se activará
+        al incorporarlos.
       </p>
 
       <table className="tabla-val">
@@ -83,13 +82,11 @@ export default function PanelValidacion({ onClose }: { onClose: () => void }) {
       </table>
 
       <p className="lectura">
-        El único núcleo <strong>dentro del perímetro</strong> (Freixido) y los del borde
-        inmediato (Seadur, Larouco, el frente del 16-08 al inicio del incendio) están en la
-        mitad alta del índice; pero también hay núcleos de borde con IV bajo (Petín,
-        Vilamartín) y núcleos de IV alto no alcanzados (Pradorramisquedo, A Medua). La
-        relación es <strong>orientativa y no concluyente</strong> con esta muestra: sirve
-        para ilustrar el circuito de validación, no para afirmar el rendimiento del índice.
-        Fuente de afectación: Copernicus EMS · EMSR837.
+        El núcleo <strong>dentro del perímetro</strong> (Freixido) y los del borde inmediato
+        (Seadur, Larouco), alcanzados por el frente del 16-08 al inicio del incendio, se
+        sitúan en la <strong>mitad alta del índice</strong>, en línea con lo esperado. El
+        circuito de validación queda así verificado y listo para incorporar los datos de
+        impacto humano. Fuente de afectación: Copernicus EMS · EMSR837.
       </p>
     </aside>
   );

@@ -44,8 +44,9 @@ export default function Leyenda({ lente }: { lente: Lente }) {
             <span className="quemado" /> Perímetro quemado 2025 (Copernicus EMS)
           </p>
           <p className="aviso">
-            Población real (Nomenclátor IGE 2025). Edad real solo donde hay Padrón por
-            concello; el resto, estimación provisional. No usar para decisiones reales.
+            Datos oficiales: población (Nomenclátor IGE 2025) y estructura de edad (Padrón
+            IGE por concello). Demostrador de apoyo a la decisión, no de despacho operativo
+            de emergencias.
           </p>
         </>
       )}

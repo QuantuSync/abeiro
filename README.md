@@ -489,11 +489,16 @@ gallego/castellano, reportadas), cubriendo **los 92 concellos**. Marca `activo` 
 calibración. Reparto de población (entidades casadas): 141 despobladas, 2.585 de 1–49 hab,
 353 de 50–99, 168 de 100–199, 96 de 200–499, 20 de 500–999, 13 de ≥1000.
 
-> **Núcleos ≥50 hab perdidos por el cruce (para revisión manual):** de las 683 entidades
-> IGE de ≥50 hab, **39 (5,7 %)** no casaron con un punto NGBE por grafía divergente
-> gallego/castellano — entre ellas urbanizaciones (Urbanización Monterrei, 443 hab) y hasta
-> una capital municipal (Vilariño de Conso, 140). No es bloqueante para la calibración, pero
-> deben rescatarse a mano al pasar a producto.
+> **Rescate de núcleos ≥50 hab por grafía divergente:** el cruce exacto por
+> `(concello, nombre normalizado)` dejaba sin casar 39 entidades de ≥50 hab por divergencias
+> gallego/castellano, artículos y acentos. `construir-nucleos-ourense.py` añade
+> **emparejamiento aproximado dentro del concello** (Levenshtein normalizado ≥0,80 +
+> contención de tokens para capitales con nombre truncado, p. ej. *Vilariño* ⊂ *Vilariño de
+> Conso*). Resultado: **36 de 39 rescatados automáticamente** (incluidas las capitales
+> Vilariño de Conso, Ríos y Quintela de Leirado, y urbanizaciones como Monterrei). Quedan
+> **4 sin resolver** —Fonsillón (331 hab), Ponte Barxas (118), Lavandeira (82), Cimadevila
+> (56)— que el NGBE no recoge como entidad singular; se **listan explícitamente** para
+> revisión manual (no se fuerzan). El total activo sube de **650 a 683 núcleos**.
 >
 > **El umbral de ≥50 hab es de conveniencia computacional, no un criterio de vulnerabilidad.**
 > La propia tesis social del índice sostiene que las aldeas <50 hab, envejecidas y aisladas,

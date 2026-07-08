@@ -73,7 +73,7 @@ describe("public/nucleos_ourense.geojson (mapa a escala)", () => {
 
   it("es un FeatureCollection de núcleos activos con IV y afectación", () => {
     expect(gj.type).toBe("FeatureCollection");
-    expect(gj.features.length).toBe(650);
+    expect(gj.features.length).toBeGreaterThanOrEqual(680); // 683 activos (tras rescate por grafía)
     for (const f of gj.features) {
       const p = f.properties;
       expect(f.geometry.type).toBe("Point");

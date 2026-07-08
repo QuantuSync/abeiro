@@ -85,29 +85,90 @@ def codmun_de(lon, lat):
     return None, None
 
 # --- 3) IGE: población + parroquia por (codmun, nombre) -----------------------
-ige = {}  # (codmun5, norm(nombre)) -> {pob, parroquia, nome}
+# IGE indexado por concello: lista de entidades singulares (con flag de uso).
+ige_conc = {}  # codmun5 -> [ {norm, pob, parroquia_ec, nome, usada} ]
 igerows = [r for r in csv.reader(open(os.path.join(DATA, "Fichero1.txt"), encoding="latin1")) if len(r) >= 8][1:]
-# ec (entidad colectiva) -> nombre de parroquia: la fila es=01 de cada ec suele
-# ser la cabecera; guardamos el nombre de la ec para etiquetar la parroquia.
+n_ige = 0
 for r in igerows:
     codprov, codmun3, ec, es, nuc, nome, pob = r[1], r[2], r[3], r[4], r[5], r[6], int(r[7])
     if nuc != "00" or es == "00":  # solo entidades singulares
         continue
-    codmun5 = codprov + codmun3
-    ige[(codmun5, norm(nome))] = {"pob": pob, "parroquia_ec": ec, "nome_ige": nome}
-print(f"IGE: {len(ige)} entidades singulares de Ourense")
+    ige_conc.setdefault(codprov + codmun3, []).append(
+        {"norm": norm(nome), "pob": pob, "parroquia_ec": ec, "nome": nome, "usada": False})
+    n_ige += 1
+print(f"IGE: {n_ige} entidades singulares de Ourense")
+
+# --- emparejamiento aproximado (rescate de grafías divergentes) ---------------
+# Similitud de Levenshtein normalizada + contención de tokens (para capitales con
+# nombre truncado: "Vilariño" ⊂ "Vilariño de Conso"). Umbral alto para no meter
+# falsos positivos; los dudosos quedan sin resolver (revisión manual).
+SIM_MIN = 0.80
+def levenshtein(a, b):
+    if a == b: return 0
+    if not a: return len(b)
+    if not b: return len(a)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[-1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+def similitud(a, b):
+    m = max(len(a), len(b))
+    return 1 - levenshtein(a, b) / m if m else 1.0
+def tokens_contenidos(a, b):
+    ta, tb = set(t for t in a.split() if len(t) >= 3), set(t for t in b.split() if len(t) >= 3)
+    return bool(ta) and bool(tb) and (ta <= tb or tb <= ta)
+
+# Tabla manual de correspondencias (codmun, norm_ige) -> norm_ngbe, para casos
+# claros que ni el exacto ni el fuzzy resuelven. Vacía por ahora: el fuzzy +
+# contención de tokens cubre las capitales; se rellena si aparece algún caso.
+TABLA_MANUAL = {}
+
+def casar(codmun5, nombre_ngbe):
+    """Devuelve la entidad IGE del concello que casa (exacto/fuzzy/tabla), o None."""
+    ents = ige_conc.get(codmun5, [])
+    nn = norm(nombre_ngbe)
+    # a) exacto
+    for e in ents:
+        if not e["usada"] and e["norm"] == nn:
+            return e, "exacto"
+    # b) tabla manual
+    obj = TABLA_MANUAL.get((codmun5, nn))
+    if obj:
+        for e in ents:
+            if not e["usada"] and e["norm"] == obj:
+                return e, "tabla"
+    # c) fuzzy: mejor por contención de tokens o similitud alta
+    mejor, mejor_sc = None, 0.0
+    for e in ents:
+        if e["usada"]:
+            continue
+        sc = similitud(nn, e["norm"])
+        if tokens_contenidos(nn, e["norm"]):
+            sc = max(sc, 0.90)  # contención estricta: match fuerte
+        if sc > mejor_sc:
+            mejor, mejor_sc = e, sc
+    if mejor and mejor_sc >= SIM_MIN:
+        return mejor, "fuzzy"
+    return None, None
 
 # --- cruce --------------------------------------------------------------------
 features, sin_codmun, sin_ige = [], 0, 0
+rescatados = {"fuzzy": [], "tabla": []}
 for s in singulares:
     codmun5, concello = codmun_de(s["lon"], s["lat"])
     if not codmun5:
         sin_codmun += 1
         continue
-    m = ige.get((codmun5, norm(s["nombre"])))
+    m, via = casar(codmun5, s["nombre"])
     if not m:
         sin_ige += 1
         continue
+    m["usada"] = True
+    if via in ("fuzzy", "tabla") and m["pob"] >= UMBRAL_POBLACION:
+        rescatados[via].append((s["nombre"], m["nome"], m["pob"]))
     features.append({
         "type": "Feature",
         "geometry": {"type": "Point", "coordinates": [round(s["lon"], 6), round(s["lat"], 6)]},
@@ -120,13 +181,24 @@ for s in singulares:
             "parroquia_ec": m["parroquia_ec"],
             "poblacion": m["pob"],
             "activo": m["pob"] >= UMBRAL_POBLACION,
+            "cruce_via": via,
             "dato_coordenadas_real": True,
             "fuente_coordenadas": f"NGBE/IGN (Nomenclátor Geográfico Básico), NamedPlace {s['id']}",
             "dato_poblacion_real": True,
             "fuente_poblacion": "Nomenclátor IGE 2025 (entidade singular)",
-            "ige_nome": m["nome_ige"],
+            "ige_nome": m["nome"],
         },
     })
+
+# Entidades IGE >=50 hab que NINGÚN punto NGBE casó: se pierden (revisión manual).
+sin_resolver = [(e["nome"], e["pob"], cod) for cod, ents in ige_conc.items()
+                for e in ents if not e["usada"] and e["pob"] >= UMBRAL_POBLACION]
+sin_resolver.sort(key=lambda x: -x[1])
+print(f"\nRescatados por fuzzy: {len(rescatados['fuzzy'])} · por tabla: {len(rescatados['tabla'])} "
+      f"(entidades >=50 hab que el exacto no casaba)")
+print(f"Entidades >=50 hab SIN resolver (sin punto NGBE; revisión manual): {len(sin_resolver)}")
+for nome, pob, cod in sin_resolver:
+    print(f"  [{cod}] {nome} ({pob} hab)")
 
 activos = [f for f in features if f["properties"]["activo"]]
 print(f"\nCruce NGBE↔IGE: {len(features)} entidades casadas "

@@ -9,7 +9,7 @@ const nextConfig = {
           {
             key: 'Content-Security-Policy',
             value:
-              "frame-ancestors 'self' https://www.casaalaniz.es https://casaalaniz.es",
+              "frame-ancestors 'self' https://www.casaalaniz.es https://casaalaniz.es https://fasor.es https://www.fasor.es http://localhost:5173",
           },
         ],
       },

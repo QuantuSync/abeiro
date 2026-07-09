@@ -8,9 +8,10 @@ import { useMemo } from "react";
 import type {NucleoProps, UseNucleosResult} from "@/lib/tipos"
 import { construirNucleos } from "@/lib/nucleos";
 
-// import nucleosData from "@/data/nucleos.json";
-// import afectacionData from "@/data/nucleos_afectacion_fisica.json";
-// import evacuacionData from "@/data/evacuacion.json";
+//CUIDADO... JSON
+import nucleosData from "@/data/nucleos.json";
+import afectacionData from "@/data/nucleos_afectacion_fisica.json";
+import evacuacionData from "@/data/evacuacion.json";
 
 // - Partial ==> coge los PanelInfo.NucleoProps y hace que todas sus propiedades sean opcionales 
 // (porque no todos los núcleos tienen afectación ni rutas de evacuación).

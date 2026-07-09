@@ -2,7 +2,7 @@
 
 import { categoriaPorIV } from "@/lib/vulnerabilidad";
 import { categoriaEvac } from "@/lib/evacuacion";
-import type { NucleoProps } from "@/lib/datos";
+import type { NucleoProps } from "@/lib/tipos";
 
 //ANTES import {NucleoProps} from "@/lib/tipos"
 // El tipo de las propiedades fusionadas vive en lib/datos.ts; se re-exporta

@@ -19,16 +19,36 @@
 //   * % MAYORES 65: proxy a nivel CONCELLO (Padrón 2022) aplicado a sus aldeas.
 //     pct_mayores_65 se guarda como fracción 0-1.
 //   * Se excluyen aldeas con 0 habitantes. Nombres leídos en latin1 -> UTF-8.
-//   * IV: se recalcula SOLO la componente social, como delta desde la base:
-//       iv = iv0 + PESO_SOCIAL * (pct_real - pct0) * 100
-//     dejando intactas peligro biofísico y capacidad de respuesta. El peso es
-//     PROVISIONAL (no calibrado); la calibración supervisada (ROC/AUC) es fase
-//     posterior. Si un concello no tiene edad disponible, el núcleo conserva iv0.
+//   * IV: se COMPONE directamente desde las tres componentes normalizadas 0-100
+//     (ya sin anclar al iv inventado de Fase 0):
+//       iv = PESO_PELIGRO·peligro_biofisico + PESO_SOCIAL·score_social
+//            + PESO_CAP·(100 − capacidad_respuesta)
+//     Dirección de cada subíndice (documentada también en metadata):
+//       - peligro_biofisico   0-100: MÁS peligro    -> MÁS IV (positivo)
+//       - score_social        0-100: MÁS sensibilidad -> MÁS IV (positivo)
+//       - capacidad_respuesta 0-100: MÁS capacidad  -> MENOS IV (entra invertida
+//         como 100 − capacidad).
+//     Los pesos son PROVISIONALES (no calibrados); la calibración supervisada
+//     (ROC/AUC contra el incendio de 2025) es fase posterior. El IV antiguo de
+//     Fase 0 (delta sobre iv0 inventado) se conserva como `iv_fase0` SOLO como
+//     columna de comparación: no se pinta en el mapa.
 // =============================================================================
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+// Toda la lógica PURA del índice (pesos, score social, IV, combustible,
+// normalización de nombres) vive en lib/indice.mjs, compartida con los tests
+// y con scripts/sensibilidad-pesos.mjs.
+import {
+  PESO_SOCIAL, PESO_CAP, PESO_PELIGRO, PESO_PENDIENTE, PESO_COMBUST,
+  NDMI_AMP, NDVI_RANGO_FIJO, NDMI_RANGO_FIJO,
+  SUBPESOS_SOCIAL, RANGO_MAYORES_65, RANGO_UNIPER,
+  scorePendiente, peligroBiofisico, factorNDMI, combustibleSatelite,
+  scoreSocial, calcularIV, confianzaNucleo,
+  PESOS_VIA, salidasPonderadas, capDeSalidas,
+  norm, sinEspacios,
+} from "../lib/indice.mjs";
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const DATA = join(DIR, "..", "data");
@@ -36,104 +56,12 @@ const DATA = join(DIR, "..", "data");
 // Ficheros del Nomenclátor por concello (población real por aldea).
 const FICHEROS_CONCELLO = [5, 9, 10, 11, 12, 13, 14, 15, 16];
 
-const PESO_SOCIAL = 0.35;  // peso provisional de la sensibilidad social en el IV
-const PESO_CAP = 0.25;     // peso provisional de la capacidad de respuesta en el IV
-const PESO_PELIGRO = 0.40; // peso provisional del peligro biofísico en el IV
-
-// Peligro biofísico (0-100) = combinación de PENDIENTE (real) y COMBUSTIBLE
-// (aproximación). Pesos provisionales documentados.
-const PESO_PENDIENTE = 0.40; // contribución de la pendiente al peligro
-const PESO_COMBUST = 0.60;   // contribución de la combustibilidad al peligro
-
-// Pendiente (grados) -> subíndice 0-100. ~35° o más = máximo (propagación muy
-// acelerada). Lineal saturado, provisional.
-const scorePendiente = (grados) =>
-  Math.max(0, Math.min(100, Math.round((grados / 35) * 100)));
-
-// Peligro biofísico a partir de pendiente (grados) y combustibilidad (0-100).
-function peligroBiofisico(grados, combustibilidad) {
-  const sp = scorePendiente(grados);
-  return Math.round(PESO_PENDIENTE * sp + PESO_COMBUST * combustibilidad);
-}
-
-// AMP = amplitud máxima de la modulación por humedad (NDMI), ±30%, provisional.
-const NDMI_AMP = 0.30;
-
-// Factor de inflamabilidad por humedad (NDMI invertido, normalizado al rango
-// observado): NDMI bajo (seco) -> >1; alto (húmedo) -> <1.
-function factorNDMI(ndmi, ndmiMin, ndmiMax) {
-  const norm = ndmiMax > ndmiMin
-    ? Math.max(0, Math.min(1, (ndmi - ndmiMin) / (ndmiMax - ndmiMin)))
-    : 0.5;
-  return 1 + NDMI_AMP * (1 - 2 * norm); // 0(seco)->1+AMP ; 1(húmedo)->1-AMP
-}
-
-// COMBUSTIBLE BASADO EN SATÉLITE (Sentinel-2). El NDVI mide CUÁNTA biomasa hay
-// (cantidad de material) y el NDMI modula la INFLAMABILIDAD (cómo de seco está):
-//   biomasa      = NDVI normalizado al rango observado * 100      (0-100)
-//   combustible  = biomasa * factorNDMI                            (0-100)
-// => Mucha biomasa + seca = máximo; mucha biomasa + húmeda = media; poca biomasa
-//    = baja esté seca o no (multiplicativo: 0 de biomasa -> 0). Esto mantiene a
-//    los núcleos urbanos (NDVI bajo) con combustible bajo pese a NDMI seco.
-function combustibleSatelite(ndvi, ndmi, ndviMin, ndviMax, ndmiMin, ndmiMax) {
-  const biomasaNorm = ndviMax > ndviMin
-    ? Math.max(0, Math.min(1, (ndvi - ndviMin) / (ndviMax - ndviMin)))
-    : 0.5;
-  const biomasa = biomasaNorm * 100;
-  const factor = factorNDMI(ndmi, ndmiMin, ndmiMax);
-  return {
-    biomasa: Math.round(biomasa),
-    factor,
-    combustibilidad: Math.max(0, Math.min(100, Math.round(biomasa * factor))),
-  };
-}
-
-// RESPALDO: combustible por cubierta OSM modulada por NDMI (solo para núcleos
-// sin dato de satélite).
-function combustibleOSM(combOSM, ndmi, ndmiMin, ndmiMax) {
-  const factor = factorNDMI(ndmi, ndmiMin, ndmiMax);
-  return { factor, combustibilidad: Math.max(0, Math.min(100, Math.round(combOSM * factor))) };
-}
-
-// Peso por CLASE de vía al contar salidas. Una pista forestal no es una vía de
-// evacuación fiable ante un incendio (puede estar cortada, sin asfaltar,
-// intransitable con humo), así que cuenta mucho menos que una carretera.
-//   - primary/secondary/tertiary  -> 1.0  (carretera asfaltada: salida plena)
-//   - unclassified/residential    -> 0.5  (vía menor: peso intermedio)
-//   - track                       -> 0.2  (pista forestal: peso bajo)
-const PESOS_VIA = {
-  primary: 1.0, secondary: 1.0, tertiary: 1.0,
-  unclassified: 0.5, residential: 0.5,
-  track: 0.2,
-};
-const PESO_VIA_DEFECTO = 0.5; // clases no listadas: peso intermedio prudente
-
-// Recuento PONDERADO de salidas a partir del desglose por tipo (OSM).
-const salidasPonderadas = (porTipo = {}) =>
-  Object.entries(porTipo).reduce(
-    (acc, [tipo, n]) => acc + n * (PESOS_VIA[tipo] ?? PESO_VIA_DEFECTO), 0);
-
-// Capacidad de respuesta (0-100) a partir del recuento (ponderado) de salidas.
-// Mapeo PROVISIONAL lineal saturado (~40 salidas plenas -> 100). Mayor capacidad
-// = menor vulnerabilidad (entra en el IV con signo negativo).
-const capDeSalidas = (vias) =>
-  Math.max(0, Math.min(100, Math.round(vias * 2.5)));
-
-// --- utilidades CSV / normalización ------------------------------------------
+// --- utilidades CSV -----------------------------------------------------------
 
 function campos(linea) {
   const m = linea.match(/("(?:[^"]|"")*"|[^,]+)/g);
   return m ? m.map((s) => s.replace(/^"|"$/g, "").replace(/""/g, '"')) : [];
 }
-
-function norm(nombre) {
-  let s = nombre.trim().toLowerCase();
-  const art = s.match(/^(.*),\s*(o|a|os|as)$/); // "rúa, a" -> "a rúa"
-  if (art) s = `${art[2]} ${art[1]}`;
-  s = s.normalize("NFD").replace(/[̀-ͯ]/g, ""); // sin tildes
-  return s.replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
-}
-const sinEspacios = (s) => norm(s).replace(/ /g, "");
 
 // --- 1) % mayores por concello (CSV) -----------------------------------------
 
@@ -199,18 +127,35 @@ const base = JSON.parse(readFileSync(join(DATA, "nucleos.base.json"), "utf8"));
 const cargaCache = (f) => existsSync(join(DATA, f))
   ? JSON.parse(readFileSync(join(DATA, f), "utf8")).nucleos || {} : {};
 const accesos = cargaCache("accesos_osm.json");     // capacidad de respuesta
+// Análisis de sensibilidad de pesos (scripts/sensibilidad-pesos.mjs): si existe,
+// aporta rango_iv = [min, max] del IV de cada núcleo al variar los pesos.
+const sensibilidad = cargaCache("sensibilidad_pesos.json");
 const pendiente = cargaCache("pendiente_dem.json"); // peligro: pendiente (real)
 const combustible = cargaCache("combustible_osm.json"); // peligro: cubierta (OSM, respaldo)
 const ndmi = cargaCache("ndmi_sentinel2.json");     // peligro: humedad vegetación (Sentinel-2)
 const ndvi = cargaCache("ndvi_sentinel2.json");     // peligro: biomasa vegetación (Sentinel-2)
 
-// Rangos observados (para normalizar al conjunto de núcleos).
-const rango = (obj, k) => {
+// -----------------------------------------------------------------------------
+// Cachés de SATÉLITE pendientes de re-medición. Tras corregir las coordenadas
+// de Fase 0 (desplazadas hasta 57 km), los NDVI/NDMI se RE-MIDIERON con
+// scripts/fetch-satelite.py (Earth Engine) sobre las coordenadas reales,
+// período pre-incendio 2025-06-01 a 2025-07-31, buffer 1 km: el conjunto queda
+// VACÍO. Si una futura edición de coordenadas vuelve a invalidar la medición
+// de algún núcleo, añádelo aquí (cae al respaldo por cubierta OSM) hasta
+// re-ejecutar fetch-satelite.py.
+// -----------------------------------------------------------------------------
+const SATELITE_PENDIENTE_REMEDICION = new Set([]);
+
+// Normalización con RANGOS FIJOS documentados (con recorte fuera de rango).
+// Los rangos observados de la muestra se calculan solo como referencia histórica.
+const [NDMI_MIN, NDMI_MAX] = NDMI_RANGO_FIJO;
+const [NDVI_MIN, NDVI_MAX] = NDVI_RANGO_FIJO;
+const rangoObservado = (obj, k) => {
   const v = Object.values(obj).map((x) => x[k]).filter((n) => n != null);
-  return v.length ? [Math.min(...v), Math.max(...v)] : [0, 1];
+  return v.length ? [Math.min(...v), Math.max(...v)] : null;
 };
-const [NDMI_MIN, NDMI_MAX] = rango(ndmi, "ndmi");
-const [NDVI_MIN, NDVI_MAX] = rango(ndvi, "ndvi");
+const NDMI_OBSERVADO = rangoObservado(ndmi, "ndmi");
+const NDVI_OBSERVADO = rangoObservado(ndvi, "ndvi");
 
 const informe = [];
 
@@ -273,7 +218,12 @@ for (const feat of base.features) {
   }
 
   // --- componente PELIGRO BIOFÍSICO (pendiente real + combustible SATÉLITE) ---
-  const pe = pendiente[p.id], co = combustible[p.id], nm = ndmi[p.id], nv = ndvi[p.id];
+  // Los NDVI/NDMI medidos en la coordenada antigua (desplazada) se descartan:
+  // el núcleo cae al respaldo por cubierta OSM hasta re-medir con Earth Engine.
+  const sateliteValido = !SATELITE_PENDIENTE_REMEDICION.has(p.id);
+  const pe = pendiente[p.id], co = combustible[p.id];
+  const nm = sateliteValido ? ndmi[p.id] : null;
+  const nv = sateliteValido ? ndvi[p.id] : null;
   let deltaPeligro = 0;
   const cobOSM = co?.combustibilidad ?? null; // cubierta OSM (solo respaldo/referencia)
   if (pe && pe.pendiente_grados != null) {
@@ -327,7 +277,39 @@ for (const feat of base.features) {
     p.dato_combustible_aprox = false;
   }
 
-  p.iv = Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial + deltaCap + deltaPeligro)));
+  // --- IV: composición directa desde las tres componentes (sin ancla Fase 0) ---
+  // El valor antiguo (delta sobre el iv0 inventado de Fase 0) se conserva como
+  // iv_fase0, SOLO para comparación; no se pinta en el mapa.
+  p.iv_fase0 = Math.round(Math.max(0, Math.min(100, iv0 + deltaSocial + deltaCap + deltaPeligro)));
+
+  // score_social explícito (0-100). Las variables uniper y dispersión siguen
+  // siendo estimaciones de Fase 0: queda registrado en los flags de procedencia.
+  p.score_social = scoreSocial({
+    pctMayores: p.pct_mayores_65,
+    pctUniper: p.pct_hogares_uniper_mayores,
+    dispersion: p.dispersion,
+    poblacion: p.poblacion,
+  });
+  p.dato_social_parcial = true; // mayores_65 y población reales; uniper y dispersión, estimación Fase 0
+
+  p.iv = calcularIV(p.peligro_biofisico, p.score_social, p.capacidad_respuesta);
+
+  // Confianza del dato (0-1) desde los flags de procedencia (fórmula en
+  // lib/indice.mjs y metadata.confianza_nota).
+  p.confianza = confianzaNucleo({
+    edadReal: !!p.dato_edad_real,
+    poblacionReal: !!p.dato_poblacion_real,
+    capacidadReal: !!p.dato_capacidad_real,
+    pendienteReal: !!p.dato_pendiente_real,
+    // Fuente efectiva del combustible: la medición Sentinel-2 pesa más que la
+    // etiqueta de cubierta OSM de respaldo (ver CONFIANZA_NIVEL en lib/indice.mjs).
+    combustible: p.combustible_fuente === "Sentinel-2 NDVI+NDMI" ? "satelite"
+      : p.combustible_sin_dato ? "sin_dato" : "osm",
+  });
+
+  // Rango del IV bajo variación de pesos (análisis de sensibilidad), si existe.
+  const sens = sensibilidad[p.id];
+  if (sens?.rango_iv) p.rango_iv = sens.rango_iv;
 
   informe.push({
     nucleo: p.nombre,
@@ -337,31 +319,85 @@ for (const feat of base.features) {
     comb: p.combustibilidad ?? "—",
     fuente: p.combustible_fuente ?? "—",
     pel: p.peligro_biofisico,
+    social: p.score_social,
+    cap: p.capacidad_respuesta,
+    iv_fase0: p.iv_fase0,
     iv: p.iv,
   });
 }
 
 base.metadata = {
   ...base.metadata,
+  indice: "Índice de Vulnerabilidad (0-100). Se COMPONE directamente desde las tres "
+    + "componentes normalizadas 0-100: iv = " + PESO_PELIGRO + "·peligro_biofisico + "
+    + PESO_SOCIAL + "·score_social + " + PESO_CAP + "·(100 − capacidad_respuesta). "
+    + "Más capacidad de respuesta BAJA el IV. Ya no se ancla al iv inventado de Fase 0 "
+    + "(conservado como iv_fase0 solo para comparación). Pesos provisionales, no calibrados.",
   fase: "Fase 1: población real (Nomenclátor IGE 2025), % de mayores de 65 real "
     + "(Padrón IGE 2022, proxy concello) y capacidad de respuesta por vías de salida "
-    + "real (OpenStreetMap/Overpass) para los núcleos del piloto.",
+    + "real (OpenStreetMap/Overpass) para los núcleos del piloto. IV compuesto desde "
+    + "componentes (sin ancla de Fase 0).",
   edad_nota: "pct_mayores_65 es fracción 0-1, proxy a nivel concello (2022); la "
     + "población es real por aldea (2025).",
   capacidad_nota: "capacidad_respuesta se deriva de las vías de salida OSM PONDERADAS "
     + "por clase (primary/secondary/tertiary=1.0; unclassified/residential=0.5; track=0.2).",
   peligro_nota: "peligro_biofisico = " + PESO_PENDIENTE + "*score_pendiente + " + PESO_COMBUST
     + "*combustibilidad. Pendiente: EU-DEM 25 m (REAL). Combustible: SATÉLITE Sentinel-2 — "
-    + "biomasa = NDVI normalizado al rango observado [" + NDVI_MIN + "," + NDVI_MAX + "] *100; "
-    + "combustibilidad = biomasa * (1±" + NDMI_AMP + ") segun NDMI invertido normalizado a ["
-    + NDMI_MIN + "," + NDMI_MAX + "]. El NDVI sustituye a la cubierta OSM como medida de cantidad "
-    + "de vegetación (OSM queda solo de respaldo). APROXIMACIÓN; aún no es el mapa calibrado "
-    + "(fotoguía + LiDAR), pero se basa en medición directa de satélite, no en etiquetas.",
+    + "biomasa = NDVI normalizado al rango FÍSICO FIJO [" + NDVI_MIN + "," + NDVI_MAX + "] *100 "
+    + "(con recorte fuera de rango); combustibilidad = biomasa * (1±" + NDMI_AMP + ") segun NDMI "
+    + "invertido normalizado al rango FIJO [" + NDMI_MIN + "," + NDMI_MAX + "]. Rangos fijos para "
+    + "que la escala no dependa de la muestra de núcleos (antes se usaba el rango observado). "
+    + "El NDVI sustituye a la cubierta OSM como medida de cantidad de vegetación (OSM queda solo "
+    + "de respaldo). APROXIMACIÓN; aún no es el mapa calibrado (fotoguía + LiDAR), pero se basa "
+    + "en medición directa de satélite, no en etiquetas.",
   pesos_iv: { peligro_biofisico: PESO_PELIGRO, sensibilidad_social: PESO_SOCIAL, capacidad_respuesta: PESO_CAP },
+  pesos_iv_nota: "iv = peligro_biofisico·" + PESO_PELIGRO + " + score_social·" + PESO_SOCIAL
+    + " + (100 − capacidad_respuesta)·" + PESO_CAP + ". Dirección: más peligro y más "
+    + "sensibilidad social SUBEN el IV; más capacidad de respuesta lo BAJA (entra invertida). "
+    + "Pesos PROVISIONALES; calibración ROC/AUC contra el incendio de 2025 en fase posterior.",
+  subpesos_social: SUBPESOS_SOCIAL,
+  social_nota: "score_social (0-100) = " + SUBPESOS_SOCIAL.mayores_65 + "·mayores_65 + "
+    + SUBPESOS_SOCIAL.hogares_unipersonales + "·hogares_unipersonales + "
+    + SUBPESOS_SOCIAL.dispersion + "·dispersion + " + SUBPESOS_SOCIAL.poblacion + "·poblacion. "
+    + "mayores_65: fracción normalizada al rango fijo [" + RANGO_MAYORES_65 + "] (REAL, proxy "
+    + "concello Padrón 2022). hogares_unipersonales: % normalizado a [" + RANGO_UNIPER + "] "
+    + "(ESTIMACIÓN Fase 0). dispersion: categórica muy baja/baja/media/alta/muy alta -> "
+    + "0/25/50/75/100 (ESTIMACIÓN Fase 0). poblacion: escala log invertida "
+    + "100 − 25·log10(hab), 1 hab->100, 10.000 hab->0 (REAL, Nomenclátor 2025).",
   pesos_via: PESOS_VIA,
+  confianza_nota: "confianza (0-1) por núcleo = ponderación de los flags de procedencia "
+    + "(real=1, aproximación=0.6, aproximación débil=0.45, estimación=0.3) por componente y "
+    + "por los pesos del IV: social con subpesos_social (uniper y dispersión siguen en "
+    + "estimación Fase 0), peligro con 0.4·pendiente + 0.6·combustible, capacidad directa. "
+    + "El combustible distingue fuente: Sentinel-2=aproximación (0.6; no es el mapa "
+    + "calibrado), cubierta OSM de respaldo=aproximación débil (0.45), sin dato=estimación. "
+    + "Etiquetas: >=0.75 alta, >=0.5 media, <0.5 baja.",
+  sensibilidad_nota: "rango_iv = [min, max] del IV del núcleo al barrer los pesos del IV "
+    + "(rejilla paso 0.05, cada peso en [0.15, 0.60], suma 1); ver "
+    + "data/sensibilidad_pesos.json y scripts/sensibilidad-pesos.mjs.",
+  satelite_pendiente_remedicion: [...SATELITE_PENDIENTE_REMEDICION],
+  satelite_nota: "NDVI/NDMI RE-MEDIDOS con scripts/fetch-satelite.py (Earth Engine) sobre las "
+    + "coordenadas corregidas: período PRE-incendio 2025-06-01 a 2025-07-31, buffer 1 km, "
+    + "CLOUDY_PIXEL_PERCENTAGE<20 + máscara SCL, mediana temporal. Los núcleos listados en "
+    + "satelite_pendiente_remedicion (si hay alguno) usan el respaldo por cubierta OSM.",
   ndmi_amplitud: NDMI_AMP,
-  ndmi_rango_observado: [NDMI_MIN, NDMI_MAX],
-  ndvi_rango_observado: [NDVI_MIN, NDVI_MAX],
+  ndmi_rango_fijo: NDMI_RANGO_FIJO,
+  ndvi_rango_fijo: NDVI_RANGO_FIJO,
+  // Rangos observados en la muestra actual: SOLO referencia histórica, no se
+  // usan para normalizar.
+  ndmi_rango_observado_referencia: NDMI_OBSERVADO,
+  ndvi_rango_observado_referencia: NDVI_OBSERVADO,
+  nota_petin: "Petín tiene el NDVI/NDMI más bajos (0.357 / −0.031), por debajo de los "
+    + "urbanos. Verificado (composición de cubierta OSM del buffer): 61% forest, 35% "
+    + "residencial (el propio Petín), 4% viñedo; 0% agua/río Sil y 0% roca; A Rúa (a 1,75 km) "
+    + "no entra en el buffer. El polígono 'forest' de OSM etiqueta laderas de solana con "
+    + "monte ralo/seco: el satélite (NDVI bajo + NDMI negativo = vegetación seca) lo mide "
+    + "mejor que la etiqueta OSM. Dato correcto; la coordenada ya es el nodo place de OSM.",
+  nota_escalado: "Limitaciones conocidas para cuando se amplíe la muestra a más comarca: "
+    + "(a) el límite inferior del rango fijo NDMI [−0.05] queda cerca del mínimo observado "
+    + "(Petín −0.031) y podría quedarse corto con zonas más secas o quemados antiguos; "
+    + "documentado, no se cambia ahora. (b) La calibración contra EMSR837 "
+    + "(data/calibracion_emsr837.json) es EXPLORATORIA con n=12: gana valor con más muestra.",
   fuente_edad_concellos: "data/padron_edad_concellos.csv",
   fuente_accesos: "data/accesos_osm.json (OpenStreetMap, ODbL).",
   fuente_peligro: "data/pendiente_dem.json (EU-DEM 25 m) + data/ndvi_sentinel2.json + "
@@ -372,15 +408,27 @@ base.metadata = {
 writeFileSync(join(DATA, "nucleos.json"), JSON.stringify(base, null, 2) + "\n", "utf8");
 
 // Informe: combustible basado en satélite (NDVI=biomasa, NDMI=humedad).
-console.log(`NDVI rango [${NDVI_MIN}, ${NDVI_MAX}] | NDMI rango [${NDMI_MIN}, ${NDMI_MAX}] | amplitud ±${NDMI_AMP}`);
+console.log(`NDVI rango fijo [${NDVI_MIN}, ${NDVI_MAX}] (observado: ${JSON.stringify(NDVI_OBSERVADO)}) | `
+  + `NDMI rango fijo [${NDMI_MIN}, ${NDMI_MAX}] (observado: ${JSON.stringify(NDMI_OBSERVADO)}) | amplitud ±${NDMI_AMP}`);
 console.log("--- Combustible SATÉLITE por núcleo ---");
-console.log(`${"núcleo".padEnd(26)} NDVI   NDMI   biomasa  comb  peligro  IV   fuente`);
+console.log(`${"núcleo".padEnd(26)} NDVI   NDMI   biomasa  comb  fuente`);
 for (const r of informe) {
   console.log(
     `${r.nucleo.padEnd(26)} ${String(r.ndvi).padStart(5)}  ${String(r.ndmi).padStart(5)}  `
-    + `${String(r.biomasa).padStart(5)}  ${String(r.comb).padStart(4)}  ${String(r.pel).padStart(5)}  `
-    + `${String(r.iv).padStart(3)}   ${r.fuente}`
+    + `${String(r.biomasa).padStart(5)}  ${String(r.comb).padStart(4)}  ${r.fuente}`
   );
 }
 const conSat = informe.filter((r) => r.fuente === "Sentinel-2 NDVI+NDMI").length;
 console.log(`\nCombustible por satélite (NDVI+NDMI): ${conSat}/12`);
+
+// Informe: composición del IV y comparación con el valor anclado de Fase 0.
+console.log("\n--- IV compuesto desde componentes (vs. iv_fase0 anclado) ---");
+console.log(`${"núcleo".padEnd(26)} peligro  social  cap   IV_fase0  IV   Δ`);
+for (const r of [...informe].sort((a, b) => b.iv - a.iv)) {
+  const delta = r.iv - r.iv_fase0;
+  console.log(
+    `${r.nucleo.padEnd(26)} ${String(r.pel).padStart(5)}  ${String(r.social).padStart(6)}  `
+    + `${String(r.cap).padStart(4)}  ${String(r.iv_fase0).padStart(7)}  ${String(r.iv).padStart(3)}  `
+    + `${delta >= 0 ? "+" : ""}${delta}`
+  );
+}

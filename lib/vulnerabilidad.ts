@@ -1,5 +1,9 @@
 // Clasificación y paleta del Índice de Vulnerabilidad (IV, 0-100).
-// Escala secuencial verde -> rojo oscuro: a mayor IV, mayor riesgo humano.
+// Escala secuencial SEGURA PARA DALTONISMO (ColorBrewer YlOrRd, 5 clases):
+// amarillo pálido -> naranja -> rojo oscuro -> granate. A mayor IV, mayor
+// riesgo humano. La antigua rampa verde->rojo era indistinguible para
+// deuteranopia/protanopia; esta varía sobre todo en LUMINOSIDAD, que se
+// percibe con cualquier tipo de visión del color.
 
 export interface CategoriaIV {
   id: string;
@@ -10,11 +14,11 @@ export interface CategoriaIV {
 }
 
 export const CATEGORIAS_IV: CategoriaIV[] = [
-  { id: "muy-baja", etiqueta: "Muy baja", min: 0, max: 20, color: "#1a9850" },
-  { id: "baja", etiqueta: "Baja", min: 20, max: 40, color: "#a6d96a" },
-  { id: "media", etiqueta: "Media", min: 40, max: 60, color: "#fee08b" },
-  { id: "alta", etiqueta: "Alta", min: 60, max: 80, color: "#f46d43" },
-  { id: "muy-alta", etiqueta: "Muy alta", min: 80, max: 100, color: "#a50026" },
+  { id: "muy-baja", etiqueta: "Muy baja", min: 0, max: 20, color: "#ffffb2" },
+  { id: "baja", etiqueta: "Baja", min: 20, max: 40, color: "#fecc5c" },
+  { id: "media", etiqueta: "Media", min: 40, max: 60, color: "#fd8d3c" },
+  { id: "alta", etiqueta: "Alta", min: 60, max: 80, color: "#f03b20" },
+  { id: "muy-alta", etiqueta: "Muy alta", min: 80, max: 100, color: "#bd0026" },
 ];
 
 export function categoriaPorIV(iv: number): CategoriaIV {

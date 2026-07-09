@@ -53,86 +53,86 @@
     "larouco": {
       "nombre": "Larouco",
       "afect_fisica": false,
-      "borde_500m": false,
-      "dist_area_m": 7581.2,
-      "fecha_frente": null
+      "borde_500m": true,
+      "dist_area_m": 317.2,
+      "fecha_frente": "2025-08-16"
     },
     "seadur": {
       "nombre": "Seadur",
       "afect_fisica": false,
-      "borde_500m": false,
-      "dist_area_m": 7995.8,
-      "fecha_frente": null
+      "borde_500m": true,
+      "dist_area_m": 147.4,
+      "fecha_frente": "2025-08-16"
     },
     "freixido": {
       "nombre": "Freixido",
-      "afect_fisica": false,
-      "borde_500m": false,
-      "dist_area_m": 10388.4,
-      "fecha_frente": null
+      "afect_fisica": true,
+      "borde_500m": true,
+      "dist_area_m": 0.0,
+      "fecha_frente": "2025-08-16"
     },
     "pradorramisquedo": {
       "nombre": "Pradorramisquedo",
       "afect_fisica": false,
       "borde_500m": false,
-      "dist_area_m": 13187.4,
+      "dist_area_m": 5519.3,
       "fecha_frente": null
     },
     "portomourisco": {
       "nombre": "Portomourisco",
-      "afect_fisica": true,
+      "afect_fisica": false,
       "borde_500m": true,
-      "dist_area_m": 0.0,
-      "fecha_frente": "2025-08-16"
+      "dist_area_m": 127.2,
+      "fecha_frente": "2025-08-20"
     },
     "petin": {
       "nombre": "Petín",
       "afect_fisica": false,
       "borde_500m": true,
-      "dist_area_m": 322.2,
-      "fecha_frente": "2025-08-21"
+      "dist_area_m": 211.8,
+      "fecha_frente": "2025-08-16"
     },
     "a-rua": {
       "nombre": "A Rúa",
       "afect_fisica": false,
-      "borde_500m": true,
-      "dist_area_m": 489.1,
-      "fecha_frente": "2025-08-16"
+      "borde_500m": false,
+      "dist_area_m": 609.4,
+      "fecha_frente": null
     },
     "o-barco": {
       "nombre": "O Barco de Valdeorras",
       "afect_fisica": false,
       "borde_500m": false,
-      "dist_area_m": 636.4,
+      "dist_area_m": 624.0,
       "fecha_frente": null
     },
     "vilardesilva": {
       "nombre": "Vilardesilva",
-      "afect_fisica": true,
-      "borde_500m": true,
-      "dist_area_m": 0.0,
-      "fecha_frente": "2025-08-20"
+      "afect_fisica": false,
+      "borde_500m": false,
+      "dist_area_m": 5127.2,
+      "fecha_frente": null
     },
     "casaio": {
       "nombre": "Casaio",
       "afect_fisica": false,
       "borde_500m": false,
-      "dist_area_m": 3838.0,
+      "dist_area_m": 1824.6,
       "fecha_frente": null
     },
     "a-medua": {
       "nombre": "A Medua",
       "afect_fisica": false,
       "borde_500m": false,
-      "dist_area_m": 7241.8,
+      "dist_area_m": 4529.9,
       "fecha_frente": null
     },
     "vilamartin": {
       "nombre": "Vilamartín de Valdeorras",
       "afect_fisica": false,
       "borde_500m": true,
-      "dist_area_m": 57.8,
-      "fecha_frente": "2025-08-20"
+      "dist_area_m": 478.8,
+      "fecha_frente": "2025-08-21"
     }
   }
 }

@@ -19,14 +19,16 @@ construye en fases posteriores.
 Mapa web ([MapLibre GL](https://maplibre.org/)) de la comarca piloto de
 **Valdeorras / Larouco** (Ourense) que pinta el **Índice de Vulnerabilidad** por núcleo
 de población con **datos reales** (IGE · OpenStreetMap · Sentinel-2 · EU-DEM · Copernicus
-EMS). Los 12 núcleos del piloto tienen ya dato real en sus cinco componentes (población,
-envejecimiento, capacidad de respuesta y pendiente reales; combustible aproximado por
-satélite). Incluye:
+EMS). Los 12 núcleos del piloto tienen dato real o aproximado en sus componentes
+(población, envejecimiento, capacidad de respuesta y pendiente reales; combustible
+aproximado por cubierta OSM, con medición Sentinel-2 pendiente de repetir tras la
+corrección de coordenadas — ver más abajo). Incluye:
 
 - Mapa interactivo con basemap **CARTO Voyager** (neutro pero con buen contraste y
   legibilidad de carreteras y topónimos, sin claves de API), pensado para que personas
   mayores distingan sin esfuerzo pueblos, carreteras y colores de riesgo.
-- Núcleos coloreados según su Índice de Vulnerabilidad (escala verde → rojo).
+- Núcleos coloreados según su Índice de Vulnerabilidad (escala amarillo → granate,
+  segura para daltonismo, con redundancia por tamaño y grosor de borde).
 - **Dos lentes** intercambiables —**Vulnerabilidad** y **Evacuación** (rutas reales de
   salida por carretera)— que no se funden en un único número.
 - **Leyenda** que cambia según la lente activa.
@@ -71,6 +73,7 @@ Abre **http://localhost:3000** en el navegador.
 npm run build   # build de producción
 npm run start   # sirve el build de producción (tras npm run build)
 npm run lint    # linting
+npm test        # tests unitarios (Vitest)
 ```
 
 ## Despliegue en Vercel
@@ -86,31 +89,39 @@ npm run lint    # linting
 ```
 abeiro/
 ├─ app/
-│  ├─ layout.tsx          # layout raíz y metadatos
+│  ├─ layout.tsx          # layout raíz y metadatos (fuentes locales next/font/local)
+│  ├─ fonts/              # woff2 variables de Inter y Playfair Display (build sin red)
 │  ├─ page.tsx            # página principal (carga el mapa en cliente)
 │  └─ globals.css         # estilos e identidad visual
 ├─ components/
-│  ├─ MapaVulnerabilidad.tsx  # mapa MapLibre + capas + interacción + selector de lente
+│  ├─ MapaVulnerabilidad.tsx  # estado e interacción del mapa + selector de lente
 │  ├─ Leyenda.tsx             # leyenda (cambia según la lente activa)
 │  ├─ PanelInfo.tsx           # panel de detalle de un núcleo (vulnerabilidad + evacuación)
 │  └─ PanelValidacion.tsx     # panel de validación (afectación física 2025)
 ├─ lib/
 │  ├─ vulnerabilidad.ts   # categorías, paleta y expresión de color del IV
-│  └─ evacuacion.ts       # dificultad de evacuación, paleta y expresión de color
+│  ├─ evacuacion.ts       # dificultad de evacuación, paleta y expresión de color
+│  ├─ indice.mjs          # lógica PURA del índice (pesos, score social, IV, confianza)
+│  ├─ datos.ts            # fusión núcleos + afectación + evacuación (tipos incluidos)
+│  ├─ mapa-config.ts      # estilo base, centro/zoom y capas por lente
+│  └─ capas-mapa.ts       # creación de fuentes y capas MapLibre (funciones puras)
 ├─ data/                  # núcleos + cachés de fuentes (IGE / OSM / Sentinel-2 / DEM / EMS)
 │  ├─ nucleos.json            # GeoJSON de núcleos con el IV y la procedencia de cada dato
 │  ├─ nucleos.base.json       # línea base reproducible (antes de cruzar fuentes)
-│  ├─ evacuacion.json         # rutas de evacuación por núcleo
+│  ├─ evacuacion.json         # rutas de evacuación por núcleo (con ratio_rodeo)
+│  ├─ sensibilidad_pesos.json # análisis de sensibilidad de los pesos del IV
 │  └─ ...                     # accesos_osm, ndvi/ndmi_sentinel2, pendiente_dem, afectación…
 ├─ public/
 │  ├─ rutas_evacuacion.geojson   # líneas de evacuación para el mapa
 │  └─ perimetro_emsr837.geojson  # perímetro quemado 2025 (Copernicus EMS)
+├─ tests/                 # tests unitarios (Vitest): índice, paletas, evacuación, datos
 └─ scripts/
    ├─ procesar-ige.mjs         # regenera nucleos.json desde base + IGE + OSM + DEM
-   ├─ fetch-accesos-osm.mjs    # red viaria OSM -> accesos_osm.json
-   ├─ fetch-peligro.mjs        # pendiente EU-DEM + combustible (Sentinel-2)
+   ├─ fetch-accesos-osm.mjs    # red viaria OSM -> accesos_osm.json (Overpass o --extracto)
+   ├─ fetch-peligro.mjs        # pendiente EU-DEM + cubierta OSM
    ├─ afectacion_emsr837.py    # cruce con el perímetro Copernicus EMS 2025
-   ├─ evacuacion_osm.py        # grafo viario + rutas de evacuación
+   ├─ evacuacion_osm.py        # grafo viario + rutas de evacuación + sanity check de rodeo
+   ├─ sensibilidad-pesos.mjs   # barrido de pesos del IV -> sensibilidad_pesos.json
    └─ verificar-mapa.mjs       # verificación headless (Playwright)
 ```
 
@@ -121,6 +132,19 @@ sensibilidad social (envejecimiento, hogares unipersonales de edad avanzada, dis
 y capacidad de respuesta (accesos, cobertura). En fases posteriores se calibrará como
 modelo supervisado contra el resultado humano observado en el incendio de 2025
 (qué aldeas se evacuaron/confinaron), no con pesos elegidos a mano, y se medirá con ROC/AUC.
+
+### Coordenadas reales de los núcleos
+
+Las coordenadas de Fase 0 de 8 de los 12 núcleos estaban **desplazadas entre 8 y 57 km**
+de su posición real (Larouco aparecía 26 km al norte; Pradorramisquedo, que pertenece a
+Viana do Bolo, a 57 km). Se corrigieron con los **nodos `place` de OpenStreetMap**
+(consulta Overpass; `fuente_coordenadas` por núcleo en `data/nucleos.base.json`) y se
+regeneraron todas las cachés que dependen de la posición: accesos, pendiente, cubierta
+OSM, afectación EMSR837 y evacuación. Consecuencia importante: los **NDVI/NDMI de
+Sentinel-2 cacheados se midieron sobre las coordenadas antiguas**, así que quedan
+invalidados para 10 núcleos (`metadata.satelite_pendiente_remedicion`), que usan el
+respaldo por cubierta OSM hasta re-medir con Earth Engine; solo A Rúa y O Barco (que
+apenas se movieron) conservan el dato de satélite.
 
 ### Datos reales integrados (Fase 1, en curso)
 
@@ -157,26 +181,51 @@ La componente de **peligro biofísico** combina pendiente real y combustible apr
   la cota en el centro y en 4 vecinos a 90 m y se calcula la pendiente por diferencias
   centradas. Más pendiente → propagación más rápida. Cache: `data/pendiente_dem.json`.
 - **Combustible (APROXIMACIÓN, basado en SATÉLITE):** se mide con **Sentinel-2**
-  (`COPERNICUS/S2_SR_HARMONIZED`, vía Google Earth Engine, verano 2025), combinando *cuánto*
-  material hay y *cómo de seco* está:
+  (`COPERNICUS/S2_SR_HARMONIZED`, vía Google Earth Engine con
+  `scripts/fetch-satelite.py`), en el período **pre-incendio 1 jun – 31 jul 2025** (el
+  incendio grande fue en agosto; medir después contaminaría el NDVI de las zonas quemadas
+  justo donde más combustible había), con buffer de **1 km**, filtro
+  `CLOUDY_PIXEL_PERCENTAGE < 20`, **máscara de nubes/sombras por banda SCL** (clases 3, 8,
+  9, 10, 11) y **mediana temporal**. Combina *cuánto* material hay y *cómo de seco* está:
   - **Biomasa (NDVI):** el NDVI medio (1 km) mide directamente la **cantidad** de vegetación.
-    `biomasa = NDVI_normalizado([0.348, 0.750]) × 100`. Cache: `data/ndvi_sentinel2.json`.
+    `biomasa = NDVI_normalizado([0.15, 0.80]) × 100`, con recorte fuera de rango. El rango
+    es **físico fijo** (0.15 ≈ suelo desnudo/urbano; 0.80 ≈ vegetación densa), no el rango
+    observado de la muestra: así la escala no depende de los 12 núcleos y añadir uno nuevo
+    no cambia los demás (`metadata.ndvi_rango_fijo`). Cache: `data/ndvi_sentinel2.json`.
   - **Inflamabilidad (NDMI):** el NDMI medio (1 km) modula por **humedad**:
     `combustibilidad = biomasa × (1 ± 0.30)`, con el factor según el NDMI invertido y
-    normalizado al rango observado `[0.013, 0.269]` (seco → ×1.30; húmedo → ×0.70). Cache:
-    `data/ndmi_sentinel2.json`.
+    normalizado al rango **físico fijo** `[−0.05, 0.35]` con recorte (−0.05 ≈ muy seco;
+    0.35 ≈ dosel bien hidratado; `metadata.ndmi_rango_fijo`). Seco → ×1.30; húmedo → ×0.70.
+    Cache: `data/ndmi_sentinel2.json`.
   - Al ser multiplicativo: mucha biomasa + seca = máximo; mucha + húmeda = media; **poca
     biomasa = baja** esté seca o no → los núcleos urbanos (A Rúa, O Barco) quedan con
     combustible bajo pese a su NDMI seco.
   - **El NDVI sustituye a la cubierta OSM** como medida de cantidad de vegetación (el satélite
     la mide; OSM solo la etiquetaba, y mezclarlos sería doble conteo). La **cubierta OSM
-    (`data/combustible_osm.json`) queda solo como respaldo** para núcleos sin satélite.
+    (`data/combustible_osm.json`) queda como respaldo** para núcleos sin satélite.
+  - **Estado actual:** los NDVI/NDMI están **re-medidos sobre las coordenadas corregidas**
+    con `scripts/fetch-satelite.py` (Earth Engine). Si algún núcleo quedara sin píxeles
+    válidos (nubes), cae automáticamente al respaldo por cubierta OSM y se lista en
+    `metadata.satelite_pendiente_remedicion`.
+  - **Caso Petín (verificado):** tiene el NDVI/NDMI más bajos (0.357 / −0.031), por debajo
+    de los urbanos. Se comprobó la composición de cubierta OSM de su buffer: **61% forest,
+    35% residencial** (el propio Petín), 4% viñedo; **0% agua/río Sil, 0% roca**, y A Rúa
+    (a 1,75 km) queda fuera. El polígono `forest` de OSM etiqueta laderas de **solana con
+    monte ralo y seco** en verano; el satélite (NDVI bajo + NDMI negativo = vegetación seca)
+    lo mide mejor que la etiqueta OSM. Dato **correcto**: es justo el caso donde el satélite
+    corrige a la cubierta OSM (`metadata.nota_petin`).
   - **No es** el mapa de combustible calibrado (fotoguía + LiDAR), que es una fase aparte;
     pero ahora se basa en **medición directa de satélite** (cantidad y humedad de vegetación),
     no en etiquetas de cubierta.
 - `peligro_biofisico = 0.40·score_pendiente + 0.60·combustibilidad` (pesos provisionales).
   Con satélite, los 12 núcleos tienen combustible real (incluido Vilamartín, que no tenía
   cubierta OSM).
+
+> **Limitación para el escalado** (`metadata.nota_escalado`): el límite inferior del rango
+> fijo NDMI (**−0.05**) queda cerca del mínimo observado (Petín −0.031). Al ampliar la
+> muestra a más comarca —con zonas más secas o quemados antiguos— podría quedarse corto y
+> saturar por recorte; se documenta como limitación conocida, **no se reajusta ahora**
+> (reajustarlo a la muestra rompería la comparabilidad de la escala, ver Tarea 2 abajo).
 
 Los ficheros del IGE vienen en **ISO-8859-1**. El procesador parte de `data/nucleos.base.json`
 (línea base reproducible, con las componentes aún estimadas), los lee como `latin1`,
@@ -193,20 +242,77 @@ node scripts/procesar-ige.mjs                 # regenera data/nucleos.json desde
 
 En el mapa, los núcleos con **edad real** se marcan con un anillo verde; el panel de cada
 núcleo muestra la procedencia de cada dato: **real** (verde), **aproximación** (ámbar,
-combustible) o **estimación** (gris). El **Índice de Vulnerabilidad** combina las tres
-componentes con pesos provisionales `peligro 0.40 · social 0.35 · capacidad 0.25`
-(`metadata.pesos_iv`); su **calibración supervisada** (ROC/AUC contra el incendio de 2025)
-es una fase posterior.
+combustible) o **estimación** (gris).
+
+### Composición del índice
+
+El **Índice de Vulnerabilidad** se **compone directamente desde las tres componentes**
+normalizadas 0–100 (ya no se calcula como delta sobre el valor inventado de Fase 0):
+
+```
+iv = 0.40 · peligro_biofisico + 0.35 · score_social + 0.25 · (100 − capacidad_respuesta)
+```
+
+Dirección de cada subíndice: más peligro biofísico y más sensibilidad social **suben** el
+IV; más capacidad de respuesta lo **baja** (entra invertida como `100 − capacidad`). El
+`score_social` (0–100) se deriva de forma explícita de las variables sociales, con
+subpesos documentados en `metadata.subpesos_social`:
+
+```
+score_social = 0.45 · mayores_65 + 0.20 · hogares_unipersonales
+             + 0.20 · dispersion + 0.15 · poblacion
+```
+
+- `mayores_65`: fracción de mayores de 65, normalizada al rango fijo [0.15, 0.55]
+  (**real**, proxy concello, Padrón IGE 2022).
+- `hogares_unipersonales`: % de hogares unipersonales de mayores, normalizado a [0, 50]
+  (**estimación** de Fase 0, aún sin fuente censal).
+- `dispersion`: categórica muy baja/baja/media/alta/muy alta → 0/25/50/75/100
+  (**estimación** de Fase 0).
+- `poblacion`: escala logarítmica invertida `100 − 25·log10(hab)` — menos vecinos, más
+  sensibilidad (**real**, Nomenclátor IGE 2025).
+
+Los pesos (`peligro 0.40 · social 0.35 · capacidad 0.25`, `metadata.pesos_iv`) son
+**provisionales**; su **calibración supervisada** (ROC/AUC contra el incendio de 2025) es
+una fase posterior. El valor antiguo anclado a Fase 0 se conserva en cada núcleo como
+`iv_fase0`, solo como columna de comparación (no se pinta en el mapa).
 
 ### Categorías
 
-| Categoría   | Rango IV | Color      |
-|-------------|----------|------------|
-| Muy baja    | 0–20     | 🟢 verde   |
-| Baja        | 20–40    | 🟡 verde claro |
-| Media       | 40–60    | 🟡 amarillo |
-| Alta        | 60–80    | 🟠 naranja |
-| Muy alta    | 80–100   | 🔴 rojo oscuro |
+La escala es **secuencial y segura para daltonismo** (ColorBrewer **YlOrRd**): varía sobre
+todo en luminosidad, de modo que se lee con deuteranopia/protanopia (la antigua rampa
+verde→rojo no). Además del color, el mapa añade **redundancia no cromática**: el tamaño
+del círculo escala con el IV y el borde se engrosa en las categorías Alta y Muy alta.
+
+| Categoría   | Rango IV | Color |
+|-------------|----------|-------|
+| Muy baja    | 0–20     | 🟡 amarillo pálido `#ffffb2` |
+| Baja        | 20–40    | 🟡 ámbar `#fecc5c` |
+| Media       | 40–60    | 🟠 naranja `#fd8d3c` |
+| Alta        | 60–80    | 🔴 rojo `#f03b20` |
+| Muy alta    | 80–100   | 🟥 granate `#bd0026` |
+
+### Sensibilidad de los pesos y confianza del dato
+
+Como los pesos del IV son provisionales, `scripts/sensibilidad-pesos.mjs` mide cuánto
+dependen los resultados de esa elección: barre una **rejilla de pesos** (paso 0.05, cada
+peso en [0.15, 0.60], suma 1; 69 combinaciones) y recalcula el IV de los 12 núcleos con
+cada una. Resultados (`data/sensibilidad_pesos.json`):
+
+- **El ranking es estable**: correlación de Spearman media de **0.97** contra el ranking
+  con los pesos base — el orden de los núcleos apenas depende de los pesos elegidos.
+- Cada núcleo lleva su **`rango_iv` [min, max]** (visible en el panel): los extremos del
+  índice al variar los pesos. Núcleos cerca de un borde de categoría (Seadur, A Medua,
+  A Rúa) cambian de categoría en >50 % de las combinaciones y deben leerse con cautela;
+  los extremos (Pradorramisquedo, O Barco) casi nunca cambian.
+
+Además cada núcleo lleva un campo **`confianza`** (0–1) derivado de los flags de
+procedencia: real = 1, aproximación = 0.6, estimación = 0.3, promediado por componente
+(con los subpesos del score social y los pesos pendiente/combustible del peligro) y
+ponderado por los pesos del IV (`metadata.confianza_nota`). El panel lo muestra como
+«Confianza del dato: alta / media / baja», y en aldeas de **menos de 50 habitantes**
+añade el aviso de que el % de mayores es un proxy del concello y puede no representar
+bien la aldea.
 
 ## Capa de afectación física 2025 (validación, NO es parte del índice)
 
@@ -233,6 +339,42 @@ En el mapa, el perímetro se pinta en granate y los núcleos dentro del área ll
 oscuro; el panel muestra el estado de afectación marcado como dato Copernicus EMS con su
 limitación.
 
+### Calibración (exploratoria) contra EMSR837
+
+`scripts/calibracion-emsr837.mjs` contrasta el poder discriminante del IV y de sus
+componentes frente a la afectación real, con el **AUC** (Mann-Whitney) de cada predictor y
+su **intervalo de confianza por bootstrap** (2000 remuestreos), contra dos variables de
+resultado: `afect_fisica` (dentro del perímetro) y `afect_fisica || borde_500m` (dentro o
+a ≤ 500 m). Salida: `data/calibracion_emsr837.json`.
+
+> ⚠️ **Resultado EXPLORATORIO, no validación concluyente.** Con **n = 12** los AUC son
+> muy inestables y los IC anchísimos (cruzan 0.5 de lado a lado). Con `afect_fisica` solo
+> hay **1 núcleo dentro del perímetro** (Freixido), así que ese AUC es casi un caso
+> degenerado. Nada de leer un AUC puntual como robusto.
+
+**Distinción conceptual crítica:** el IV mide **vulnerabilidad ante un incendio** (quién
+sufriría si ocurre), **no probabilidad de ignición** ni dónde empieza el fuego. Que un
+núcleo caiga dentro del perímetro de **un** incendio valida sobre todo la **exposición /
+peligro biofísico**, no la **vulnerabilidad social** (un urbano afectado y una aldea
+envejecida afectada cuentan igual como "afectado"). Los resultados lo confirman:
+
+| Variable de resultado | Mejor predictor | AUC (IC95 bootstrap) | Lectura |
+|---|---|---|---|
+| `afect_fisica` (1 dentro) | Peligro biofísico | 0.86 [0.65, 1.00] | Peligro > IV ≈ social > capacidad; **coherente con la hipótesis** (la exposición manda), pero con 1 positivo no es concluyente. |
+| `afect ∨ borde ≤500 m` (6/6) | todos ≈ azar | 0.38–0.53, IC ~[0.05, 0.9] | **Ningún predictor discrimina.** El borde del frente fue cuestión de **geografía del incendio** (por dónde entró el 16-08), no del combustible del núcleo: Pradorramisquedo tiene el mayor peligro (65) y quedó a 5,5 km sin arder. |
+
+- **Lo que queda (débilmente) respaldado:** el **peligro biofísico** discrimina la
+  afectación *física* mejor que el resto — lo esperable, porque es la componente de
+  exposición.
+- **Lo que NO valida este incendio:** la **vulnerabilidad social**. Un solo incendio no es
+  la prueba adecuada para la parte social; necesita otra clase de evidencia
+  (evacuaciones/confinamientos reales, varios eventos).
+- **Diagnóstico de pesos (no adoptado):** si se optimizaran los pesos para maximizar el AUC
+  de *este* incendio, el óptimo se pega a `social = 0.60` (el máximo de la rejilla), lo que
+  **no tiene sentido** para predecir afectación física — señal clara de **sobreajuste** a
+  n = 12. Los pesos del índice **siguen siendo los provisionales declarados**; la
+  calibración informa, no decide.
+
 ## Capa de evacuación estática (corazón de la misión, NO es parte del IV)
 
 No "dónde arde" sino "por dónde se sale vivo". Para cada núcleo se calcula la **ruta real de
@@ -241,9 +383,10 @@ servicios: **A Rúa** y **O Barco de Valdeorras**). Es una capa nueva e independ
 no se toca.
 
 - **Método** (`scripts/evacuacion_osm.py`): se descarga **una vez** un extracto OSM de las
-  carreteras del bbox de Valdeorras (vía Overpass; cache `data/osm_valdeorras.json`,
-  gitignored) y se construye el **grafo viario en local con `networkx`** (≈258k nodos). El
-  build de la web **no** depende de llamadas en vivo: lee los resultados estáticos.
+  carreteras del bbox de Valdeorras ampliado al sur hasta Viana do Bolo (vía Overpass;
+  cache `data/osm_valdeorras.json`, gitignored) y se construye el **grafo viario en local
+  con `networkx`** (≈320k nodos). El build de la web **no** depende de llamadas en vivo:
+  lee los resultados estáticos.
 - **Ponderación por tipo de vía:** velocidad y *fiabilidad* por clase (asfalto fiable, pista
   forestal lenta y poco fiable: una ruta que solo va por pista **no** es salida segura). La
   ruta elegida es la más rápida; se reporta el % por pista y una fiabilidad media 0–1.
@@ -251,22 +394,28 @@ no se toca.
   **nº de rutas alternativas independientes** (conectividad de aristas al conjunto de
   destinos = redundancia; 1 = sin redundancia, más vulnerable). Resultado en
   `data/evacuacion.json`; líneas para el mapa en `public/rutas_evacuacion.geojson`.
+- **Sanity check de rodeo:** por núcleo se reporta `ratio_rodeo = dist_carretera /
+  dist_recta` (haversine al destino) y el script lista como WARNING las rutas con ratio
+  \> 3 (delatan aristas OSM ausentes, grafo mal conectado o coordenadas erróneas — así se
+  destapó el desplazamiento de coordenadas de Fase 0: Larouco→A Rúa daba 43,7 km y con la
+  coordenada real da 7,8 km, rodeo 1,16). Actualmente todas las rutas tienen rodeo ≤ 2.
 - **Limitación:** evacuación **estática** — todavía no considera el fuego (qué vías quedan
   cortadas), ni el tráfico ni la hora. Es el primer paso verificable, sin motor de fuego.
 
-En el mapa, las rutas se dibujan en verde (fiable) → naranja (depende de pista), con los
-destinos seguros marcados en azul; el panel muestra destino, distancia, tiempo, redundancia
-y % de pista.
+En el mapa, las rutas se dibujan en azul (fiable) → naranja → rojo (depende de pista), con
+los destinos seguros marcados en azul oscuro; el panel muestra destino, distancia, tiempo,
+redundancia y % de pista.
 
 ## Dos lentes del mapa (vulnerabilidad y evacuación NO se funden)
 
 La interfaz tiene un **selector** que alterna entre dos visualizaciones independientes del
 mismo mapa. Son cosas distintas y **no se combinan en un único número**:
 
-- **Vulnerabilidad:** colorea por el Índice de Vulnerabilidad (verde→rojo). Muestra el
-  anillo de edad real y el perímetro quemado 2025.
-- **Evacuación:** colorea por la **dificultad de evacuación** (azul=fácil → rojo=difícil,
-  paleta distinta a propósito) y dibuja las rutas. La dificultad (`lib/evacuacion.ts`) deriva
+- **Vulnerabilidad:** colorea por el Índice de Vulnerabilidad (amarillo→granate, YlOrRd).
+  Muestra el anillo de edad real y el perímetro quemado 2025.
+- **Evacuación:** colorea por la **dificultad de evacuación** (azul=fácil → gris →
+  rojo=difícil, ColorBrewer RdBu, paleta distinta a propósito de la del IV) y dibuja las
+  rutas. La dificultad (`lib/evacuacion.ts`) deriva
   **solo** de la capa de evacuación:
   `dificultad = 0.35·tiempo + 0.45·redundancia + 0.20·pista` (0–100, pesos provisionales),
   con `tiempo = min(100, tiempo_min/45·100)`, `redundancia` = 1 ruta → 100 (crítico), 2 → 40,
@@ -274,9 +423,242 @@ mismo mapa. Son cosas distintas y **no se combinan en un único número**:
   es el mayor riesgo. **No recalcula ni toca el IV.**
 
 El **panel** de cada núcleo muestra **siempre las dos lecturas separadas**, en bloques
-«Vulnerabilidad» y «Evacuación», para que se vea que un núcleo puede ser medio en una y
-crítico en la otra (p. ej. **Vilamartín**: IV 56 *media*, evacuación 64 *difícil*; o
-**Pradorramisquedo**: alto en ambas). La **leyenda** cambia según la lente activa.
+«Vulnerabilidad» y «Evacuación», para que se vea que un núcleo puede ser alto en una y
+bajo en la otra (p. ej. **Vilardesilva**: IV 70 *alta* pero evacuación 29 *fácil*; en
+cambio **Pradorramisquedo** es el peor en ambas: IV 73 y evacuación 53, con 54 minutos
+hasta el destino seguro). La **leyenda** cambia según la lente activa.
+
+## Desarrollo
+
+```bash
+npm run dev     # servidor de desarrollo (http://localhost:3000)
+npm test        # tests unitarios (Vitest)
+npm run lint    # linting
+npm run build   # build de producción (sin red: fuentes locales y datos cacheados)
+```
+
+Regeneración de cada dataset (el build **no** llama a ninguna API; estos scripts se
+ejecutan a mano y cachean en `data/`):
+
+| Dataset | Comando | ¿Red? |
+|---|---|---|
+| `nucleos.json` (IV, confianza) | `node scripts/procesar-ige.mjs` | No (lee cachés) |
+| `accesos_osm.json` | `node scripts/fetch-accesos-osm.mjs --extracto` | No (usa el extracto local) |
+| — variante Overpass | `node scripts/fetch-accesos-osm.mjs --force` | Sí (Overpass) |
+| `pendiente_dem.json` + `combustible_osm.json` | `node scripts/fetch-peligro.mjs --force` | Sí (opentopodata + Overpass) |
+| `ndvi/ndmi_sentinel2.json` | `.venv/Scripts/python scripts/fetch-satelite.py` | Sí (Earth Engine; requiere `earthengine authenticate` una vez y proyecto Cloud con la API habilitada) |
+| `evacuacion.json` + `rutas_evacuacion.geojson` | `python scripts/evacuacion_osm.py` | Solo la 1ª vez (descarga el extracto; luego usa `data/osm_valdeorras.json`) |
+| `nucleos_afectacion_fisica.json` | `python scripts/afectacion_emsr837.py` | No (delineaciones EMS locales en `data/emsr837/`) |
+| `sensibilidad_pesos.json` | `node scripts/sensibilidad-pesos.mjs` | No |
+| `calibracion_emsr837.json` | `node scripts/calibracion-emsr837.mjs` | No |
+
+Tras regenerar cualquier caché, vuelve a ejecutar `node scripts/procesar-ige.mjs` para
+recomponer `nucleos.json`, y `npm test` para validar la integridad. Los scripts Python
+requieren `networkx` (evacuación) y `shapely` + `pyproj` (afectación); la re-medición de
+satélite usa un **venv** con `earthengine-api` (`python -m venv .venv &&
+.venv/Scripts/pip install earthengine-api`) — es una dependencia de re-medición que se
+ejecuta a mano, no forma parte del build.
+
+## Escalado a Ourense (calibración a escala)
+
+El demostrador se validó con 12 núcleos de Valdeorras. Para convertir el índice de
+"demostrador honesto" en "índice contrastado contra el historial real de incendios" se está
+escalando a la **provincia de Ourense** (piloto de Galicia). Este hito trabaja **solo la
+lente de vulnerabilidad** (la evacuación, cara de rutear a escala, queda para un hito
+posterior). La arquitectura generaliza el pipeline de 12 núcleos fijos a una lista dinámica.
+
+### Fase 1 — Lista maestra de núcleos (hecho)
+
+`data/nucleos_ourense.json` es la lista maestra de **entidades singulares de población de
+Ourense**, construida cruzando tres fuentes abiertas (cada dato con su procedencia):
+
+- **Coordenadas + nombre + tipo:** Nomenclátor Geográfico Básico de España (**NGBE/IGN**),
+  vía WFS INSPIRE `gn:NamedPlace` (licencia CC-BY 4.0 IGN). El NGBE da 3.705 "Entidad
+  singular" en Ourense (coincide con el dato oficial del INE, ~3.700).
+  Caché: `data/ngbe_ourense_raw.json` (`scripts/fetch-nomenclator-ourense.py`).
+- **Población + parroquia:** **Nomenclátor IGE 2025** (`data/Fichero1.txt`, toda la
+  provincia 32), por entidad singular.
+- **Concello:** el NGBE no trae municipio, así que se asigna por *point-in-polygon* con los
+  **límites municipales de OpenStreetMap** (`admin_level=8`, `ref:ine`=codmun; ODbL).
+  Caché: `data/limites_concellos_ourense.geojson` (`scripts/fetch-limites-concellos.py`).
+
+`scripts/construir-nucleos-ourense.py` hace el cruce por `(concello, nombre normalizado)` más
+un rescate aproximado (ver más abajo): **3.663 entidades casadas** de 3.705, cubriendo **los
+92 concellos**. Marca `activo` a las de **≥ 50 habitantes → 683 núcleos** (650 por el cruce
+exacto + 33 rescatados por grafía), que son el subconjunto de trabajo del primer barrido de
+calibración. Reparto de población (entidades casadas): 141 despobladas, 2.585 de 1–49 hab,
+353 de 50–99, 168 de 100–199, 96 de 200–499, 20 de 500–999, 13 de ≥1000.
+
+> **Rescate de núcleos ≥50 hab por grafía divergente:** el cruce exacto por
+> `(concello, nombre normalizado)` dejaba sin casar 39 entidades de ≥50 hab por divergencias
+> gallego/castellano, artículos y acentos. `construir-nucleos-ourense.py` añade
+> **emparejamiento aproximado dentro del concello** (Levenshtein normalizado ≥0,80 +
+> contención de tokens para capitales con nombre truncado, p. ej. *Vilariño* ⊂ *Vilariño de
+> Conso*). Resultado: **36 de 39 rescatados automáticamente** (incluidas las capitales
+> Vilariño de Conso, Ríos y Quintela de Leirado, y urbanizaciones como Monterrei). Quedan
+> **4 sin resolver** —Fonsillón (331 hab), Ponte Barxas (118), Lavandeira (82), Cimadevila
+> (56)— que el NGBE no recoge como entidad singular; se **listan explícitamente** para
+> revisión manual (no se fuerzan). El total activo sube de **650 a 683 núcleos**.
+>
+> **El umbral de ≥50 hab es de conveniencia computacional, no un criterio de vulnerabilidad.**
+> La propia tesis social del índice sostiene que las aldeas <50 hab, envejecidas y aisladas,
+> están entre las **más** vulnerables; se excluyen del primer barrido por coste (81 % de las
+> entidades), no porque importen menos. Es deuda a saldar al escalar a producto.
+
+### Fase 2 — Componentes del IV en lote (683 núcleos, hecho)
+
+- **Peligro biofísico** (`scripts/fetch-peligro-ourense.py`): una sola pasada de Earth
+  Engine mide NDVI/NDMI (Sentinel-2 pre-incendio, buffer 1 km) y **pendiente** (SRTM 30 m,
+  `ee.Terrain.slope`). El MDT del CNIG es teselado por hojas MTN desde un portal SPA (no
+  automatizable sin fricción) y opentopodata no escala a 683×buffer; SRTM en EE es el
+  respaldo escalable de elevación (misma pasada), documentado como tal. 683/683 medidos.
+- **Sensibilidad social**: población del IGE (lista maestra) + **% de mayores de 65 de los
+  92 concellos** desde el Padrón del **INE** (tabla 33866 de Ourense;
+  `scripts/fetch-padron-ourense.py`). A escala no hay hogares unipersonales ni dispersión por
+  núcleo (en el piloto eran estimaciones de Fase 0): `scoreSocial` renormaliza sus subpesos a
+  las variables presentes (mayores_65 y población, ambas reales).
+- **Capacidad de respuesta** (`scripts/fetch-vias-ourense.py` + `fetch-accesos-ourense.py`):
+  vías de salida y distancia a servicios desde el **extracto viario OSM de Ourense** en local
+  (indexado espacial por rejilla), sin llamadas Overpass punto-a-punto.
+- `scripts/procesar-ourense.mjs` recompone el IV con `lib/indice.mjs` y los **pesos
+  provisionales vigentes** (no se tocan): IV 18–81 (mediana 61), confianza 0,90 uniforme.
+  (LiDAR PNOA para mejor combustible queda como mejora futura, no bloqueante.)
+
+### Fase 3 — Afectación histórica (GlobFire, hecho)
+
+`scripts/fetch-globfire-ourense.py` cruza los 683 núcleos con los perímetros finales de
+**GlobFire** (`JRC/GWIS/GlobFire/v2/FinalPerimeters`, MODIS, 2001–2021) en Earth Engine.
+De los 1.641 perímetros del ámbito se descartaron **43 con geometría degenerada** (área
+infinita) que contenían cualquier punto y daban afectados espurios (100 %); con los 1.598
+válidos y buffers por núcleo (250 m afectado, 500 m borde): **103/683 afectados**, 167 en
+borde, `n_afectaciones` 0–4. Salida: `data/afectacion_globfire_ourense.json`.
+
+> **Limitación (declarada en metadata):** GlobFire deriva de MODIS (~500 m): capta bien los
+> incendios **grandes** (los relevantes para la vulnerabilidad de núcleos), pero suaviza
+> bordes y omite los pequeños. Es un **proxy** del historial de grandes incendios, no el
+> registro oficial de la Xunta.
+
+### Fase 4 — Calibración con muestra real (n=683, hecho)
+
+`scripts/calibracion-ourense.mjs globfire` contrasta el IV y sus componentes contra la
+afectación histórica (el script es genérico y parametrizado por variable de resultado; ver
+*Ingesta de datos de evacuación*). Con **n=683 los IC bootstrap son estrechos** (±0,05): ese
+es el salto de valor frente al piloto (n=12). AUC (Mann-Whitney) contra *afectado* (buffer
+250 m):
+
+| Predictor | AUC (IC95) |
+|---|---|
+| **Capacidad de respuesta** (100−cap) | **0,73 [0,68–0,78]** |
+| IV (índice completo) | 0,69 [0,64–0,74] |
+| Sensibilidad social | 0,65 [0,59–0,71] |
+| Peligro biofísico | 0,61 [0,55–0,67] |
+
+**Interpretación honesta (y contraintuitiva):**
+- Ningún componente es un predictor *fuerte* (todos 0,61–0,73); el IV combinado queda en 0,69.
+- El **mejor predictor es la capacidad de respuesta invertida** (pocas vías de salida), no el
+  peligro biofísico —que resulta el **más débil**—. No es que la capacidad *cause* el
+  incendio: es un **confound espacial de aislamiento** (los núcleos aislados, con pocas
+  salidas, caen en zona de grandes incendios). El peligro biofísico discrimina peor de lo
+  esperado, en parte porque el NDVI de 2025 tiene poca varianza entre núcleos (casi todo
+  Ourense es forestal) y el buffer de 1 km mezcla la aldea con su entorno (ver la nota del
+  confound, abajo, que lo mide).
+- **La hipótesis peligro > social no se cumplió**: con GlobFire (grandes incendios MODIS) la
+  señal del peligro no se reforzó. La distinción conceptual sigue en pie: el incendio valida
+  **exposición/localización**, no la **vulnerabilidad social** (que un solo tipo de evento no
+  puede validar).
+- **Recalibración (recomendación, NO adoptada):** la validación cruzada 5-fold es estable
+  (gap train−validación ≈ 0, sin sobreajuste con n=683) y sugiere pesos que suben el peso de
+  la capacidad (AUC de 0,69 a ~0,73). **No se adoptan**: optimizarían la predicción de *dónde
+  arde* (ignición/exposición y su confound espacial), no de *quién es vulnerable si arde*, que
+  es el propósito del IV. Los pesos siguen
+  siendo los **provisionales declarados**; la decisión queda para revisión humana.
+
+Salida: `data/calibracion_globfire_ourense.json`.
+
+#### Nota metodológica: el confound espacial, medido
+
+Que la capacidad de respuesta prediga la afectación mejor que el peligro sugiere un
+**confound espacial**. `scripts/analisis-confound-ourense.mjs` lo mide, en vez de solo
+afirmarlo, con una covariable de **exposición del paisaje** independiente del IV: la
+**fracción de monte** (árbol+matorral, ESA WorldCover, buffer 1 km;
+`fetch-exposicion-ourense.py`) y la **distancia al núcleo urbano**. Resultado (n=683):
+
+- **La fracción de monte sola NO predice la afectación** (AUC **0,42**): casi todos los
+  núcleos rurales tienen monte alrededor (mediana 0,62), poca varianza discriminante. La
+  hipótesis simple "está en el monte → arde" no se sostiene a este nivel.
+- **El confound real es el AISLAMIENTO, no el monte**: la **distancia al núcleo urbano**
+  predice la afectación (AUC 0,61, a la par del peligro) y correlaciona con la capacidad
+  invertida (Spearman 0,44) y con el IV (0,63). Los núcleos **aislados** (lejos de ciudad,
+  con pocas salidas) son los que caen en zona de grandes incendios — geografía de la
+  ruralidad, no vulnerabilidad humana.
+- **Al estratificar por tercil de monte, el poder de los componentes se mantiene** (capacidad
+  0,72 intra-tercil vs 0,73 global): su señal no venía del monte, sino del eje
+  aislamiento/ruralidad que la capacidad captura.
+- El **peligro biofísico** sí correlaciona fuerte con el monte (0,60) pero **no** predice la
+  afectación: tener vegetación alrededor no distingue quién ardió en GlobFire.
+
+**Conclusión (blindada):** la calibración contra área quemada mide **geografía de
+exposición/aislamiento**, no vulnerabilidad social. Por eso **no se recalibran los pesos**
+con GlobFire, y la **validación de la parte social requiere otra variable de resultado**:
+el **impacto humano** (evacuaciones/confinamientos), que es exactamente el dato que se
+pedirá a **AXEGA** (ver *Ingesta de datos de evacuación*). Salida:
+`data/confound_ourense.json`.
+
+### Fase 5 — Mapa a escala (hecho)
+
+La ruta **`/ourense`** navega en dos niveles: de lejos, **coropleta por concello** (IV medio,
+paleta accesible; `public/concellos_ourense.geojson`) con **drill-down** al pinchar; al
+acercarse, los **683 núcleos con clustering de MapLibre** coloreados por IV, con borde
+reforzado en los que tienen historial de incendios. Panel de detalle completo (componentes,
+procedencia por variable, confianza) y leyenda con avisos (núcleos <50 hab excluidos,
+afectación proxy GlobFire). La demo original de Valdeorras (`/`) queda intacta.
+
+### Ingesta de datos de evacuación (andamiaje para AXEGA)
+
+La calibración contra GlobFire mide exposición, no vulnerabilidad social; validar la parte
+social requiere una variable de **impacto humano**: evacuaciones/confinamientos. El sistema
+queda **listo para enchufar esos datos** cuando lleguen (p. ej. de AXEGA):
+
+- **Esquema** (documentado y con plantilla ficticia en `data/evacuaciones_ejemplo.json`):
+  por registro `codmun` (obligatorio), `nucleo_nombre` (opcional), `fecha`, `tipo`
+  (`evacuacion`/`confinamiento`), `personas`, `evento`, `fuente`.
+- **Ingesta** (`scripts/ingesta-evacuaciones.mjs`): cruza los registros con la lista maestra
+  y produce por núcleo `evacuado_hist` y `n_evacuaciones`, análogos a `afectado_hist` de
+  GlobFire.
+- **Calibración parametrizada** (`scripts/calibracion-ourense.mjs`): la **misma maquinaria**
+  (AUC, IC bootstrap, Spearman, validación cruzada) corre contra GlobFire **o** contra
+  evacuación sin reescribir nada.
+
+Cuando existan los datos reales:
+```bash
+# 1) colocar los datos de AXEGA en data/evacuaciones.json (mismo esquema que el ejemplo)
+node scripts/ingesta-evacuaciones.mjs            # -> data/evacuacion_resultado_ourense.json
+node scripts/calibracion-ourense.mjs evacuacion  # -> calibración contra impacto humano
+```
+Los datos reales de AXEGA y los derivados de la plantilla ficticia están **gitignorados** (no
+se versionan); solo la plantilla del esquema (`evacuaciones_ejemplo.json`) forma parte del repo.
+
+## Mejoras futuras
+
+El trabajo técnico que no depende de datos externos está cerrado. Lo que queda son mejoras
+que dependen de **datos o interlocutores externos**, no de deuda técnica pendiente:
+
+- **Datos de evacuación/confinamiento de AXEGA** — la variable de impacto humano que permite
+  **validar la vulnerabilidad social** del índice (la calibración contra GlobFire mide
+  exposición del paisaje, no vulnerabilidad). El andamiaje de ingesta y calibración ya está
+  listo; solo falta el dato.
+- **Perímetros oficiales de incendio de la Xunta** — mejorarían sobre GlobFire (MODIS ~500 m,
+  proxy de grandes incendios) para la afectación histórica.
+- **LiDAR PNOA (MDSnV) y MDT-CNIG** — darían combustible y pendiente más finos que la
+  aproximación por satélite (Sentinel-2) y SRTM 30 m usados a escala.
+- **Evacuación a escala provincial** — la lente de rutas (hoy solo en la demo de Valdeorras)
+  para los ~683 núcleos; el ruteo masivo quedó fuera de este hito por coste.
+- **Los 4 núcleos ≥50 hab sin rescatar** (Fonsillón 331 hab, Ponte Barxas, Lavandeira,
+  Cimadevila) — el NGBE no los recoge como entidad singular; a confirmar con conocimiento
+  local y coordenadas de otra fuente.
+- **Las entidades <50 hab** (81 % del total) — excluidas del primer barrido por coste, pese a
+  ser de las más vulnerables según la propia tesis del índice; deuda a saldar al pasar a
+  producto.
 
 ## Privacidad (RGPD)
 
@@ -284,6 +666,28 @@ La identidad nominal de personas vulnerables queda **fuera** del sistema. Solo s
 indicadores agregados y no identificativos (proporción de mayores, hogares unipersonales
 de edad avanzada, dispersión, distancia a servicios).
 
-## Licencia
+## Licencia y datos
 
-Proyecto open source bajo licencia libre. Ámbito: Galicia.
+- **Código:** licencia [MIT](LICENSE).
+- **Datos derivados de OpenStreetMap** (accesos, red viaria de evacuación, cubierta de
+  respaldo, coordenadas de núcleos): © colaboradores de OpenStreetMap, bajo
+  [ODbL 1.0](https://www.openstreetmap.org/copyright).
+- **Datos del IGE** (Nomenclátor 2025, Padrón 2022): reutilización según las
+  [condiciones del Instituto Galego de Estatística](https://www.ige.gal/web/mostrar_paxina.jsp?paxina=001001004&idioma=es)
+  (datos abiertos con cita de la fuente).
+- **Copernicus** — imágenes **Sentinel-2** y delineaciones **EMS EMSR837**: uso libre con
+  atribución según la [política de datos de Copernicus](https://www.copernicus.eu/en/access-data)
+  y las [condiciones de Copernicus EMS](https://emergency.copernicus.eu/mapping/ems/cite-and-reuse-modified-copernicus-service-information).
+- **EU-DEM 25 m**: producto de la Agencia Europea de Medio Ambiente (Copernicus Land),
+  [reutilización libre con atribución](https://land.copernicus.eu/en/data-policy).
+
+Fuentes del escalado a Ourense:
+
+- **NGBE** — Nomenclátor Geográfico Básico de España, **IGN** (CC-BY 4.0), vía WFS INSPIRE.
+- **Padrón** por edad y municipio: **INE** (Estadística del Padrón Continuo), reutilización
+  libre citando la fuente.
+- **SRTM 30 m**: NASA/USGS, dominio público, vía Earth Engine (pendiente a escala).
+- **GlobFire**: JRC/GWIS, Comisión Europea (perímetros de incendio MODIS 2001–2021), vía
+  Earth Engine.
+
+Ámbito del proyecto: Galicia.

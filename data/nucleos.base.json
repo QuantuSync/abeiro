@@ -1,12 +1,18 @@
 {
   "type": "FeatureCollection",
   "name": "nucleos_valdeorras_larouco",
-  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
   "metadata": {
     "descripcion": "DATOS DE PRUEBA (inventados pero coherentes) para la Fase 0 de ABEIRO. NO son datos reales. Núcleos de la comarca piloto de Valdeorras / zona de Larouco (Ourense).",
     "indice": "Índice de Vulnerabilidad (0-100). Combina peligro biofísico, sensibilidad social (envejecimiento, aislamiento, dispersión) y capacidad de respuesta (accesos, cobertura).",
     "fuente": "Generado para Fase 0. Sustituir por fuentes abiertas en Fase 1.",
-    "privacidad": "Solo indicadores agregados y no identificativos. Ninguna identidad nominal."
+    "privacidad": "Solo indicadores agregados y no identificativos. Ninguna identidad nominal.",
+    "coordenadas_nota": "Coordenadas REALES de cada núcleo: nodo place de OpenStreetMap (consulta Overpass 2026-07-07; fuente_coordenadas por núcleo). Las coordenadas originales de Fase 0 estaban desplazadas hasta 57 km (invented); todas las cachés derivadas de posición (accesos, pendiente, combustible OSM, afectación, evacuación) se regeneraron con las reales."
   },
   "features": [
     {
@@ -25,9 +31,16 @@
         "capacidad_respuesta": 38,
         "num_accesos": 2,
         "cobertura_movil": "parcial",
-        "notas": "Capital municipal. Envejecimiento alto y accesos limitados por carretera de montaña."
+        "notas": "Capital municipal. Envejecimiento alto y accesos limitados por carretera de montaña.",
+        "fuente_coordenadas": "OpenStreetMap node/836419669 (village Larouco)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.1836, 42.5831] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.16324,
+          42.3466
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -45,9 +58,16 @@
         "capacidad_respuesta": 27,
         "num_accesos": 1,
         "cobertura_movil": "deficiente",
-        "notas": "Un solo acceso viario y vegetación densa en la interfaz. Población muy envejecida."
+        "notas": "Un solo acceso viario y vegetación densa en la interfaz. Población muy envejecida.",
+        "fuente_coordenadas": "OpenStreetMap node/836541995 (hamlet Seadur)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.1612, 42.5972] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.16114,
+          42.37509
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -65,16 +85,23 @@
         "capacidad_respuesta": 31,
         "num_accesos": 1,
         "cobertura_movil": "deficiente",
-        "notas": "Aldea dispersa en ladera; combustible continuo hasta las primeras casas."
+        "notas": "Aldea dispersa en ladera; combustible continuo hasta las primeras casas.",
+        "fuente_coordenadas": "OpenStreetMap node/836419672 (hamlet Freixido de Abaixo; la parroquia agrupa Arriba/Abaixo)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.2048, 42.6038] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.14022,
+          42.36566
+        ]
+      }
     },
     {
       "type": "Feature",
       "properties": {
         "id": "pradorramisquedo",
         "nombre": "Pradorramisquedo",
-        "concello": "Larouco",
+        "concello": "Viana do Bolo",
         "iv": 89,
         "poblacion": 34,
         "pct_mayores_65": 61,
@@ -85,9 +112,16 @@
         "capacidad_respuesta": 19,
         "num_accesos": 1,
         "cobertura_movil": "nula",
-        "notas": "Núcleo aislado de alta montaña. El caso más crítico de la comarca piloto."
+        "notas": "Núcleo aislado de alta montaña. El caso más crítico de la comarca piloto.",
+        "fuente_coordenadas": "OpenStreetMap node/1158060849 (hamlet Pradorramisquedo, Viana do Bolo)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.2331, 42.6211] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.96619,
+          42.14721
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -105,9 +139,16 @@
         "capacidad_respuesta": 49,
         "num_accesos": 2,
         "cobertura_movil": "parcial",
-        "notas": "Mejor conectado al valle; riesgo medio por proximidad a masa forestal."
+        "notas": "Mejor conectado al valle; riesgo medio por proximidad a masa forestal.",
+        "fuente_coordenadas": "OpenStreetMap node/886165943 (hamlet Portomourisco)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.1158, 42.4309] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.1287,
+          42.33773
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -125,9 +166,16 @@
         "capacidad_respuesta": 58,
         "num_accesos": 3,
         "cobertura_movil": "buena",
-        "notas": "Núcleo de valle con buenos accesos y servicios cercanos."
+        "notas": "Núcleo de valle con buenos accesos y servicios cercanos.",
+        "fuente_coordenadas": "OpenStreetMap node/876526037 (village Petín)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.1042, 42.4006] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.12636,
+          42.38234
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -145,9 +193,16 @@
         "capacidad_respuesta": 71,
         "num_accesos": 4,
         "cobertura_movil": "buena",
-        "notas": "Villa principal del tramo. Servicios de emergencia y centro de salud propios."
+        "notas": "Villa principal del tramo. Servicios de emergencia y centro de salud propios.",
+        "fuente_coordenadas": "OpenStreetMap node/256200178 (town A Rúa de Valdeorras)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.1117, 42.3922] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.11416,
+          42.39528
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -165,9 +220,16 @@
         "capacidad_respuesta": 79,
         "num_accesos": 5,
         "cobertura_movil": "buena",
-        "notas": "Capital de comarca. Máxima capacidad de respuesta; riesgo humano bajo."
+        "notas": "Capital de comarca. Máxima capacidad de respuesta; riesgo humano bajo.",
+        "fuente_coordenadas": "OpenStreetMap node/256200176 (town O Barco)"
       },
-      "geometry": { "type": "Point", "coordinates": [-6.9831, 42.4164] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.9843,
+          42.41646
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -185,9 +247,16 @@
         "capacidad_respuesta": 33,
         "num_accesos": 1,
         "cobertura_movil": "deficiente",
-        "notas": "Ladera de solana con matorral; acceso único y población envejecida."
+        "notas": "Ladera de solana con matorral; acceso único y población envejecida.",
+        "fuente_coordenadas": "OpenStreetMap node/738257751 (hamlet Vilar de Silva, Rubiá)"
       },
-      "geometry": { "type": "Point", "coordinates": [-6.9389, 42.4671] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.82989,
+          42.46151
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -205,9 +274,16 @@
         "capacidad_respuesta": 28,
         "num_accesos": 1,
         "cobertura_movil": "deficiente",
-        "notas": "Bajo el macizo de Pena Trevinca; gran masa forestal y acceso de montaña."
+        "notas": "Bajo el macizo de Pena Trevinca; gran masa forestal y acceso de montaña.",
+        "fuente_coordenadas": "OpenStreetMap node/853954489 (hamlet Casaio)"
       },
-      "geometry": { "type": "Point", "coordinates": [-6.8472, 42.4889] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.80536,
+          42.34
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -225,9 +301,16 @@
         "capacidad_respuesta": 36,
         "num_accesos": 1,
         "cobertura_movil": "parcial",
-        "notas": "Entorno de Las Médulas gallegas; núcleo pequeño y muy disperso."
+        "notas": "Entorno de Las Médulas gallegas; núcleo pequeño y muy disperso.",
+        "fuente_coordenadas": "OpenStreetMap node/594019319 (hamlet A Medua)"
       },
-      "geometry": { "type": "Point", "coordinates": [-6.8061, 42.4538] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.87161,
+          42.39899
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -245,9 +328,16 @@
         "capacidad_respuesta": 62,
         "num_accesos": 3,
         "cobertura_movil": "buena",
-        "notas": "Núcleo de fondo de valle, bien comunicado por la N-120."
+        "notas": "Núcleo de fondo de valle, bien comunicado por la N-120.",
+        "fuente_coordenadas": "OpenStreetMap node/361414243 (village Vilamartín)"
       },
-      "geometry": { "type": "Point", "coordinates": [-7.0494, 42.4256] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.0624,
+          42.41412
+        ]
+      }
     }
   ]
 }

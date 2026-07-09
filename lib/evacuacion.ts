@@ -48,14 +48,17 @@ export interface CategoriaEvac {
   color: string;
 }
 
-// Escala fácil → difícil. Paleta azul(frío=fácil) → rojo(cálido=difícil),
-// distinta a propósito del verde→rojo del IV para no confundir las lentes.
+// Escala fácil → difícil. Paleta azul(frío=fácil) → gris → rojo(cálido=difícil)
+// (ColorBrewer RdBu invertida, segura para daltonismo), distinta a propósito de
+// la amarillo→granate (YlOrRd) del IV para no confundir las lentes: su extremo
+// bajo es AZUL (el IV nunca usa azul) y su punto medio es gris neutro (no se
+// parece al amarillo pálido del IV "muy baja").
 export const CATEGORIAS_EVAC: CategoriaEvac[] = [
-  { id: "muy-facil", etiqueta: "Muy fácil", min: 0, max: 20, color: "#2c7fb8" },
-  { id: "facil", etiqueta: "Fácil", min: 20, max: 40, color: "#7fcdbb" },
-  { id: "moderada", etiqueta: "Moderada", min: 40, max: 60, color: "#f6e8c3" },
-  { id: "dificil", etiqueta: "Difícil", min: 60, max: 80, color: "#ef8a62" },
-  { id: "muy-dificil", etiqueta: "Muy difícil", min: 80, max: 100, color: "#b2182b" },
+  { id: "muy-facil", etiqueta: "Muy fácil", min: 0, max: 20, color: "#0571b0" },
+  { id: "facil", etiqueta: "Fácil", min: 20, max: 40, color: "#92c5de" },
+  { id: "moderada", etiqueta: "Moderada", min: 40, max: 60, color: "#f0f0f0" },
+  { id: "dificil", etiqueta: "Difícil", min: 60, max: 80, color: "#f4a582" },
+  { id: "muy-dificil", etiqueta: "Muy difícil", min: 80, max: 100, color: "#ca0020" },
 ];
 
 export function categoriaEvac(d: number): CategoriaEvac {

@@ -14,6 +14,9 @@
 //
 // Uso:  node scripts/fetch-accesos-osm.mjs            (usa caché si existe)
 //       node scripts/fetch-accesos-osm.mjs --force    (re-consulta Overpass)
+//       node scripts/fetch-accesos-osm.mjs --extracto (SIN red: cuenta las
+//         salidas desde el extracto local data/osm_valdeorras.json, el mismo
+//         que usa scripts/evacuacion_osm.py; útil cuando Overpass no responde)
 // =============================================================================
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -59,6 +62,7 @@ async function overpass(query) {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": UA },
           body: new URLSearchParams({ data: query }).toString(),
+          signal: AbortSignal.timeout(90_000), // un mirror colgado no debe bloquear el script
         });
         if (res.status === 429 || res.status === 504) { // límite/timeout: espera y reintenta
           await sleep(4000 * intento);
@@ -98,7 +102,8 @@ function contarSalidas(elements, lat, lon) {
 
 // --- ejecución ---------------------------------------------------------------
 
-const usarCache = !process.argv.includes("--force");
+const usarExtracto = process.argv.includes("--extracto");
+const usarCache = !process.argv.includes("--force") && !usarExtracto;
 const fc = JSON.parse(readFileSync(join(DATA, "nucleos.json"), "utf8"));
 const nucleos = fc.features.map((f) => ({
   id: f.properties.id,
@@ -106,6 +111,27 @@ const nucleos = fc.features.map((f) => ({
   lon: f.geometry.coordinates[0],
   lat: f.geometry.coordinates[1],
 }));
+
+// Modo SIN RED: extracto local (mismo fichero que usa evacuacion_osm.py). Se
+// filtran las clases de vía consideradas y los ways a <= RADIO_M + margen.
+let extracto = null;
+if (usarExtracto) {
+  const EXTRACTO = join(DATA, "osm_valdeorras.json");
+  if (!existsSync(EXTRACTO)) {
+    console.error("ERROR: no existe data/osm_valdeorras.json. Ejecuta antes "
+      + "scripts/evacuacion_osm.py (descarga el extracto) o usa Overpass sin --extracto.");
+    process.exit(1);
+  }
+  extracto = JSON.parse(readFileSync(EXTRACTO, "utf8")).elements
+    .filter((w) => w.type === "way" && w.geometry && CLASES.includes(w.tags?.highway));
+  console.log(`Modo extracto local: ${extracto.length} vías candidatas.`);
+}
+
+// Vías del extracto con algún vértice cerca del núcleo (preselección barata).
+function viasCerca(lat, lon) {
+  return extracto.filter((w) =>
+    w.geometry.some((g) => distM(lat, lon, g.lat, g.lon) <= RADIO_M * 2));
+}
 
 let cachePrevio = {};
 if (usarCache && existsSync(SALIDA)) {
@@ -122,11 +148,13 @@ for (const n of nucleos) {
     continue;
   }
   try {
-    const data = await overpass(consulta(n.lat, n.lon));
-    const r = contarSalidas(data.elements || [], n.lat, n.lon);
+    const elements = usarExtracto
+      ? viasCerca(n.lat, n.lon)
+      : (await overpass(consulta(n.lat, n.lon))).elements || [];
+    const r = contarSalidas(elements, n.lat, n.lon);
     resultados[n.id] = { nombre: n.nombre, lat: n.lat, lon: n.lon, radio_m: RADIO_M, ...r };
     console.log(`${n.nombre.padEnd(26)} vias_salida=${r.vias_salida}  (vias=${r.vias_que_cruzan})  ${JSON.stringify(r.por_tipo)}`);
-    await sleep(1500); // cortesía con la API pública
+    if (!usarExtracto) await sleep(1500); // cortesía con la API pública
   } catch (e) {
     errores.push({ id: n.id, nombre: n.nombre, error: String(e.message || e) });
     console.error(`${n.nombre.padEnd(26)} ERROR: ${e.message || e}`);
@@ -144,7 +172,9 @@ if (errores.length) {
 
 const salida = {
   metadata: {
-    fuente: "OpenStreetMap vía Overpass API (ODbL).",
+    fuente: usarExtracto
+      ? "OpenStreetMap, extracto local data/osm_valdeorras.json (bbox Valdeorras, ODbL)."
+      : "OpenStreetMap vía Overpass API (ODbL).",
     indicador: "vias_salida = nº de cruces de vías transitables con el círculo de radio R "
       + "alrededor del centro del núcleo (cada cruce = una salida).",
     radio_m: RADIO_M,

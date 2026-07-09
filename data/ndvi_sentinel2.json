@@ -2,22 +2,59 @@
   "metadata": {
     "indicador": "NDVI medio (Normalized Difference Vegetation Index, (B8-B4)/(B8+B4)) en un buffer de 1 km alrededor del centro de cada núcleo. NDVI alto = vegetación densa/vigorosa = más biomasa = más material combustible.",
     "fuente": "Sentinel-2 SR, COPERNICUS/S2_SR_HARMONIZED, vía Google Earth Engine.",
-    "periodo": "verano 2025",
-    "fecha_integracion": "2026-06-03",
-    "nota": "El NDVI mide directamente la CANTIDAD de vegetación (biomasa). Sustituye a la etiqueta de cubierta OSM como medida de 'cuánta vegetación hay' (usarlos juntos sería doble conteo). La cubierta OSM queda solo como respaldo donde falte satélite."
+    "periodo": "pre-incendio: 2025-06-01 a 2025-07-31",
+    "fecha_integracion": "2026-07-07",
+    "filtro_nubes": "CLOUDY_PIXEL_PERCENTAGE < 20 + máscara SCL por píxel (clases descartadas: [3, 8, 9, 10, 11]); composición por mediana temporal.",
+    "nota": "El NDVI mide directamente la CANTIDAD de vegetación (biomasa). Sustituye a la etiqueta de cubierta OSM como medida de 'cuánta vegetación hay' (usarlos juntos sería doble conteo). La cubierta OSM queda solo como respaldo donde falte satélite. Re-medido sobre las coordenadas CORREGIDAS de los núcleos (nodos place de OSM; ver metadata.coordenadas_nota de nucleos.json), buffer de 1000 m. Período PRE-incendio para no contaminar la medición con las zonas quemadas en agosto de 2025."
   },
   "nucleos": {
-    "larouco": { "nombre": "Larouco", "ndvi": 0.670 },
-    "seadur": { "nombre": "Seadur", "ndvi": 0.740 },
-    "freixido": { "nombre": "Freixido", "ndvi": 0.607 },
-    "pradorramisquedo": { "nombre": "Pradorramisquedo", "ndvi": 0.726 },
-    "portomourisco": { "nombre": "Portomourisco", "ndvi": 0.656 },
-    "petin": { "nombre": "Petín", "ndvi": 0.482 },
-    "a-rua": { "nombre": "A Rúa", "ndvi": 0.348 },
-    "o-barco": { "nombre": "O Barco de Valdeorras", "ndvi": 0.425 },
-    "vilardesilva": { "nombre": "Vilardesilva", "ndvi": 0.593 },
-    "casaio": { "nombre": "Casaio", "ndvi": 0.750 },
-    "a-medua": { "nombre": "A Medua", "ndvi": 0.588 },
-    "vilamartin": { "nombre": "Vilamartín de Valdeorras", "ndvi": 0.658 }
+    "larouco": {
+      "nombre": "Larouco",
+      "ndvi": 0.582
+    },
+    "seadur": {
+      "nombre": "Seadur",
+      "ndvi": 0.533
+    },
+    "freixido": {
+      "nombre": "Freixido",
+      "ndvi": 0.671
+    },
+    "pradorramisquedo": {
+      "nombre": "Pradorramisquedo",
+      "ndvi": 0.586
+    },
+    "portomourisco": {
+      "nombre": "Portomourisco",
+      "ndvi": 0.592
+    },
+    "petin": {
+      "nombre": "Petín",
+      "ndvi": 0.357
+    },
+    "a-rua": {
+      "nombre": "A Rúa",
+      "ndvi": 0.418
+    },
+    "o-barco": {
+      "nombre": "O Barco de Valdeorras",
+      "ndvi": 0.459
+    },
+    "vilardesilva": {
+      "nombre": "Vilardesilva",
+      "ndvi": 0.677
+    },
+    "casaio": {
+      "nombre": "Casaio",
+      "ndvi": 0.513
+    },
+    "a-medua": {
+      "nombre": "A Medua",
+      "ndvi": 0.527
+    },
+    "vilamartin": {
+      "nombre": "Vilamartín de Valdeorras",
+      "ndvi": 0.555
+    }
   }
 }

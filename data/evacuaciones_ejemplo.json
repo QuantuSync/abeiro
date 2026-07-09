@@ -1,0 +1,24 @@
+{
+  "_PLANTILLA": "DATOS FICTICIOS. Este fichero es SOLO una plantilla del esquema de datos de evacuaciones/confinamientos. Los registros NO son reales: sirven para desarrollar y probar la ingesta. Sustituir por los datos reales de AXEGA (o Protección Civil) en data/evacuaciones.json antes de calibrar.",
+  "metadata": {
+    "descripcion": "Registros de evacuaciones y confinamientos de población por incendio forestal. Cada registro es una decisión administrativa de emergencia sobre un núcleo (o concello). Es la variable de resultado de IMPACTO HUMANO que permite validar la vulnerabilidad SOCIAL del índice, a diferencia de GlobFire (que mide área quemada / exposición del paisaje).",
+    "esquema": {
+      "codmun": "código INE del concello (5 dígitos, 32xxx). Obligatorio.",
+      "nucleo_nombre": "nombre de la entidad singular afectada (opcional; si falta, el registro se imputa a nivel concello).",
+      "fecha": "fecha de la decisión (ISO YYYY-MM-DD).",
+      "tipo": "'evacuacion' | 'confinamiento'.",
+      "personas": "nº de personas afectadas (opcional).",
+      "evento": "nombre o identificador del incendio (opcional).",
+      "fuente": "organismo que emitió/registró la decisión (p. ej. AXEGA)."
+    },
+    "fuente_prevista": "AXEGA (Axencia Galega de Emerxencias) / Protección Civil.",
+    "aviso": "PLANTILLA con datos ficticios; no usar como datos reales."
+  },
+  "registros": [
+    { "codmun": "32038", "nucleo_nombre": "Seadur", "fecha": "2022-07-17", "tipo": "evacuacion", "personas": 40, "evento": "FICTICIO-A", "fuente": "PLANTILLA (no real)" },
+    { "codmun": "32038", "nucleo_nombre": "Larouco", "fecha": "2022-07-17", "tipo": "confinamiento", "personas": 120, "evento": "FICTICIO-A", "fuente": "PLANTILLA (no real)" },
+    { "codmun": "32025", "nucleo_nombre": "Casaio", "fecha": "2021-08-23", "tipo": "evacuacion", "personas": 60, "evento": "FICTICIO-B", "fuente": "PLANTILLA (no real)" },
+    { "codmun": "32092", "nucleo_nombre": "Vilariño de Conso", "fecha": "2020-09-10", "tipo": "evacuacion", "personas": 35, "evento": "FICTICIO-C", "fuente": "PLANTILLA (no real)" },
+    { "codmun": "32038", "nucleo_nombre": "Seadur", "fecha": "2017-10-15", "tipo": "evacuacion", "personas": 40, "evento": "FICTICIO-D", "fuente": "PLANTILLA (no real)" }
+  ]
+}

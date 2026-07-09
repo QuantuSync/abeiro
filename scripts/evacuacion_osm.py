@@ -20,7 +20,15 @@ import networkx as nx
 DATA = os.path.join(os.path.dirname(__file__), "..", "data")
 PUBLIC = os.path.join(os.path.dirname(__file__), "..", "public")
 EXTRACTO = os.path.join(DATA, "osm_valdeorras.json")
-BBOX = "42.35,-7.35,42.68,-6.75"  # lat,lon: cubre los 12 núcleos + A Rúa + O Barco
+# lat,lon (S,W,N,E): cubre los 12 núcleos con sus coordenadas REALES (incluido
+# Pradorramisquedo, en Viana do Bolo al sur) + A Rúa + O Barco + los corredores
+# viarios entre ellos (N-120, OU-533, OU-122).
+BBOX = "42.05,-7.35,42.55,-6.70"
+
+# Umbral del sanity check de rutas: si la distancia por carretera supera en más
+# de RATIO_MAX veces la distancia en línea recta, la ruta es sospechosa (rodeo
+# anómalo, arista OSM ausente o fallo del grafo) y se emite un WARNING.
+RATIO_MAX = 3.0
 UA = "abeiro/1.0 (github.com/QuantuSync/abeiro)"
 MIRRORS = [
     "https://overpass-api.de/api/interpreter",
@@ -48,10 +56,11 @@ def norm_hw(h):
     h = h.replace("_link", "")
     return h if h in SPEED else "road"
 
-# Destinos seguros (cabeceras comarcales).
+# Destinos seguros (cabeceras comarcales). Coordenadas de los nodos place de OSM
+# (las mismas que usa data/nucleos.base.json).
 DESTINOS = {
-    "a-rua": {"nombre": "A Rúa", "lon": -7.1117, "lat": 42.3922},
-    "o-barco": {"nombre": "O Barco de Valdeorras", "lon": -6.9831, "lat": 42.4164},
+    "a-rua": {"nombre": "A Rúa", "lon": -7.11416, "lat": 42.39528},
+    "o-barco": {"nombre": "O Barco de Valdeorras", "lon": -6.98430, "lat": 42.41646},
 }
 
 def haversine(lat1, lon1, lat2, lon2):
@@ -147,6 +156,7 @@ def main():
 
     nucleos = json.load(open(os.path.join(DATA, "nucleos.json"), encoding="utf-8"))
     resultados, lineas, srcs = {}, [], {}
+    sospechosas = []  # rutas con ratio_rodeo > RATIO_MAX (sanity check)
     # PASO 1: rutas en el grafo LIMPIO (sin sumidero, para no contaminar el coste).
     for feat in nucleos["features"]:
         p = feat["properties"]; lon, lat = feat["geometry"]["coordinates"]
@@ -174,16 +184,25 @@ def main():
         t_min, dk, path = mejor
         d_total, t_total, fiab, pct_track, por_tipo = resumen_ruta(G, path)
         srcs[p["id"]] = src
+        # Sanity check: ratio de rodeo = distancia por carretera / distancia en
+        # línea recta al destino elegido. Un ratio > RATIO_MAX delata un rodeo
+        # anómalo (arista ausente en OSM, grafo mal conectado o coordenada mala).
+        d_recta = haversine(lat, lon, DESTINOS[dk]["lat"], DESTINOS[dk]["lon"])
+        ratio = (d_total / d_recta) if d_recta > 0 else 1.0
         resultados[p["id"]] = {
             "nombre": p["nombre"], "es_destino": False,
             "destino": dk, "destino_nombre": DESTINOS[dk]["nombre"],
             "dist_km": round(d_total / 1000, 1),
+            "dist_recta_km": round(d_recta / 1000, 1),
+            "ratio_rodeo": round(ratio, 2),
             "tiempo_min": round(t_total, 1),
             "rutas_alternativas": None,  # se calcula en el PASO 2
             "fiabilidad": round(fiab, 2),
             "pct_track": round(pct_track),
             "por_tipo_km": {k: round(v / 1000, 2) for k, v in sorted(por_tipo.items(), key=lambda x: -x[1])},
         }
+        if ratio > RATIO_MAX:
+            sospechosas.append((p["nombre"], DESTINOS[dk]["nombre"], d_total / 1000, d_recta / 1000, ratio))
         # Geometría de la ruta (lon,lat) simplificada para el mapa.
         pts = [[round(G.nodes[n]["lon"], 5), round(G.nodes[n]["lat"], 5)] for n in path if "lon" in G.nodes[n]]
         lineas.append({"type": "Feature",
@@ -205,7 +224,18 @@ def main():
             resultados[nid]["rutas_alternativas"] = None
         r = resultados[nid]
         print(f"  {r['nombre']:<26} -> {r['destino_nombre']:<22} {r['dist_km']:5.1f} km  {r['tiempo_min']:4.1f} min  "
-              f"rutas={r['rutas_alternativas']}  fiab={r['fiabilidad']:.2f}  track={r['pct_track']}%")
+              f"rutas={r['rutas_alternativas']}  fiab={r['fiabilidad']:.2f}  track={r['pct_track']}%  "
+              f"rodeo={r['ratio_rodeo']:.2f}")
+
+    # Sanity check: lista de rutas sospechosas (rodeo anómalo).
+    if sospechosas:
+        print(f"\nWARNING: {len(sospechosas)} ruta(s) con ratio carretera/recta > {RATIO_MAX}:")
+        for nom, dest, dkm, drect, ratio in sospechosas:
+            print(f"  {nom} -> {dest}: {dkm:.1f} km por carretera vs {drect:.1f} km en recta "
+                  f"(ratio {ratio:.2f})")
+        print("  Revisar: aristas OSM ausentes, conectividad del grafo o coordenadas del núcleo.")
+    else:
+        print(f"\nSanity check de rodeo: OK (todas las rutas con ratio <= {RATIO_MAX}).")
 
     out = {
         "metadata": {
@@ -219,6 +249,8 @@ def main():
                       "fiabilidad = media de fiabilidad por longitud (1=asfalto, 0.3=pista); "
                       "pct_track = % del recorrido por pista forestal.",
             "velocidades_kmh": SPEED, "fiabilidad_por_tipo": RELIAB,
+            "sanity_check": f"ratio_rodeo = dist_carretera / dist_recta (haversine al destino). "
+                            f"Ratios > {RATIO_MAX} se listan como WARNING al ejecutar el script.",
             "limitacion": "Evacuación ESTÁTICA: no considera el fuego (qué rutas quedan cortadas) "
                           "ni el tráfico ni la hora. Primer paso verificable.",
         },

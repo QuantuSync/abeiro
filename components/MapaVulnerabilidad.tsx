@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import maplibregl, { Map as MapLibreMap, GeoJSONSource } from "maplibre-gl";
+import { useEffect, useMemo, useRef, useState } from "react";
+import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 // import type { FeatureCollection, Point } from "geojson";
@@ -91,6 +91,22 @@ export default function MapaVulnerabilidad({ comarca }: { comarca?: Comarca }) {
   // FUTUO... por defecto solo carga nucleos de Valdeorras
   // Dado que habra fetch continuo de afec y evac segun evolucione el fuego, esto debe de ser CLIENTE (lo dejamos en MapaVulenerabilidad)
   const { nucleos } = useNucleos(/*FUTURO... pasar "comarca.id" para que useSWR actualice el fetching cuando cambie comarcaActual*/);
+import { nucleos, type NucleoProps } from "@/lib/datos";
+import { CAPAS_EVAC, CAPAS_VULN, CENTRO, ESTILO_BASE, ZOOM_INICIAL } from "@/lib/mapa-config";
+import { anadirCapasEvacuacion, anadirCapasNucleos, anadirCapasVulnerabilidad } from "@/lib/capas-mapa";
+import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
+import { EXPRESION_COLOR_EVAC } from "@/lib/evacuacion";
+import { FILTROS_DEFECTO, filtrando, pasaFiltros, type Filtros } from "@/lib/filtros";
+import Leyenda, { type Lente } from "@/components/Leyenda";
+import PanelInfo from "@/components/PanelInfo";
+import PanelValidacion from "@/components/PanelValidacion";
+import PanelFiltros from "@/components/PanelFiltros";
+
+// Color base de las rutas por % de pista (igual que en lib/capas-mapa).
+const COLOR_RUTA_BASE = [
+  "step", ["get", "pct_track"], "#0571b0", 15, "#e08214", 30, "#ca0020",
+] as unknown as maplibregl.ExpressionSpecification;
+const GRIS_ATENUADO = "#9a958a";
 
   const contenedor = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -101,6 +117,24 @@ export default function MapaVulnerabilidad({ comarca }: { comarca?: Comarca }) {
   // Guarda la última comarca a la que ya volamos, para no repetir el flyTo en
   // cada render y para no saltar en el propio montaje (ver efecto más abajo).
   const comarcaAnterior = useRef(comarca?.id);
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_DEFECTO);
+
+  // Núcleos que cumplen el filtro y los que quedan fuera (para atenuarlos en el
+  // mapa). El conjunto base son TODOS los núcleos (incluidos O Barco y A Rúa, que
+  // además son destinos de evacuación pero núcleos reales con IV propio). El
+  // filtro de vías aplica aquí (hay capa de evacuación).
+  const { visibles, total, idsFuera } = useMemo(() => {
+    const opts = { campoAfectacion: "afect_fisica" as const, soporteVias: true };
+    const activo = filtrando(filtros);
+    const fuera = activo
+      ? nucleos.features.filter((f) => !pasaFiltros(f.properties, filtros, opts)).map((f) => f.properties.id)
+      : [];
+    return {
+      total: nucleos.features.length,
+      visibles: nucleos.features.filter((f) => pasaFiltros(f.properties, filtros, opts)).length,
+      idsFuera: fuera,
+    };
+  }, [filtros]);
 
   useEffect(() => {
     if (!contenedor.current || mapRef.current) return;
@@ -195,15 +229,13 @@ export default function MapaVulnerabilidad({ comarca }: { comarca?: Comarca }) {
     }
   }, [seleccionado]);
 
-  // Aplica la lente activa: recolorea los núcleos y muestra/oculta capas.
+  // Aplica la lente activa: muestra/oculta las capas propias de cada lente.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const aplicar = () => {
       if (!map.getLayer("nucleos-punto")) return;
       const evac = lente === "evacuacion";
-      map.setPaintProperty("nucleos-punto", "circle-color",
-        (evac ? EXPRESION_COLOR_EVAC : EXPRESION_COLOR_IV) as maplibregl.ExpressionSpecification);
       for (const id of CAPAS_VULN) {
         if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", evac ? "none" : "visible");
       }
@@ -211,11 +243,52 @@ export default function MapaVulnerabilidad({ comarca }: { comarca?: Comarca }) {
         if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", evac ? "visible" : "none");
       }
     };
-    // Gate por existencia de capa (no por isStyleLoaded, que es false durante
-    // animaciones/carga de teselas aunque las capas ya existan).
     if (map.getLayer("nucleos-punto")) aplicar();
     else map.once("load", aplicar);
   }, [lente]);
+
+  // FOCO + FILTRO (Tareas 1 y 2): un único protagonista claro y contexto tenue.
+  // - Núcleo seleccionado: destaca; el resto se atenúa ligeramente (no invisible).
+  // - Filtrado fuera: gris y muy tenue (contexto), sin ocultarse.
+  // - En evacuación, la ruta del seleccionado destaca y las demás pasan a gris.
+  // Sin animaciones ni movimientos de cámara añadidos.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const aplicar = () => {
+      if (!map.getLayer("nucleos-punto")) return;
+      const base = (lente === "evacuacion" ? EXPRESION_COLOR_EVAC : EXPRESION_COLOR_IV) as maplibregl.ExpressionSpecification;
+      const sel = seleccionado?.id ?? null;
+      const fuera: maplibregl.ExpressionSpecification | boolean =
+        idsFuera.length ? (["in", ["get", "id"], ["literal", idsFuera]] as unknown as maplibregl.ExpressionSpecification) : false;
+      const noSel: maplibregl.ExpressionSpecification | boolean =
+        sel ? (["!=", ["get", "id"], sel] as unknown as maplibregl.ExpressionSpecification) : false;
+
+      // --- Núcleos: color (gris si filtrado fuera) y opacidad por foco ---
+      map.setPaintProperty("nucleos-punto", "circle-color",
+        (idsFuera.length ? ["case", fuera, GRIS_ATENUADO, base] : base) as maplibregl.ExpressionSpecification);
+      map.setPaintProperty("nucleos-punto", "circle-opacity",
+        ["case", fuera, 0.28, noSel, 0.55, 1] as unknown as maplibregl.ExpressionSpecification);
+      if (map.getLayer("nucleos-halo")) {
+        map.setPaintProperty("nucleos-halo", "circle-opacity",
+          ["case", fuera, 0.3, 0.92] as unknown as maplibregl.ExpressionSpecification);
+      }
+
+      // --- Rutas: foco de la seleccionada + atenuación del resto/filtradas ---
+      if (map.getLayer("rutas-evacuacion")) {
+        const atenuada: maplibregl.ExpressionSpecification =
+          ["any", fuera, noSel] as unknown as maplibregl.ExpressionSpecification;
+        map.setPaintProperty("rutas-evacuacion", "line-color",
+          ["case", atenuada, GRIS_ATENUADO, COLOR_RUTA_BASE] as unknown as maplibregl.ExpressionSpecification);
+        map.setPaintProperty("rutas-evacuacion", "line-opacity",
+          ["case", fuera, 0.18, noSel, 0.28, 1] as unknown as maplibregl.ExpressionSpecification);
+        map.setPaintProperty("rutas-casing", "line-opacity",
+          ["case", atenuada, 0.25, 0.9] as unknown as maplibregl.ExpressionSpecification);
+      }
+    };
+    if (map.getLayer("nucleos-punto")) aplicar();
+    else map.once("load", aplicar);
+  }, [seleccionado, lente, idsFuera]);
 
   // Resalta la ruta del núcleo seleccionado (glow dorado) según el estado.
   useEffect(() => {
@@ -227,10 +300,12 @@ export default function MapaVulnerabilidad({ comarca }: { comarca?: Comarca }) {
     else map.once("load", aplicar);
   }, [rutaResaltada]);
 
-  // Al cambiar de núcleo seleccionado (o cerrar el panel) se limpia el resaltado.
+  // En la lente de evacuación, la ruta del núcleo seleccionado se resalta (glow);
+  // al deseleccionar o en la otra lente, se limpia. Así el foco (glow + atenuación
+  // del resto) sigue siempre a la selección, sin acciones adicionales.
   useEffect(() => {
-    setRutaResaltada(null);
-  }, [seleccionado?.id]);
+    setRutaResaltada(lente === "evacuacion" && seleccionado ? seleccionado.id : null);
+  }, [seleccionado, lente]);
 
   // "Ruta de escape en coche": pasa a la lente de evacuación, resalta la ruta y
   // encuadra el trayecto núcleo -> destino seguro DENTRO de Valdeorras.

@@ -1,0 +1,143 @@
+{
+  "metadata": {
+    "descripcion": "Calibración exploratoria del IV contra afectación GlobFire (2001-2021, exposición del paisaje). AUC (Mann-Whitney) con IC bootstrap; Spearman vs n_afectaciones; recalibración por validación cruzada 5-fold.",
+    "variable_resultado": "globfire",
+    "valida": "EXPOSICIÓN/localización, no vulnerabilidad social (ver confound_ourense.json).",
+    "n_nucleos": 683,
+    "n_bootstrap": 2000,
+    "k_fold": 5,
+    "pesos_base": {
+      "peligro": 0.4,
+      "social": 0.35,
+      "cap": 0.25
+    },
+    "pesos_no_adoptados": "La recalibración por CV es una RECOMENDACIÓN fundamentada, NO se adopta: los pesos del índice siguen siendo los provisionales declarados. Decisión para revisión humana (ver gap_sobreajuste: train − validación).",
+    "advertencia_concepto": "El IV mide VULNERABILIDAD, no ignición. El incendio valida sobre todo la EXPOSICIÓN/localización del paisaje (aislamiento), NO la vulnerabilidad social (ver confound_ourense.json). Con n grande el IC es estrecho: ese es el salto de valor frente al piloto (n=12).",
+    "confound": "El mejor predictor es la capacidad de respuesta invertida (~0.73), no el peligro (~0.61). No es causal: es confound espacial de AISLAMIENTO (los núcleos aislados, con pocas salidas, caen en zona de grandes incendios). La fracción de monte sola no predice (AUC 0.42) y estratificar por monte no elimina el poder de los componentes; el eje es la distancia a lo urbano. Ver data/confound_ourense.json.",
+    "fuente_resultado": "GlobFire MODIS ~500 m: proxy de grandes incendios, no registro oficial de la Xunta. Se descartaron 43 perímetros con geometría degenerada (ver afectacion_*)."
+  },
+  "auc_binario": {
+    "afectado_hist": {
+      "etiqueta": "Afectado (buffer 250 m)",
+      "n_positivos": 103,
+      "n_negativos": 580,
+      "predictores": {
+        "iv": {
+          "etiqueta": "IV (índice completo)",
+          "auc": 0.691,
+          "ic95": [
+            0.636,
+            0.745
+          ]
+        },
+        "peligro_biofisico": {
+          "etiqueta": "Peligro biofísico",
+          "auc": 0.613,
+          "ic95": [
+            0.553,
+            0.669
+          ]
+        },
+        "score_social": {
+          "etiqueta": "Sensibilidad social",
+          "auc": 0.651,
+          "ic95": [
+            0.59,
+            0.707
+          ]
+        },
+        "capacidad_respuesta_inv": {
+          "etiqueta": "Capacidad de respuesta (100−cap)",
+          "auc": 0.727,
+          "ic95": [
+            0.677,
+            0.777
+          ]
+        }
+      }
+    },
+    "afectado_borde_500m": {
+      "etiqueta": "Borde <=500 m",
+      "n_positivos": 167,
+      "n_negativos": 516,
+      "predictores": {
+        "iv": {
+          "etiqueta": "IV (índice completo)",
+          "auc": 0.645,
+          "ic95": [
+            0.597,
+            0.692
+          ]
+        },
+        "peligro_biofisico": {
+          "etiqueta": "Peligro biofísico",
+          "auc": 0.588,
+          "ic95": [
+            0.539,
+            0.639
+          ]
+        },
+        "score_social": {
+          "etiqueta": "Sensibilidad social",
+          "auc": 0.6,
+          "ic95": [
+            0.552,
+            0.647
+          ]
+        },
+        "capacidad_respuesta_inv": {
+          "etiqueta": "Capacidad de respuesta (100−cap)",
+          "auc": 0.68,
+          "ic95": [
+            0.632,
+            0.725
+          ]
+        }
+      }
+    }
+  },
+  "spearman_continua": {
+    "iv": {
+      "etiqueta": "IV (índice completo)",
+      "spearman": 0.235
+    },
+    "peligro_biofisico": {
+      "etiqueta": "Peligro biofísico",
+      "spearman": 0.14
+    },
+    "score_social": {
+      "etiqueta": "Sensibilidad social",
+      "spearman": 0.185
+    },
+    "capacidad_respuesta_inv": {
+      "etiqueta": "Capacidad de respuesta (100−cap)",
+      "spearman": 0.284
+    }
+  },
+  "recalibracion_cv": {
+    "afectado_hist": {
+      "etiqueta": "Afectado (buffer 250 m)",
+      "auc_pesos_base": 0.691,
+      "pesos_optimos_cv": {
+        "peligro": 0.35,
+        "social": 0.15,
+        "cap": 0.5
+      },
+      "auc_val_optimos": 0.728,
+      "auc_train_optimos": 0.729,
+      "gap_sobreajuste": 0
+    },
+    "afectado_borde_500m": {
+      "etiqueta": "Borde <=500 m",
+      "auc_pesos_base": 0.645,
+      "pesos_optimos_cv": {
+        "peligro": 0.3,
+        "social": 0.15,
+        "cap": 0.55
+      },
+      "auc_val_optimos": 0.685,
+      "auc_train_optimos": 0.681,
+      "gap_sobreajuste": -0.004
+    }
+  }
+}

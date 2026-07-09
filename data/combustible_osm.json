@@ -25,106 +25,158 @@
     "larouco": {
       "nombre": "Larouco",
       "radio_m": 800,
-      "cobertura_clasificada_m2": null,
-      "areas": {},
-      "combustibilidad": 73,
-      "dominante": "landuse=forest"
+      "combustibilidad": 71,
+      "dominante": "landuse=forest",
+      "cobertura_clasificada_m2": 3094018,
+      "areas": {
+        "landuse=forest": 2681813,
+        "landuse=residential": 208281,
+        "landuse=vineyard": 196858,
+        "landuse=industrial": 6200,
+        "natural=scrub": 867
+      }
     },
     "seadur": {
       "nombre": "Seadur",
       "radio_m": 800,
-      "cobertura_clasificada_m2": null,
-      "areas": {},
-      "combustibilidad": 89,
-      "dominante": "natural=heath"
+      "combustibilidad": 21,
+      "dominante": "landuse=vineyard",
+      "cobertura_clasificada_m2": 378414,
+      "areas": {
+        "landuse=vineyard": 298971,
+        "landuse=residential": 79443
+      }
+    },
+    "freixido": {
+      "nombre": "Freixido",
+      "radio_m": 800,
+      "combustibilidad": 6,
+      "dominante": "landuse=residential",
+      "cobertura_clasificada_m2": 66840,
+      "areas": {
+        "landuse=residential": 58507,
+        "landuse=industrial": 5500,
+        "landuse=vineyard": 2833
+      }
     },
     "pradorramisquedo": {
       "nombre": "Pradorramisquedo",
       "radio_m": 800,
-      "cobertura_clasificada_m2": null,
-      "areas": {},
-      "combustibilidad": 78,
-      "dominante": "landuse=forest"
+      "combustibilidad": 75,
+      "dominante": "landuse=forest",
+      "cobertura_clasificada_m2": 1382939,
+      "areas": {
+        "landuse=forest": 1290352,
+        "landuse=quarry": 56403,
+        "landuse=residential": 34734,
+        "natural=water": 1450
+      }
     },
     "portomourisco": {
       "nombre": "Portomourisco",
       "radio_m": 800,
-      "cobertura_clasificada_m2": null,
-      "areas": {},
-      "combustibilidad": 80,
-      "dominante": "landuse=forest"
+      "combustibilidad": 16,
+      "dominante": "landuse=vineyard",
+      "cobertura_clasificada_m2": 262372,
+      "areas": {
+        "landuse=vineyard": 138310,
+        "landuse=residential": 124061
+      }
     },
     "petin": {
       "nombre": "Petín",
       "radio_m": 800,
-      "cobertura_clasificada_m2": null,
-      "areas": {},
-      "combustibilidad": 11,
-      "dominante": "landuse=residential"
+      "combustibilidad": 52,
+      "dominante": "landuse=forest",
+      "cobertura_clasificada_m2": 3856744,
+      "areas": {
+        "landuse=forest": 2348782,
+        "landuse=residential": 1339310,
+        "landuse=vineyard": 168652
+      }
     },
     "a-rua": {
       "nombre": "A Rúa",
       "radio_m": 800,
-      "cobertura_clasificada_m2": null,
-      "areas": {},
-      "combustibilidad": 12,
-      "dominante": "landuse=residential"
+      "combustibilidad": 13,
+      "dominante": "landuse=residential",
+      "cobertura_clasificada_m2": 1650834,
+      "areas": {
+        "landuse=residential": 1069412,
+        "landuse=vineyard": 565504,
+        "natural=wood": 15665,
+        "landuse=industrial": 254
+      }
     },
     "o-barco": {
       "nombre": "O Barco de Valdeorras",
       "radio_m": 800,
-      "cobertura_clasificada_m2": null,
-      "areas": {},
       "combustibilidad": 65,
-      "dominante": "landuse=forest"
+      "dominante": "landuse=forest",
+      "cobertura_clasificada_m2": 10814098,
+      "areas": {
+        "landuse=forest": 8634837,
+        "landuse=residential": 1884236,
+        "natural=water": 167052,
+        "landuse=vineyard": 73280,
+        "landuse=meadow": 30319,
+        "landuse=industrial": 15010,
+        "landuse=farmland": 4847,
+        "natural=wood": 2104,
+        "landuse=orchard": 1803,
+        "landuse=grass": 611
+      }
     },
     "vilardesilva": {
       "nombre": "Vilardesilva",
       "radio_m": 800,
-      "cobertura_clasificada_m2": null,
-      "areas": {},
-      "combustibilidad": 80,
-      "dominante": "landuse=forest"
-    },
-    "freixido": {
-      "nombre": "Freixido",
-      "radio_m": 1500,
-      "combustibilidad": 43,
-      "dominante": "landuse=forest",
-      "cobertura_clasificada_m2": 419413,
+      "combustibilidad": 78,
+      "dominante": "natural=wood",
+      "cobertura_clasificada_m2": 1386259,
       "areas": {
-        "landuse=forest": 215173,
-        "landuse=residential": 204174,
-        "natural=water": 66
+        "natural=wood": 1067639,
+        "landuse=forest": 279705,
+        "landuse=residential": 38914
       }
     },
     "casaio": {
       "nombre": "Casaio",
       "radio_m": 800,
-      "combustibilidad": 79,
-      "dominante": "landuse=forest",
-      "cobertura_clasificada_m2": 28295451,
+      "combustibilidad": 5,
+      "dominante": "landuse=quarry",
+      "cobertura_clasificada_m2": 4842848,
       "areas": {
-        "landuse=forest": 27906354,
-        "landuse=orchard": 389098
+        "landuse=quarry": 4446018,
+        "landuse=residential": 247405,
+        "natural=water": 87563,
+        "landuse=industrial": 61861
       }
     },
     "a-medua": {
       "nombre": "A Medua",
       "radio_m": 800,
-      "combustibilidad": 80,
-      "dominante": "landuse=forest",
-      "cobertura_clasificada_m2": 2780038,
+      "combustibilidad": 11,
+      "dominante": "landuse=industrial",
+      "cobertura_clasificada_m2": 54458,
       "areas": {
-        "landuse=forest": 2780038
+        "landuse=industrial": 28216,
+        "landuse=residential": 21950,
+        "natural=wood": 4292
       }
     },
     "vilamartin": {
       "nombre": "Vilamartín de Valdeorras",
-      "radio_m": 1500,
-      "combustibilidad": null,
-      "dominante": null,
-      "areas": {}
+      "radio_m": 800,
+      "combustibilidad": 77,
+      "dominante": "landuse=forest",
+      "cobertura_clasificada_m2": 17389206,
+      "areas": {
+        "landuse=forest": 16427630,
+        "landuse=vineyard": 525799,
+        "landuse=residential": 328914,
+        "natural=wood": 71781,
+        "natural=scrub": 35083
+      }
     }
   }
 }

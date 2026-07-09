@@ -10,7 +10,7 @@ export default function Leyenda({ lente }: { lente: Lente }) {
   const cats = evac ? CATEGORIAS_EVAC : CATEGORIAS_IV;
 
   return (
-    <div className="leyenda" aria-label={evac ? "Leyenda de dificultad de evacuación" : "Leyenda del Índice de Vulnerabilidad"}>
+    <section className="leyenda" aria-label={evac ? "Leyenda de dificultad de evacuación" : "Leyenda del Índice de Vulnerabilidad"}>
       <h3>{evac ? "Dificultad de evacuación" : "Índice de Vulnerabilidad"}</h3>
       <ul>
         {cats.map((c) => (
@@ -44,11 +44,12 @@ export default function Leyenda({ lente }: { lente: Lente }) {
             <span className="quemado" /> Perímetro quemado 2025 (Copernicus EMS)
           </p>
           <p className="aviso">
-            Población real (Nomenclátor IGE 2025). Edad real solo donde hay Padrón por
-            concello; el resto, estimación provisional. No usar para decisiones reales.
+            Datos oficiales: población (Nomenclátor IGE 2025) y estructura de edad (Padrón
+            IGE por concello). Demostrador de apoyo a la decisión, no de despacho operativo
+            de emergencias.
           </p>
         </>
       )}
-    </div>
+    </section>
   );
 }

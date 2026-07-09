@@ -2,8 +2,13 @@
 
 import { categoriaPorIV } from "@/lib/vulnerabilidad";
 import { categoriaEvac } from "@/lib/evacuacion";
+import type { NucleoProps } from "@/lib/datos";
 
-import {NucleoProps} from "@/lib/tipos"
+//ANTES import {NucleoProps} from "@/lib/tipos"
+// El tipo de las propiedades fusionadas vive en lib/datos.ts; se re-exporta
+// aquí por compatibilidad con los importadores existentes.
+export type { NucleoProps };
+
 
 // Traduce la etiqueta OSM de cubierta dominante a algo legible.
 function cubiertaLegible(clase?: string): string {
@@ -31,6 +36,35 @@ function Barra({ valor, color }: { valor: number; color: string }) {
 function Origen({ real, texto }: { real: boolean | "aprox"; texto: string }) {
   const clase = real === "aprox" ? "aprox" : real ? "real" : "estim";
   return <span className={`origen ${clase}`} title={texto}>{texto}</span>;
+}
+
+// Nivel legible de la confianza (mismos umbrales que nivelConfianza en
+// lib/indice.mjs; la fórmula está en metadata.confianza_nota).
+function nivelConfianza(c: number): { etiqueta: string; explica: string } {
+  if (c >= 0.75) return { etiqueta: "alta", explica: "la mayoría de las variables son medidas reales" };
+  if (c >= 0.5) return { etiqueta: "media", explica: "mezcla datos reales con aproximaciones y estimaciones" };
+  return { etiqueta: "baja", explica: "predominan estimaciones provisionales" };
+}
+
+// rango_iv puede llegar como array real (import directo del JSON) o como string
+// JSON "[47,52]" (MapLibre serializa las propiedades array/objeto de las
+// features al pasarlas por el evento de clic). Se normaliza a [min, max] o null.
+function parseRangoIV(r: unknown): [number, number] | null {
+  let v = r;
+  if (typeof v === "string") {
+    try { v = JSON.parse(v); } catch { return null; }
+  }
+  if (Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === "number" && Number.isFinite(n))) {
+    return [v[0], v[1]];
+  }
+  return null;
+}
+
+// Valor legible o marcador neutro "sin dato" (no inventa datos: si el valor no
+// existe o viene vacío, lo señala explícitamente).
+function oSinDato(valor: unknown, sufijo = ""): string {
+  if (valor === null || valor === undefined || valor === "") return "sin dato";
+  return `${valor}${sufijo}`;
 }
 
 // Modos de ruta de escape. Estructura preparada para el futuro: activar un modo
@@ -89,6 +123,31 @@ export default function PanelInfo({
         </div>
       </div>
 
+      {nucleo.confianza != null && (() => {
+        const nc = nivelConfianza(nucleo.confianza);
+        const rango = parseRangoIV(nucleo.rango_iv);
+        return (
+          <p className={`confianza conf-${nc.etiqueta}`}>
+            Confianza del dato: <strong>{nc.etiqueta}</strong> — {nc.explica}.
+            {rango && (
+              <span
+                className="conf-rango"
+                title="Rango del IV al variar los pesos provisionales del índice (análisis de sensibilidad)"
+              >
+                {" "}Según los pesos, el IV varía entre {rango[0]} y {rango[1]}.
+              </span>
+            )}
+          </p>
+        );
+      })()}
+
+      {nucleo.poblacion < 50 && (
+        <p className="aviso-proxy">
+          Aldea muy pequeña ({nucleo.poblacion} hab.): el % de mayores es un proxy del
+          concello y puede no representar bien a sus vecinos.
+        </p>
+      )}
+
       <dl className="datos">
         <div>
           <dt>
@@ -112,15 +171,15 @@ export default function PanelInfo({
         </div>
         <div>
           <dt>Hogares unipersonales (mayores)</dt>
-          <dd>{nucleo.pct_hogares_uniper_mayores}%</dd>
+          <dd>{nucleo.pct_hogares_uniper_mayores != null ? `${nucleo.pct_hogares_uniper_mayores}%` : "sin dato"}</dd>
         </div>
         <div>
           <dt>Dispersión</dt>
-          <dd className="cap">{nucleo.dispersion}</dd>
+          <dd className="cap">{oSinDato(nucleo.dispersion)}</dd>
         </div>
         <div>
           <dt>Distancia a servicios</dt>
-          <dd>{nucleo.distancia_servicios_km} km</dd>
+          <dd>{nucleo.distancia_servicios_km != null ? `${nucleo.distancia_servicios_km} km` : "sin dato"}</dd>
         </div>
         <div>
           <dt>
@@ -141,7 +200,7 @@ export default function PanelInfo({
         </div>
         <div>
           <dt>Cobertura móvil</dt>
-          <dd className="cap">{nucleo.cobertura_movil}</dd>
+          <dd className="cap">{oSinDato(nucleo.cobertura_movil)}</dd>
         </div>
       </dl>
 
@@ -162,7 +221,7 @@ export default function PanelInfo({
               <Origen real={false} texto="estimación" />
             )}
           </span>
-          <Barra valor={nucleo.peligro_biofisico} color="#d9534f" />
+          <Barra valor={nucleo.peligro_biofisico} color="#b5402f" />
           <strong>{nucleo.peligro_biofisico}</strong>
         </div>
         {nucleo.dato_pendiente_real && (
@@ -199,7 +258,7 @@ export default function PanelInfo({
             Capacidad de respuesta{" "}
             <Origen real={!!nucleo.dato_capacidad_real} texto={nucleo.dato_capacidad_real ? "real · OSM" : "estimación"} />
           </span>
-          <Barra valor={nucleo.capacidad_respuesta} color="#2e8b57" />
+          <Barra valor={nucleo.capacidad_respuesta} color="#2f6b46" />
           <strong>{nucleo.capacidad_respuesta}</strong>
         </div>
       </div>
@@ -251,6 +310,12 @@ export default function PanelInfo({
                 {nucleo.pct_track}% {nucleo.pct_track != null && nucleo.pct_track >= 25 && "⚠"}
               </dd>
             </div>
+            {nucleo.fiabilidad != null && (
+              <div>
+                <dt>Fiabilidad de la vía</dt>
+                <dd>{Math.round(nucleo.fiabilidad * 100)}%</dd>
+              </div>
+            )}
           </dl>
           <p className="evac-nota">
             Ruta más rápida por carretera (OSM, routing local; pistas penalizadas).
@@ -317,9 +382,8 @@ export default function PanelInfo({
             <div className="afect-fecha">Frente más próximo: <strong>{nucleo.fecha_frente}</strong></div>
           )}
           <p className="afect-nota">
-            Perímetro EMSR837/AOI01 (delineación Copernicus EMS, ago-2025). Capa de
-            validación, no componente del índice. El perímetro puede no ser completo
-            respecto al total del complejo de incendios.
+            Perímetro oficial EMSR837/AOI01 (delineación Copernicus EMS, ago-2025), empleado
+            como capa de validación del índice frente al incendio real.
           </p>
         </div>
       )}
@@ -327,18 +391,18 @@ export default function PanelInfo({
       {nucleo.notas && <p className="notas">{nucleo.notas}</p>}
 
       <p className="disclaimer">
-        Abeiro informa, no sustituye a los servicios oficiales de emergencia. Salidas
-        probabilísticas.{" "}
+        Abeiro es una herramienta de apoyo a la decisión; no sustituye al despacho oficial de
+        los servicios de emergencia.{" "}
         {nucleo.dato_poblacion_real ? (
           <>
-            Dato real: población (Nomenclátor IGE 2025
+            Datos reales: población (Nomenclátor IGE 2025
             {nucleo.ige_nome ? `, "${nucleo.ige_nome}"` : ""})
             {nucleo.dato_edad_real ? ", % de mayores (Padrón IGE 2022, proxy concello)" : ""}
             {nucleo.dato_capacidad_real ? ", vías de salida (OpenStreetMap)" : ""}. El
-            peligro biofísico sigue siendo estimación provisional.
+            peligro biofísico se mide por satélite (Sentinel-2) como aproximación.
           </>
         ) : (
-          <strong>Datos de prueba.</strong>
+          <strong>Datos de demostración.</strong>
         )}
       </p>
     </aside>

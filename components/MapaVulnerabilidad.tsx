@@ -1,35 +1,32 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
+import maplibregl, { Map as MapLibreMap, GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-// import type { FeatureCollection, Point } from "geojson";
-// import nucleosData from "@/data/nucleos.json";
-// import afectacionData from "@/data/nucleos_afectacion_fisica.json";
-// import evacuacionData from "@/data/evacuacion.json";
 import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
 import { EXPRESION_COLOR_EVAC } from "@/lib/evacuacion";
 import Leyenda, { type Lente } from "@/components/Leyenda";
 import PanelInfo from "@/components/PanelInfo";
 import PanelValidacion from "@/components/PanelValidacion";
+import PanelFiltros from "@/components/PanelFiltros";
 import type { Comarca, NucleoProps } from "@/lib/tipos";
 
-//ANTES: const nucleos = ...
-//AHORA: CustomHook para el fetching de datos de nucleos, afectacion y evacuacion.
-import {useNucleos} from "@/hooks/useNucleos";
-import { configurarCapas, configurarInteraccionNucleos } from "@/lib/mapaCapas";
+// Custom hook para el fetching de datos de nucleos, afectacion y evacuacion.
+import { useNucleos } from "@/hooks/useNucleos";
 import { resaltarRutaCoche } from "@/lib/resaltarRutaCoche";
 
-
-import { nucleos } from "@/lib/datos";
 import { CAPAS_EVAC, CAPAS_VULN, CENTRO, ESTILO_BASE, ZOOM_INICIAL } from "@/lib/mapa-config";
 import { anadirCapasEvacuacion, anadirCapasNucleos, anadirCapasVulnerabilidad } from "@/lib/capas-mapa";
 import { FILTROS_DEFECTO, filtrando, pasaFiltros, type Filtros } from "@/lib/filtros";
 
+// Color base de las rutas por % de pista (igual que en lib/capas-mapa).
+const COLOR_RUTA_BASE = [
+  "step", ["get", "pct_track"], "#0571b0", 15, "#e08214", 30, "#ca0020",
+] as unknown as maplibregl.ExpressionSpecification;
+const GRIS_ATENUADO = "#9a958a";
 
-
-//Controlamos la App el zoom minimo y maximo que puede hacer el user.
+// Controlamos en la App el zoom mínimo y máximo que puede hacer el user.
 const MIN_ZOOM = 7;
 const MAX_ZOOM = 13;
 
@@ -47,18 +44,13 @@ function calcularLimites(centro: [number, number]): [[number, number], [number, 
     [centro[0] + MAP_SIZE.WIDTH / 2, centro[1] + MAP_SIZE.HEIGHT / 2], // esquina noreste
   ];
 }
+
 export default function MapaVulnerabilidad({ comarca }: { comarca?: Comarca }) {
-  // de momento lo llama aqui va a ser siempre que se renderiza?
-  // FUTUO... por defecto solo carga nucleos de Valdeorras
-  // Dado que habra fetch continuo de afec y evac segun evolucione el fuego, esto debe de ser CLIENTE (lo dejamos en MapaVulenerabilidad)
+  // de momento se llama aquí siempre que se renderiza.
+  // FUTURO: por defecto solo carga núcleos de Valdeorras.
+  // Dado que habrá fetch continuo de afec y evac según evolucione el fuego,
+  // esto debe de ser CLIENTE (lo dejamos en MapaVulnerabilidad).
   const { nucleos } = useNucleos(/*FUTURO... pasar "comarca.id" para que useSWR actualice el fetching cuando cambie comarcaActual*/);
-
-
-// Color base de las rutas por % de pista (igual que en lib/capas-mapa).
-const COLOR_RUTA_BASE = [
-  "step", ["get", "pct_track"], "#0571b0", 15, "#e08214", 30, "#ca0020",
-] as unknown as maplibregl.ExpressionSpecification;
-const GRIS_ATENUADO = "#9a958a";
 
   const contenedor = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -86,7 +78,7 @@ const GRIS_ATENUADO = "#9a958a";
       visibles: nucleos.features.filter((f) => pasaFiltros(f.properties, filtros, opts)).length,
       idsFuera: fuera,
     };
-  }, [filtros]);
+  }, [filtros, nucleos]);
 
   useEffect(() => {
     if (!contenedor.current || mapRef.current) return;
@@ -111,22 +103,41 @@ const GRIS_ATENUADO = "#9a958a";
     map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
 
     map.on("load", () => {
-      //Encapsulamos el codigo qque modifica map en dos funciones para que sea mas legible
-      //... addlayer y addsource
-      configurarCapas(map);
+      // El orden de llamada define el apilado: perímetro (fondo) -> rutas ->
+      // núcleos (cima). Misma estructura de capas e ids que siempre.
+      anadirCapasVulnerabilidad(map);
+      anadirCapasEvacuacion(map);
+      anadirCapasNucleos(map, nucleos);
 
-      //map.on
-      configurarInteraccionNucleos(map, "nucleos-punto", setSeleccionado);
-    });  
+      const capaInteractiva = "nucleos-punto";
+
+      map.on("click", capaInteractiva, (e) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        setSeleccionado(f.properties as unknown as NucleoProps);
+      });
+
+      // Clic en zona vacía cierra el panel.
+      map.on("click", (e) => {
+        const hits = map.queryRenderedFeatures(e.point, { layers: [capaInteractiva] });
+        if (hits.length === 0) setSeleccionado(null);
+      });
+
+      map.on("mouseenter", capaInteractiva, () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", capaInteractiva, () => {
+        map.getCanvas().style.cursor = "";
+      });
+    });
 
     return () => {
       map.remove();
       mapRef.current = null;
     };
-  }, []); //solo se ejecuta 1 vez, en el montaje del componente.
+  }, []); // solo se ejecuta 1 vez, en el montaje del componente.
 
-
-  // cuando cambie nucleos por el fetching de datos, actualizamos el mapRef
+  // Cuando cambien los núcleos por el fetching de datos, actualizamos la source.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -136,16 +147,15 @@ const GRIS_ATENUADO = "#9a958a";
       source?.setData(nucleos);
     };
 
-    //PROBLEMA A FUTURO: 
-    // En el efecto que hace setData cuando cambian los datos, 
-    // si nucleos cambiara dos veces antes de que el mapa termine de cargar sus teselas (evento load), 
-    // se registrarían dos map.once("load", actualizarDatos) 
-    // porque el efecto no tiene función de limpieza que desregistre el anterior. 
-    // Actualmente no pasa nada, pero cuidado cuando hagas fetchs largos
+    // PROBLEMA A FUTURO:
+    // En el efecto que hace setData cuando cambian los datos,
+    // si nucleos cambiara dos veces antes de que el mapa termine de cargar sus teselas (evento load),
+    // se registrarían dos map.once("load", actualizarDatos)
+    // porque el efecto no tiene función de limpieza que desregistre el anterior.
+    // Actualmente no pasa nada, pero cuidado cuando hagas fetchs largos.
     if (map.getSource("nucleos")) actualizarDatos();
     else map.once("load", actualizarDatos);
   }, [nucleos]); // se relanza cuando useNucleos entregue los datos reales
-
 
   // Vuela hacia la comarca elegida en el buscador del header. Se salta la
   // primera ejecución (montaje, comarca por defecto = misma vista inicial)
@@ -179,7 +189,7 @@ const GRIS_ATENUADO = "#9a958a";
     if (f) {
       map.flyTo({ center: f.geometry.coordinates as [number, number], zoom: Math.max(map.getZoom(), 11), speed: 0.8 });
     }
-  }, [seleccionado]);
+  }, [seleccionado, nucleos]);
 
   // Aplica la lente activa: muestra/oculta las capas propias de cada lente.
   useEffect(() => {
@@ -260,12 +270,12 @@ const GRIS_ATENUADO = "#9a958a";
   }, [seleccionado, lente]);
 
   // "Ruta de escape en coche": pasa a la lente de evacuación, resalta la ruta y
-  // encuadra el trayecto núcleo -> destino seguro DENTRO de Valdeorras.
+  // encuadra el trayecto núcleo -> destino seguro. Lógica de bounds/padding
+  // extraída a lib/resaltarRutaCoche.
   const resaltarRutaCocheAux = (id: string) => {
     setLente("evacuacion");
     setRutaResaltada(id);
-    // Funcion en lib 
-    resaltarRutaCoche(mapRef.current, nucleos, id);    
+    resaltarRutaCoche(mapRef.current, nucleos, id);
   };
 
   return (
@@ -291,7 +301,14 @@ const GRIS_ATENUADO = "#9a958a";
       </div>
 
       <Leyenda lente={lente} />
-      
+      <PanelFiltros
+        filtros={filtros}
+        onChange={setFiltros}
+        total={total}
+        visibles={visibles}
+        soporteVias={true}
+        campoAfectacionLabel="incendio 2025"
+      />
       <button
         className="btn-validacion"
         onClick={() => setMostrarValidacion((v) => !v)}

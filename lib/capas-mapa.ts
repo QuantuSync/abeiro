@@ -5,7 +5,7 @@ import type maplibregl from "maplibre-gl";
 import type { FeatureCollection, Point } from "geojson";
 
 import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
-import type { NucleoProps } from "@/lib/datos";
+import type { NucleoProps } from "@/lib/tipos";
 
 // Capas de la lente de VULNERABILIDAD: perímetro quemado EMSR837 (capa de
 // validación). Se carga del estático (recortado al piloto y simplificado) para

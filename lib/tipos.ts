@@ -6,11 +6,17 @@ export type Comarca = {
     centro: [number, number]; // [lon, lat], para el flyTo inicial
 };
 
+// Propiedades de un núcleo tras la fusión (las opcionales dependen de la fase
+// de datos y de las capas presentes).
 export interface NucleoProps {
     id: string;
     nombre: string;
     concello: string;
     iv: number;
+    iv_fase0?: number; // IV antiguo anclado a Fase 0 (solo comparación)
+    score_social?: number;
+    confianza?: number; // 0-1, desde los flags de procedencia (metadata.confianza_nota)
+    rango_iv?: [number, number]; // [min, max] del IV al variar los pesos (sensibilidad)
     poblacion: number;
     pct_mayores_65: number; // fracción 0-1
     pct_hogares_uniper_mayores: number;
@@ -34,7 +40,7 @@ export interface NucleoProps {
     vias_salida_por_tipo?: Record<string, number>;
     dato_capacidad_real?: boolean;
     fuente_capacidad?: string;
-    // Peligro biofísico (pendiente real + combustible Sentinel-2 NDVI+NDMI).
+    // Peligro biofísico (pendiente real + combustible Sentinel-2 NDVI+NDMI u OSM).
     pendiente_grados?: number;
     cota_m?: number;
     combustibilidad?: number;
@@ -57,6 +63,8 @@ export interface NucleoProps {
     destino?: string;
     destino_nombre?: string;
     dist_km?: number;
+    dist_recta_km?: number;
+    ratio_rodeo?: number;
     tiempo_min?: number;
     rutas_alternativas?: number | null;
     fiabilidad?: number;

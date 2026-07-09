@@ -35,7 +35,12 @@ export const ESTILO_BASE: maplibregl.StyleSpecification = {
   ],
 };
 
-// Centro aproximado de la comarca piloto (Valdeorras / Larouco), ajustado a
-// las coordenadas reales de los núcleos (bbox 42.15-42.46).
-export const CENTRO: [number, number] = [-7.05, 42.35];
+// - X = longitud (este-oeste)
+// - Y = latitud (norte-sur). 
+// 1º de latitud = 111 km aprox, 1º de longitud varía segun la distancia al ecuador (85 km aprox en Valdeorras.
+// Las coordenadas estan en grados
+// Variables de control de cámara: POSICION (x,y) + ZOOM INICIAL
+// POR DEFECTO: centro aproximado de Valdeorras (para el zoom inicial).
+export const CENTRO: [number, number] = [-7.05, 42.48];
+//const CENTRO: [number, number] = [-3.70, 40.41];
 export const ZOOM_INICIAL = 9.4;

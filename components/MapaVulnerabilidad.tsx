@@ -21,53 +21,14 @@ import {useNucleos} from "@/hooks/useNucleos";
 import { configurarCapas, configurarInteraccionNucleos } from "@/lib/mapaCapas";
 import { resaltarRutaCoche } from "@/lib/resaltarRutaCoche";
 
-// Capas que solo se muestran en cada lente.
-const CAPAS_VULN = ["nucleos-dato-real", "nucleos-afectado", "perimetro-fill", "perimetro-line"];
-const CAPAS_EVAC = ["rutas-resaltada", "rutas-casing", "rutas-evacuacion", "destinos-seguros"];
 
-// Basemap neutro pero LEGIBLE sin clave de API: CARTO Voyager. Tiene más
-// contraste y color que Positron (carreteras y topónimos más marcados, se leen
-// con claridad) manteniéndose limpio. Pensado para legibilidad de usuarios
-// mayores: que pueblos, carreteras y colores de riesgo se distingan sin esfuerzo.
-const ESTILO_BASE: maplibregl.StyleSpecification = {
-  version: 8,
-  // Glyphs (fuentes para etiquetas symbol). Debe servir PBF válido: el endpoint
-  // de openmaptiles devolvía HTML y provocaba el error "Unimplemented type: 4".
-  glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-  sources: {
-    carto: {
-      type: "raster",
-      //CARTO no recibe ningún mensaje tipo "enséñame Valdeorras". 
-      // CARTO tiene, para todo el planeta, un tile PNG de 256×256 px por cada combinación de:
-      // - zoom (z) 
-      // - coordenadas de cuadrícula (x, y)
-      // de ahí el {z}/{x}/{y}.png en la URL:
-      tiles: [
-        "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-        "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-      ],
-      tileSize: 256,
-      attribution:
-        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · '
-        + '© <a href="https://carto.com/attributions">CARTO</a>',
-    },
-  },
-  layers: [
-    { id: "fondo", type: "background", paint: { "background-color": "#e7e2d8" } },
-    { id: "carto", type: "raster", source: "carto", paint: { "raster-opacity": 1 } },
-  ],
-};
+import { nucleos } from "@/lib/datos";
+import { CAPAS_EVAC, CAPAS_VULN, CENTRO, ESTILO_BASE, ZOOM_INICIAL } from "@/lib/mapa-config";
+import { anadirCapasEvacuacion, anadirCapasNucleos, anadirCapasVulnerabilidad } from "@/lib/capas-mapa";
+import { FILTROS_DEFECTO, filtrando, pasaFiltros, type Filtros } from "@/lib/filtros";
 
-// - X = longitud (este-oeste)
-// - Y = latitud (norte-sur). 
-// 1º de latitud = 111 km aprox, 1º de longitud varía segun la distancia al ecuador (85 km aprox en Valdeorras.
-// Las coordenadas estan en grados
-// Variables de control de cámara: POSICION (x,y) + ZOOM INICIAL
-// POR DEFECTO: centro aproximado de Valdeorras (para el zoom inicial).
-const CENTRO: [number, number] = [-7.05, 42.48];
-//const CENTRO: [number, number] = [-3.70, 40.41];
-const ZOOM_INICIAL = 9.4;
+
+
 //Controlamos la App el zoom minimo y maximo que puede hacer el user.
 const MIN_ZOOM = 7;
 const MAX_ZOOM = 13;
@@ -91,16 +52,7 @@ export default function MapaVulnerabilidad({ comarca }: { comarca?: Comarca }) {
   // FUTUO... por defecto solo carga nucleos de Valdeorras
   // Dado que habra fetch continuo de afec y evac segun evolucione el fuego, esto debe de ser CLIENTE (lo dejamos en MapaVulenerabilidad)
   const { nucleos } = useNucleos(/*FUTURO... pasar "comarca.id" para que useSWR actualice el fetching cuando cambie comarcaActual*/);
-import { nucleos, type NucleoProps } from "@/lib/datos";
-import { CAPAS_EVAC, CAPAS_VULN, CENTRO, ESTILO_BASE, ZOOM_INICIAL } from "@/lib/mapa-config";
-import { anadirCapasEvacuacion, anadirCapasNucleos, anadirCapasVulnerabilidad } from "@/lib/capas-mapa";
-import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
-import { EXPRESION_COLOR_EVAC } from "@/lib/evacuacion";
-import { FILTROS_DEFECTO, filtrando, pasaFiltros, type Filtros } from "@/lib/filtros";
-import Leyenda, { type Lente } from "@/components/Leyenda";
-import PanelInfo from "@/components/PanelInfo";
-import PanelValidacion from "@/components/PanelValidacion";
-import PanelFiltros from "@/components/PanelFiltros";
+
 
 // Color base de las rutas por % de pista (igual que en lib/capas-mapa).
 const COLOR_RUTA_BASE = [

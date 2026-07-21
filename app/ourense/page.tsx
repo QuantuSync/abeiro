@@ -1,5 +1,7 @@
 import dynamic from "next/dynamic";
 
+//QUITAR.......
+
 // Mapa provincial de Ourense (piloto de escalado): se carga solo en cliente.
 const MapaOurense = dynamic(() => import("@/components/MapaOurense"), {
   ssr: false, loading: () => <div className="cargando">Cargando mapa de Ourense…</div>,
@@ -28,7 +30,7 @@ export default function OurensePage() {
           </span>
         </div>
       </header>
-      <MapaOurense />
+      {/*<MapaOurense />*/}
     </main>
   );
 }

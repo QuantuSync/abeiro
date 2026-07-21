@@ -1188,3 +1188,26 @@ body {
     font-size: 1rem;
   }
 }
+
+
+/**/
+.btn-volver {
+  position: absolute;
+  top: 64px;
+  right: 12px;
+  z-index: 6;
+  background: var(--primario);
+  color: #ffffff;
+  border: 1px solid var(--primario);
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--sombra);
+  min-height: 44px; /* área táctil accesible */
+}
+.btn-volver:hover {
+  background: var(--primario-claro);
+  border-color: var(--primario-claro);
+}

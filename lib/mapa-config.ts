@@ -41,6 +41,7 @@ export const ESTILO_BASE: maplibregl.StyleSpecification = {
 // Las coordenadas estan en grados
 // Variables de control de cámara: POSICION (x,y) + ZOOM INICIAL
 // POR DEFECTO: centro aproximado de Valdeorras (para el zoom inicial).
-export const CENTRO: [number, number] = [-7.05, 42.48];
-//const CENTRO: [number, number] = [-3.70, 40.41];
+export const CENTRO_OURENSE: [number, number] = [-7.55, 42.20];
+export const ZOOM_OURENSE = 8;
+
 export const ZOOM_INICIAL = 9.4;

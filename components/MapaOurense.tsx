@@ -1,21 +1,29 @@
+// components/MapaOurense.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { useEffect, useMemo, useState } from "react";
+import type { Map as MapLibreMap } from "maplibre-gl";
+//import type maplibregl from "maplibre-gl";
+import maplibregl from "maplibre-gl"; //no type
 import type { FeatureCollection, Point } from "geojson";
 
-import { ESTILO_BASE } from "@/lib/mapa-config";
 import { EXPRESION_COLOR_IV, CATEGORIAS_IV, categoriaPorIV } from "@/lib/vulnerabilidad";
 import { FILTROS_DEFECTO, filtrando, pasaFiltros, type Filtros } from "@/lib/filtros";
 import PanelFiltros from "@/components/PanelFiltros";
+import type { Comarca } from "@/lib/tipos";
+
+import { CENTRO_OURENSE, ZOOM_OURENSE } from "@/lib/mapa-config";
 
 // Vista provincial de Ourense (683 núcleos activos, >=50 hab), lente de
-// VULNERABILIDAD (la evacuación queda fuera de este hito). Dos niveles:
-//   - Lejos: COROPLETA por concello (IV medio) para no saturar; clic = drill-down.
-//   - Cerca: los núcleos con CLUSTERING de MapLibre, coloreados por IV.
-const CENTRO: [number, number] = [-7.55, 42.20];
-const ZOOM = 8;
+// VULNERABILIDAD. Dos niveles: coropleta por concello (lejos) y clustering
+// de núcleos (cerca).
+// const CENTRO: [number, number] = [-7.55, 42.20];
+// const ZOOM = 8;
+
+// A partir de este zoom, se considera que el usuario ha "entrado" en una
+// comarca concreta: se calcula la más cercana al centro de cámara y se avisa
+// al padre para que cambie a modo detalle.
+const ZOOM_UMBRAL_DETALLE = 11;
 
 interface NucleoOU {
   id: string; nombre: string; concello: string; iv: number; poblacion: number;
@@ -23,7 +31,6 @@ interface NucleoOU {
   confianza: number; afectado_hist: boolean; n_afectaciones: number;
 }
 
-// Nivel legible de confianza (mismos umbrales que lib/indice.mjs).
 function nivelConfianza(c: number): { etiqueta: string; explica: string } {
   if (c >= 0.75) return { etiqueta: "alta", explica: "la mayoría de las variables son medidas reales" };
   if (c >= 0.5) return { etiqueta: "media", explica: "mezcla datos reales con aproximaciones" };
@@ -35,17 +42,19 @@ function Barra({ valor, color }: { valor: number; color: string }) {
 }
 
 type FCNuc = FeatureCollection<Point, NucleoOU>;
+const VACIO: FCNuc = { type: "FeatureCollection", features: [] };
 
-export default function MapaOurense() {
-  const contenedor = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<MapLibreMap | null>(null);
+type Props = {
+  map: MapLibreMap;
+  comarcas: Comarca[];
+  onEntrarDetalle: (comarcaId: string) => void;
+};
+
+export default function MapaOurense({ map, comarcas, onEntrarDetalle }: Props) {
   const [sel, setSel] = useState<NucleoOU | null>(null);
   const [datos, setDatos] = useState<FCNuc | null>(null);
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_DEFECTO);
 
-  // Núcleos que cumplen el filtro. Con clustering, el filtro se aplica sobre los
-  // DATOS de la fuente (setData): así clústeres y puntos reflejan el filtro, y el
-  // contador muestra cuántos quedan. Los destinos no existen en Ourense.
   const { fcVisible, visibles, total } = useMemo(() => {
     if (!datos) return { fcVisible: null as FCNuc | null, visibles: 0, total: 0 };
     const opts = { campoAfectacion: "afectado_hist" as const, soporteVias: false };
@@ -59,138 +68,171 @@ export default function MapaOurense() {
     };
   }, [datos, filtros]);
 
+  // ACTIVACIÓN: añade capas de concello + núcleos (la fuente "nuc" se crea
+  // VACÍA de entrada, igual que "nucleos" en MapaVulnerabilidad; el fetch la
+  // rellena vía el efecto [fcVisible] de más abajo, no aquí). Registra
+  // listeners nombrados y el umbral de zoom→detalle. La LIMPIEZA revierte
+  // todo: capas, fuentes, listeners, y evita tocar `datos` si el componente
+  // ya se desactivó antes de que el fetch resolviera.
   useEffect(() => {
-    if (!contenedor.current || mapRef.current) return;
-    const map = new maplibregl.Map({
-      container: contenedor.current, style: ESTILO_BASE,
-      center: CENTRO, zoom: ZOOM, minZoom: 7, maxZoom: 15,
-      attributionControl: { compact: true },
+    let cancelado = false;
+
+    map.setMaxBounds(undefined); // vista general: sin restricción de movimiento
+    map.jumpTo({ center: CENTRO_OURENSE, zoom: ZOOM_OURENSE });
+
+    // --- Coropleta por concello (IV medio), visible de lejos --------------
+    map.addSource("concellos", { type: "geojson", data: "/concellos_ourense.geojson" });
+    map.addLayer({
+      id: "concellos-fill", type: "fill", source: "concellos", maxzoom: 10.5,
+      paint: {
+        "fill-color": ["step", ["get", "iv_medio"], CATEGORIAS_IV[0].color,
+          20, CATEGORIAS_IV[1].color, 40, CATEGORIAS_IV[2].color,
+          60, CATEGORIAS_IV[3].color, 80, CATEGORIAS_IV[4].color],
+        "fill-opacity": 0.55,
+      },
     });
-    mapRef.current = map;
-    (window as unknown as { __mapaOurense?: MapLibreMap }).__mapaOurense = map;
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-
-    map.on("load", async () => {
-      // Se cargan los núcleos como datos (no URL) para poder filtrarlos con setData.
-      const gj = (await fetch("/nucleos_ourense.geojson").then((r) => r.json())) as FCNuc;
-      setDatos(gj);
-
-      // --- Coropleta por concello (IV medio), visible de lejos --------------
-      map.addSource("concellos", { type: "geojson", data: "/concellos_ourense.geojson" });
-      map.addLayer({
-        id: "concellos-fill", type: "fill", source: "concellos", maxzoom: 10.5,
-        paint: {
-          "fill-color": ["step", ["get", "iv_medio"], CATEGORIAS_IV[0].color,
-            20, CATEGORIAS_IV[1].color, 40, CATEGORIAS_IV[2].color,
-            60, CATEGORIAS_IV[3].color, 80, CATEGORIAS_IV[4].color],
-          "fill-opacity": 0.55,
-        },
-      });
-      map.addLayer({
-        id: "concellos-line", type: "line", source: "concellos", maxzoom: 10.5,
-        paint: { "line-color": "#15110a", "line-width": 0.6, "line-opacity": 0.5 },
-      });
-      map.addLayer({
-        id: "concellos-label", type: "symbol", source: "concellos", maxzoom: 10.5,
-        layout: {
-          "text-field": ["get", "concello"], "text-font": ["Noto Sans Bold"],
-          "text-size": ["interpolate", ["linear"], ["zoom"], 8, 9, 10, 13], "text-padding": 6,
-        },
-        paint: { "text-color": "#161b18", "text-halo-color": "#ffffff", "text-halo-width": 1.8 },
-      });
-
-      // --- Núcleos con clustering, visibles al acercar ----------------------
-      map.addSource("nuc", {
-        type: "geojson", data: gj,
-        cluster: true, clusterRadius: 50, clusterMaxZoom: 12,
-      });
-      map.addLayer({
-        id: "clusters", type: "circle", source: "nuc", filter: ["has", "point_count"], minzoom: 9,
-        paint: {
-          "circle-color": "#1f3b57", "circle-opacity": 0.9,
-          "circle-radius": ["step", ["get", "point_count"], 15, 10, 20, 40, 27],
-          "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff",
-        },
-      });
-      map.addLayer({
-        id: "cluster-count", type: "symbol", source: "nuc", filter: ["has", "point_count"], minzoom: 9,
-        layout: { "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Bold"], "text-size": 13 },
-        paint: { "text-color": "#ffffff" },
-      });
-      map.addLayer({
-        id: "nucleo", type: "circle", source: "nuc", filter: ["!", ["has", "point_count"]], minzoom: 9,
-        paint: {
-          "circle-radius": ["interpolate", ["linear"], ["get", "iv"], 0, 5, 100, 10],
-          "circle-color": EXPRESION_COLOR_IV as maplibregl.ExpressionSpecification,
-          "circle-opacity": 1,
-          "circle-stroke-color": ["case", ["get", "afectado_hist"], "#3a0d06", "#1c1c1c"],
-          "circle-stroke-width": ["case", ["get", "afectado_hist"], 2.6, 1.2],
-        },
-      });
-
-      // Drill-down: clic en un concello encuadra su geometría.
-      map.on("click", "concellos-fill", (e) => {
-        const f = e.features?.[0];
-        if (!f) return;
-        const coords = (f.geometry as GeoJSON.Polygon).coordinates[0] as [number, number][];
-        const b = coords.reduce((acc, c) => acc.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
-        map.fitBounds(b, { padding: 40, maxZoom: 12, duration: 700 });
-      });
-      map.on("click", "clusters", (e) => {
-        const f = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0];
-        (map.getSource("nuc") as maplibregl.GeoJSONSource)
-          .getClusterExpansionZoom(f.properties!.cluster_id as number)
-          .then((z) => map.easeTo({ center: (f.geometry as GeoJSON.Point).coordinates as [number, number], zoom: z }));
-      });
-      map.on("click", "nucleo", (e) => {
-        const p = e.features?.[0]?.properties as unknown as NucleoOU;
-        if (p) setSel(p);
-      });
-      // Clic en zona vacía (fuera de núcleos/clústeres) cierra el panel.
-      map.on("click", (e) => {
-        const hits = map.queryRenderedFeatures(e.point, { layers: ["nucleo", "clusters"] });
-        if (hits.length === 0) setSel(null);
-      });
-      for (const capa of ["concellos-fill", "clusters", "nucleo"]) {
-        map.on("mouseenter", capa, () => { map.getCanvas().style.cursor = "pointer"; });
-        map.on("mouseleave", capa, () => { map.getCanvas().style.cursor = ""; });
-      }
+    map.addLayer({
+      id: "concellos-line", type: "line", source: "concellos", maxzoom: 10.5,
+      paint: { "line-color": "#15110a", "line-width": 0.6, "line-opacity": 0.5 },
+    });
+    map.addLayer({
+      id: "concellos-label", type: "symbol", source: "concellos", maxzoom: 10.5,
+      layout: {
+        "text-field": ["get", "concello"], "text-font": ["Noto Sans Bold"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 8, 9, 10, 13], "text-padding": 6,
+      },
+      paint: { "text-color": "#161b18", "text-halo-color": "#ffffff", "text-halo-width": 1.8 },
     });
 
-    return () => { map.remove(); mapRef.current = null; };
-  }, []);
+    // --- Núcleos con clustering, visibles al acercar ----------------------
+    map.addSource("nuc", {
+      type: "geojson", data: VACIO,
+      cluster: true, clusterRadius: 50, clusterMaxZoom: 12,
+    });
+    map.addLayer({
+      id: "clusters", type: "circle", source: "nuc", filter: ["has", "point_count"], minzoom: 9,
+      paint: {
+        "circle-color": "#1f3b57", "circle-opacity": 0.9,
+        "circle-radius": ["step", ["get", "point_count"], 15, 10, 20, 40, 27],
+        "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff",
+      },
+    });
+    map.addLayer({
+      id: "cluster-count", type: "symbol", source: "nuc", filter: ["has", "point_count"], minzoom: 9,
+      layout: { "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Bold"], "text-size": 13 },
+      paint: { "text-color": "#ffffff" },
+    });
+    map.addLayer({
+      id: "nucleo", type: "circle", source: "nuc", filter: ["!", ["has", "point_count"]], minzoom: 9,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["get", "iv"], 0, 5, 100, 10],
+        "circle-color": EXPRESION_COLOR_IV as maplibregl.ExpressionSpecification,
+        "circle-opacity": 1,
+        "circle-stroke-color": ["case", ["get", "afectado_hist"], "#3a0d06", "#1c1c1c"],
+        "circle-stroke-width": ["case", ["get", "afectado_hist"], 2.6, 1.2],
+      },
+    });
 
-  // FILTRO (Tarea 2): reduce el conjunto vía setData; clústeres y puntos se
-  // recomputan. Nada se filtra solo: solo al tocar los controles.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !fcVisible) return;
-    const src = map.getSource("nuc") as maplibregl.GeoJSONSource | undefined;
-    if (src) src.setData(fcVisible);
-  }, [fcVisible]);
-
-  // FOCO por selección (Tarea 1): el núcleo seleccionado destaca y el resto se
-  // atenúa ligeramente (contexto, no invisible). Sin movimientos de cámara.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const aplicar = () => {
-      if (!map.getLayer("nucleo")) return;
-      const sel2 = sel?.id ?? null;
-      map.setPaintProperty("nucleo", "circle-opacity",
-        (sel2 ? ["case", ["==", ["get", "id"], sel2], 1, 0.5] : 1) as unknown as maplibregl.ExpressionSpecification);
+    // --- Listeners nombrados (para poder quitarlos exactamente al limpiar) ---
+    const alClicConcello = (e: maplibregl.MapLayerMouseEvent) => {
+      const f = e.features?.[0];
+      if (!f) return;
+      const coords = (f.geometry as GeoJSON.Polygon).coordinates[0] as [number, number][];
+      const b = coords.reduce((acc, c) => acc.extend(c), new (map.constructor as typeof maplibregl.Map extends never ? never : any)());
+      // extraaaa
+      map.fitBounds(b, { padding: 40, maxZoom: 12, duration: 700 });
     };
-    if (map.getLayer("nucleo")) aplicar();
-    else map.once("load", aplicar);
-  }, [sel]);
+
+    map.on("click", "concellos-fill", alClicConcello);
+
+    const alClicCluster = (e: maplibregl.MapLayerMouseEvent) => {
+      const f = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0];
+      if (!f) return;
+      (map.getSource("nuc") as maplibregl.GeoJSONSource)
+        .getClusterExpansionZoom(f.properties!.cluster_id as number)
+        .then((z) => map.easeTo({ center: (f.geometry as GeoJSON.Point).coordinates as [number, number], zoom: z }));
+    };
+    map.on("click", "clusters", alClicCluster);
+
+    const alClicNucleo = (e: maplibregl.MapLayerMouseEvent) => {
+      const p = e.features?.[0]?.properties as unknown as NucleoOU;
+      if (p) setSel(p);
+    };
+    map.on("click", "nucleo", alClicNucleo);
+
+    const alClicVacio = (e: maplibregl.MapMouseEvent) => {
+      const hits = map.queryRenderedFeatures(e.point, { layers: ["nucleo", "clusters"] });
+      if (hits.length === 0) setSel(null);
+    };
+    map.on("click", alClicVacio);
+
+    const alEntrar = () => { map.getCanvas().style.cursor = "pointer"; };
+    const alSalir = () => { map.getCanvas().style.cursor = ""; };
+    const CAPAS_HOVER = ["concellos-fill", "clusters", "nucleo"];
+    for (const capa of CAPAS_HOVER) {
+      map.on("mouseenter", capa, alEntrar);
+      map.on("mouseleave", capa, alSalir);
+    }
+
+    // --- Umbral de zoom → entrar en detalle --------------------------------
+    const alCambiarZoom = () => {
+      if (map.getZoom() <= ZOOM_UMBRAL_DETALLE || comarcas.length === 0) return;
+      const centro = map.getCenter();
+      let masCercana = comarcas[0];
+      let distMin = Infinity;
+      for (const c of comarcas) {
+        const d = Math.hypot(c.centro[0] - centro.lng, c.centro[1] - centro.lat);
+        if (d < distMin) { distMin = d; masCercana = c; }
+      }
+      onEntrarDetalle(masCercana.id);
+    };
+    map.on("zoomend", alCambiarZoom);
+
+    // --- Datos: fetch de los 683 núcleos, con guarda contra "cancelado" ---
+    fetch("/nucleos_ourense.geojson")
+      .then((r) => r.json())
+      .then((gj: FCNuc) => { if (!cancelado) setDatos(gj); });
+
+    return () => {
+      cancelado = true;
+
+      map.off("click", "concellos-fill", alClicConcello);
+      map.off("click", "clusters", alClicCluster);
+      map.off("click", "nucleo", alClicNucleo);
+      map.off("click", alClicVacio);
+      for (const capa of CAPAS_HOVER) {
+        map.off("mouseenter", capa, alEntrar);
+        map.off("mouseleave", capa, alSalir);
+      }
+      map.off("zoomend", alCambiarZoom);
+
+      for (const id of ["concellos-fill", "concellos-line", "concellos-label", "clusters", "cluster-count", "nucleo"]) {
+        if (map.getLayer(id)) map.removeLayer(id);
+      }
+      for (const id of ["concellos", "nuc"]) {
+        if (map.getSource(id)) map.removeSource(id);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]);
+
+  useEffect(() => {
+    if (!fcVisible) return;
+    const src = map.getSource("nuc") as maplibregl.GeoJSONSource | undefined;
+    src?.setData(fcVisible);
+  }, [fcVisible, map]);
+
+  useEffect(() => {
+    const sel2 = sel?.id ?? null;
+    map.setPaintProperty("nucleo", "circle-opacity",
+      (sel2 ? ["case", ["==", ["get", "id"], sel2], 1, 0.5] : 1) as unknown as maplibregl.ExpressionSpecification);
+  }, [sel, map]);
 
   const cat = sel ? categoriaPorIV(sel.iv) : null;
   const nc = sel ? nivelConfianza(sel.confianza) : null;
 
   return (
-    <div className="mapa-wrap">
-      <div ref={contenedor} className="mapa" />
-
+    <>
       <PanelFiltros
         filtros={filtros}
         onChange={setFiltros}
@@ -200,7 +242,6 @@ export default function MapaOurense() {
         campoAfectacionLabel="incendio (2001–2021)"
       />
 
-      {/* Leyenda: categorías del IV (paleta accesible) + avisos de alcance. */}
       <section className="leyenda" aria-label="Leyenda del Índice de Vulnerabilidad de Ourense">
         <h3>Índice de Vulnerabilidad</h3>
         <ul>
@@ -214,10 +255,11 @@ export default function MapaOurense() {
         </ul>
         <p className="dato-real-nota"><span className="anillo" style={{ borderColor: "#3a0d06" }} /> Borde oscuro: con incendios 2001–2021</p>
         <p className="aviso">
-          Aleja para ver el IV medio por <strong>concello</strong>; pincha uno para entrar.
-          Solo núcleos <strong>≥50 hab</strong> (los &lt;50, de los más vulnerables, quedan fuera
-          del primer barrido por coste). Afectación = proxy <strong>GlobFire</strong> (MODIS
-          ~500 m), no registro oficial. Pesos <strong>provisionales</strong>.
+          Aleja para ver el IV medio por <strong>concello</strong>; pincha uno para entrar, o
+          acércate más para pasar al detalle de la comarca. Solo núcleos <strong>≥50 hab</strong>{" "}
+          (los &lt;50, de los más vulnerables, quedan fuera del primer barrido por coste).
+          Afectación = proxy <strong>GlobFire</strong> (MODIS ~500 m), no registro oficial.
+          Pesos <strong>provisionales</strong>.
         </p>
       </section>
 
@@ -283,6 +325,6 @@ export default function MapaOurense() {
           </p>
         </aside>
       )}
-    </div>
+    </>
   );
 }

@@ -138,7 +138,11 @@ export default function MapaOurense({ map, comarcas, onEntrarDetalle }: Props) {
       const f = e.features?.[0];
       if (!f) return;
       const coords = (f.geometry as GeoJSON.Polygon).coordinates[0] as [number, number][];
-      const b = coords.reduce((acc, c) => acc.extend(c), new (map.constructor as typeof maplibregl.Map extends never ? never : any)());
+      // const b = coords.reduce((acc, c) => acc.extend(c), new (map.constructor as typeof maplibregl.Map extends never ? never : any)());
+      const b = coords.reduce(
+        (acc, c) => acc.extend(c),
+        new maplibregl.LngLatBounds(coords[0], coords[0])
+      );
       // extraaaa
       map.fitBounds(b, { padding: 40, maxZoom: 12, duration: 700 });
     };
@@ -189,7 +193,7 @@ export default function MapaOurense({ map, comarcas, onEntrarDetalle }: Props) {
     map.on("zoomend", alCambiarZoom);
 
     // --- Datos: fetch de los 683 núcleos, con guarda contra "cancelado" ---
-    fetch("/nucleos_ourense.geojson")
+    fetch("/nucleos_ourense.geojson") //nucleos/poblaciones?
       .then((r) => r.json())
       .then((gj: FCNuc) => { if (!cancelado) setDatos(gj); });
 

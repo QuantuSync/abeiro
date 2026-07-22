@@ -189,3 +189,28 @@ export function anadirCapasNucleos(
     },
   });
 }
+
+
+// Capa del Índice de Peligro Meteorológico (FWI), vía WMS de EFFIS/Copernicus.
+export function anadirCapaFWI(map: maplibregl.Map, tileUrl: string) {
+  // Si ya existía (p.ej. cambió la fecha), se quita y se vuelve a crear —
+  // es la forma más segura de forzar a MapLibre a pedir teselas nuevas,
+  // sin depender de si tu versión soporta source.setTiles().
+  if (map.getLayer("fwi-capa")) map.removeLayer("fwi-capa");
+  if (map.getSource("fwi")) map.removeSource("fwi");
+
+  map.addSource("fwi", {
+    type: "raster",
+    tiles: [tileUrl],
+    tileSize: 256,
+  });
+
+  map.addLayer({
+    id: "fwi-capa",
+    type: "raster",
+    source: "fwi",
+    paint: {
+      "raster-opacity": 0.65, // deja ver el mapa base por debajo
+    },
+  });
+}

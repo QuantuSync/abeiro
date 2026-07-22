@@ -9,6 +9,7 @@ import BuscadorComarcas from "@/components/BuscadorComarcas";
 //import MapaBase from "@/components/MapaBase";
 import MapaOurense from "@/components/MapaOurense";
 import MapaVulnerabilidad from "@/components/MapaVulnerabilidad";
+import MapaFWI from "@/components/MapaFWI";
 import { CENTRO_OURENSE, ZOOM_OURENSE, ZOOM_INICIAL } from "@/lib/mapa-config";
 
 import dynamic from "next/dynamic";
@@ -90,7 +91,7 @@ export default function ExploradorMapa({
         <main className="app">
         <header className="cabecera">
             <div className="marca">
-            <span className="logo">ABEIRO</span>
+            <span className="logo">BELENOS</span>
             <span className="claim">Protección ante incendios forestales · Galicia</span>
             </div>
 

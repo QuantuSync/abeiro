@@ -125,7 +125,7 @@ export default function ExploradorMapa({
         <MapaBase centroInicial={centroInicial} zoomInicial={zoomInicial} onMapReady={(m) => { mapRef.current = m; }}>
             {(map) =>
             vista === "general" ? (
-                <MapaOurense map={map} comarcas={comarcas} onEntrarDetalle={entrarEnDetalle} />
+                <MapaFWI map={map} comarcas={comarcas} onEntrarDetalle={entrarEnDetalle} />
             ) : (
                 <MapaVulnerabilidad map={map} comarca={comarcaActual} onVolver={volverAGeneral} />
             )

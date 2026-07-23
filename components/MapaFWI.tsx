@@ -9,7 +9,7 @@ import { anadirCapaFWI } from "@/lib/capas-mapa";
 import { CENTRO_OURENSE, ZOOM_OURENSE } from "@/lib/mapa-config";
 import type { Comarca } from "@/lib/tipos";
 
-const ANADIR_CAPA_FWI = false
+const ANADIR_CAPA_FWI = true
 
 // A partir de este zoom, se considera que el usuario ha "entrado" en una
 // comarca concreta. Mismo umbral y misma lógica que tenía MapaOurense —
@@ -95,7 +95,7 @@ export default function MapaFWI({ map, comarcas, onEntrarDetalle }: Props) {
             ))}
             </ul>
             <p className="aviso">
-            Dato del día {fecha} · modelo ECMWF (~8 km) · fuente: EFFIS/Copernicus.
+            Dato del día {fecha} · modelo Meteo France (~10 km) · fuente: EFFIS/Copernicus.
             Acércate para pasar al detalle de una comarca.
             </p>
         </section>

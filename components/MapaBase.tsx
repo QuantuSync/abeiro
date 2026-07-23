@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ESTILO_BASE } from "@/lib/mapa-config";
+import { bboxDeTesela } from "@/lib/tileMath";
 
 // Unión de los rangos de zoom que ya usaban por separado MapaVulnerabilidad
 // (7–20) y MapaOurense (7–15): ningún modo debe quedar más restringido de lo
@@ -33,14 +34,29 @@ export default function MapaBase({ centroInicial, zoomInicial, onMapReady, child
         if (!contenedor.current || mapRef.current) return;
 
         const map = new maplibregl.Map({
-        container: contenedor.current,
-        style: ESTILO_BASE,
-        center: centroInicial,
-        zoom: zoomInicial,
-        minZoom: MIN_ZOOM,
-        maxZoom: MAX_ZOOM,
-        attributionControl: { compact: true },
-        });
+            container: contenedor.current,
+            style: ESTILO_BASE,
+            center: centroInicial,
+            zoom: zoomInicial,
+            minZoom: MIN_ZOOM,
+            maxZoom: MAX_ZOOM,
+            attributionControl: { compact: true },
+            transformRequest: (url, resourceType) => {
+                if (resourceType === "Tile" && url.includes("__z=")) {
+                const u = new URL(url);
+                const z = Number(u.searchParams.get("__z"));
+                const x = Number(u.searchParams.get("__x"));
+                const y = Number(u.searchParams.get("__y"));
+                const [minx, miny, maxx, maxy] = bboxDeTesela(x, y, z);
+                u.searchParams.delete("__z");
+                u.searchParams.delete("__x");
+                u.searchParams.delete("__y");
+                u.searchParams.set("BBOX", `${minx},${miny},${maxx},${maxy}`);
+                return { url: u.toString() };
+                }
+                return { url };  },
+            });
+            
         mapRef.current = map;
         // Aid de depuración/verificación: acceso a la instancia desde la consola.
         (window as unknown as { __abeiroMap?: MapLibreMap }).__abeiroMap = map;
@@ -54,13 +70,10 @@ export default function MapaBase({ centroInicial, zoomInicial, onMapReady, child
         });
 
         return () => {
-        map.remove();
-        mapRef.current = null;
+            map.remove();
+            mapRef.current = null;
         };
-        // Solo se ejecuta al montar: centroInicial/zoomInicial son el encuadre de
-        // ARRANQUE, no algo que deba reaccionar a cambios posteriores (eso lo
-        // gestiona cada modo con su propio flyTo).
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    
     }, []);
 
     return (

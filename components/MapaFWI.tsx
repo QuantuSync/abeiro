@@ -9,6 +9,8 @@ import { anadirCapaFWI } from "@/lib/capas-mapa";
 import { CENTRO_OURENSE, ZOOM_OURENSE } from "@/lib/mapa-config";
 import type { Comarca } from "@/lib/tipos";
 
+import { BBOX_OURENSE_FWI } from "@/lib/mapa-config";
+
 const ANADIR_CAPA_FWI = true
 
 // A partir de este zoom, se considera que el usuario ha "entrado" en una
@@ -76,7 +78,7 @@ export default function MapaFWI({ map, comarcas, onEntrarDetalle }: Props) {
     // nuevas, así que no hace falta lógica de limpieza aparte para ese caso.
     useEffect(() => {
         if (ANADIR_CAPA_FWI)
-            anadirCapaFWI(map, tileUrl);
+             anadirCapaFWI(map, tileUrl, BBOX_OURENSE_FWI);
     }, [map, tileUrl]);
 
     return (

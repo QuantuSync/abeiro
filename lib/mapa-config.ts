@@ -45,3 +45,7 @@ export const CENTRO_OURENSE: [number, number] = [-7.55, 42.20];
 export const ZOOM_OURENSE = 8;
 
 export const ZOOM_INICIAL = 9.4;
+
+// Mismo BBOX que usa lib/procesarFWI.ts en el servidor — un solo sitio de
+// verdad para que nunca diverjan.
+export const BBOX_OURENSE_FWI: [number, number, number, number] = [-8.3, 41.8, -6.5, 42.7];

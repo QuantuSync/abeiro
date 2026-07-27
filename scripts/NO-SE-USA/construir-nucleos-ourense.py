@@ -1,3 +1,5 @@
+#CREAR GEOJSONS QUE YA NO SE USAN
+
 # -*- coding: utf-8 -*-
 """
 ABEIRO · Lista maestra de núcleos de Ourense (Fase 1 del escalado).

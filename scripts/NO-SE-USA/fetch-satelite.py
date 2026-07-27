@@ -1,4 +1,6 @@
-# -*- coding: utf-8 -*-
+# ALIMENTA ARCHIVOS QUE GENERAN GEOJSON
+# 
+# # -*- coding: utf-8 -*-
 """
 ABEIRO · Re-medición Sentinel-2 (NDVI + NDMI) vía Google Earth Engine.
 

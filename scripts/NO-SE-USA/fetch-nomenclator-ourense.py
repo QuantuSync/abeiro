@@ -1,4 +1,7 @@
-# -*- coding: utf-8 -*-
+# ALIMENTA ARCHIVOS QUE GENERAN GEOJSON
+# 
+# 
+# # -*- coding: utf-8 -*-
 """
 ABEIRO · Descarga del Nomenclátor Geográfico Básico (NGBE/IGN) para Ourense.
 

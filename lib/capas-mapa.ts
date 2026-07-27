@@ -7,12 +7,16 @@ import type { FeatureCollection, Point } from "geojson";
 import { EXPRESION_COLOR_IV } from "@/lib/vulnerabilidad";
 import type { NucleoProps } from "@/lib/tipos";
 
+// GEOJSON EN public/
+const GEOJOSN_PERIMETRO = "/perimetro_emsr837.geojson"
+const GEOJOSN_RUTA = "/rutas_evacuacion.geojson"
+
 // Capas de la lente de VULNERABILIDAD: perímetro quemado EMSR837 (capa de
 // validación). Se carga del estático (recortado al piloto y simplificado) para
 // no inflar el bundle. Velo translúcido: relleno muy tenue + contorno suave,
 // para que no compita con los núcleos.
 export function anadirCapasVulnerabilidad(map: maplibregl.Map): void {
-  map.addSource("perimetro", { type: "geojson", data: "/perimetro_emsr837.geojson" });
+  map.addSource("perimetro", { type: "geojson", data:  GEOJOSN_PERIMETRO});
   map.addLayer({
     id: "perimetro-fill",
     type: "fill",
@@ -35,7 +39,7 @@ export function anadirCapasVulnerabilidad(map: maplibregl.Map): void {
 // coherencia con la lente (azul = evacuación fácil). (El marcador de destinos
 // seguros vive en anadirCapasNucleos por orden de apilado: bajo el halo.)
 export function anadirCapasEvacuacion(map: maplibregl.Map): void {
-  map.addSource("rutas", { type: "geojson", data: "/rutas_evacuacion.geojson" });
+  map.addSource("rutas", { type: "geojson", data: GEOJOSN_RUTA });
   // Resaltado dorado (glow) de la ruta del núcleo seleccionado al pulsar
   // "Ruta de escape en coche". Filtro vacío hasta que se active.
   map.addLayer({

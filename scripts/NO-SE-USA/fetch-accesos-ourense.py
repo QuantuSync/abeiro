@@ -1,3 +1,5 @@
+# ALIMENTA ARCHIVOS QUE GENERAN GEOJSON
+
 # -*- coding: utf-8 -*-
 """
 ABEIRO · Capacidad de respuesta de los núcleos de Ourense (OSM local).

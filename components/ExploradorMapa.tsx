@@ -6,8 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import type { Comarca } from "@/lib/tipos";
 import BuscadorComarcas from "@/components/BuscadorComarcas";
-//import MapaBase from "@/components/MapaBase";
-import MapaOurense from "@/components/MapaOurense";
+import MapaOurense from "@/components/MapaOurense"; // sustituido por MapaFWI
 import MapaVulnerabilidad from "@/components/MapaVulnerabilidad";
 import MapaFWI from "@/components/MapaFWI";
 import { CENTRO_OURENSE, ZOOM_OURENSE, ZOOM_INICIAL } from "@/lib/mapa-config";
@@ -63,7 +62,7 @@ export default function ExploradorMapa({
 
         if (vista === "general") {
         // Aún en Ourense: solo movemos la cámara. Si el vuelo cruza el umbral
-        // de zoom, MapaOurense lo detecta por su cuenta (zoomend) y llama a
+        // de zoom, MapaFWI lo detecta por su cuenta (zoomend) y llama a
         // onEntrarDetalle — mismo camino que el zoom manual, sin atajos.
         mapRef.current?.flyTo({ center: c.centro, zoom: ZOOM_INICIAL, speed: 1.2 });
         }

@@ -1,4 +1,3 @@
-// components/MapaOurense.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

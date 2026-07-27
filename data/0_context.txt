@@ -1,0 +1,4 @@
+Los json fuera se usan en:
+- hooks/useNucleos
+- app/page  
+- lib/procesarFWI

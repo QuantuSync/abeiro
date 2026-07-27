@@ -8,8 +8,11 @@ import path from "node:path";
 
 import { BBOX_OURENSE_FWI as BBOX } from "@/lib/mapa-config";
 
+//GeoJSON de data/
+const GEOJSON_CONCELLOS = "limites_concellos_ourense.geojson"
+
 const EFFIS_WMS = "https://maps.effis.emergency.copernicus.eu/effis";
-const CAPA_FWI = "mf010.fwi";
+const CAPA_FWI = "mf010.fwi"; //MeteoFrance. ecmwf007.fwi daba problemas al principio
 //const BBOX: [number, number, number, number] = [-8.3, 41.8, -6.5, 42.7]; // oeste, sur, este, norte
 const ANCHO = 2048;
 const ALTO = 2048;
@@ -60,7 +63,7 @@ function anilloAPath(anillo: [number, number][]): string {
 }
 
 async function construirMascaraSVG(): Promise<Buffer> {
-  const ruta = path.join(process.cwd(), "data", "limites_concellos_ourense.geojson");
+  const ruta = path.join(process.cwd(), "data", GEOJSON_CONCELLOS);
   const fc = JSON.parse(await readFile(ruta, "utf-8"));
 
   // Un <path> por concello (fill-rule evenodd resuelve bien sus propios

@@ -1,3 +1,5 @@
+//DONDE??? pipeline de Valdeorras, alimenta nucleos.json
+
 // =============================================================================
 // ABEIRO · Fase 1 — Peligro biofísico (pendiente real + combustible aproximado)
 // =============================================================================

@@ -1,3 +1,6 @@
+//CREAR GEOJSONS QUE YA NO SE USAN
+
+
 // =============================================================================
 // ABEIRO · Recomposición del IV para los núcleos de Ourense (escalado)
 // =============================================================================

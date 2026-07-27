@@ -1,3 +1,5 @@
+//DONDE??? pipeline de Valdeorras, alimenta nucleos.json
+
 // =============================================================================
 // ABEIRO · Fase 1 — Red viaria OSM para la capacidad de respuesta
 // =============================================================================

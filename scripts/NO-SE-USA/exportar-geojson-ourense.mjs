@@ -1,3 +1,5 @@
+//CREAR GEOJSONS QUE YA NO SE USAN
+
 // Exporta public/nucleos_ourense.geojson: los núcleos activos de Ourense con
 // las propiedades mínimas para el mapa a escala (clustering MapLibre). Fuente:
 // data/nucleos_ourense.json (IV) + data/afectacion_globfire_ourense.json.

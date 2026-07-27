@@ -1,4 +1,6 @@
-# -*- coding: utf-8 -*-
+# ALIMENTA ARCHIVOS QUE GENERAN GEOJSON
+# 
+# # -*- coding: utf-8 -*-
 """
 ABEIRO · Extracto viario de Ourense (OSM) para la capacidad de respuesta.
 

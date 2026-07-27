@@ -1,3 +1,5 @@
+# ALIMENTA ARCHIVOS QUE GENERAN GEOJSON
+
 # -*- coding: utf-8 -*-
 """
 ABEIRO · Covariable de EXPOSICIÓN / ruralidad del paisaje por núcleo (Ourense).

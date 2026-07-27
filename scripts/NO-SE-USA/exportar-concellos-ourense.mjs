@@ -1,3 +1,5 @@
+//CREAR GEOJSONS QUE YA NO SE USAN
+
 // Agrega los núcleos activos por concello para la vista provincial (coropleta +
 // drill-down) del mapa de Ourense. Produce public/concellos_ourense.geojson con
 // el IV medio, nº de núcleos y afectados por concello, con la geometría

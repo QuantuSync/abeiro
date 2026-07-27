@@ -1,3 +1,5 @@
+# alimenta la mascara de recorte de fwi
+
 # -*- coding: utf-8 -*-
 """
 ABEIRO · Límites municipales de Ourense (para asignar concello a cada núcleo).

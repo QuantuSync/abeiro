@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 ABEIRO · Fase 1 — Capa de afectación física (validación, NO componente del IV).

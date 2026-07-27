@@ -1,4 +1,3 @@
-// components/MapaFWI.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -10,8 +9,6 @@ import { CENTRO_OURENSE, ZOOM_OURENSE } from "@/lib/mapa-config";
 import type { Comarca } from "@/lib/tipos";
 
 import { BBOX_OURENSE_FWI } from "@/lib/mapa-config";
-
-const ANADIR_CAPA_FWI = true
 
 // A partir de este zoom, se considera que el usuario ha "entrado" en una
 // comarca concreta. Mismo umbral y misma lógica que tenía MapaOurense —
@@ -39,8 +36,27 @@ type Props = {
     onEntrarDetalle: (comarcaId: string) => void;
 };
 
+// esto lo tiene que hacer el cliente porque no tiene sentido que se lo ande mandando el server?
+//revisar implementacion. lo suyo es que te diga el serve cuando se actualizo por ultima vez y ya tu vayas actualizando
+function obtenerHorasDesdeMediodia(): string {
+    const ahora = new Date();
+    const horaActual = ahora.getHours();
+
+    let horasPasadas: number;
+
+    if (horaActual >= 12) {
+        // Si ya pasaron las 12:00 de hoy
+        horasPasadas = horaActual - 12;
+    } else {
+        // Si aún no son las 12:00 de hoy, contamos desde el mediodía de ayer
+        horasPasadas = horaActual + 12;
+    }
+
+    return `Hace ${horasPasadas} horas`;
+}
+
 export default function MapaFWI({ map, comarcas, onEntrarDetalle }: Props) {
-    const { tileUrl, fecha } = useFWI();
+    const { tileUrl, fecha } = useFWI(); //punto de entrada del cliente. devuelve la ruta del api/fwi-ourense
 
     // ACTIVACIÓN: vista general, sin restricción de paneo, encuadre
     // provincial (igual que hacía MapaOurense al activarse — necesario tanto
@@ -53,33 +69,33 @@ export default function MapaFWI({ map, comarcas, onEntrarDetalle }: Props) {
         map.jumpTo({ center: CENTRO_OURENSE, zoom: ZOOM_OURENSE });
 
         const alCambiarZoom = () => {
-        if (map.getZoom() <= ZOOM_UMBRAL_DETALLE || comarcas.length === 0) return;
-        const centro = map.getCenter();
-        let masCercana = comarcas[0];
-        let distMin = Infinity;
-        for (const c of comarcas) {
-            const d = Math.hypot(c.centro[0] - centro.lng, c.centro[1] - centro.lat);
-            if (d < distMin) { distMin = d; masCercana = c; }
-        }
-        onEntrarDetalle(masCercana.id);
+            if (map.getZoom() <= ZOOM_UMBRAL_DETALLE || comarcas.length === 0) 
+                return;
+            const centro = map.getCenter();
+            let masCercana = comarcas[0];
+            let distMin = Infinity;
+            for (const c of comarcas) {
+                const d = Math.hypot(c.centro[0] - centro.lng, c.centro[1] - centro.lat);
+                if (d < distMin) { distMin = d; masCercana = c; }
+            }
+            onEntrarDetalle(masCercana.id);
         };
         map.on("zoomend", alCambiarZoom);
 
         return () => {
-        map.off("zoomend", alCambiarZoom);
-        if (map.getLayer("fwi-capa")) map.removeLayer("fwi-capa");
-        if (map.getSource("fwi")) map.removeSource("fwi");
-        };
+            map.off("zoomend", alCambiarZoom);
+            if (map.getLayer("fwi-capa")) map.removeLayer("fwi-capa");
+            if (map.getSource("fwi")) map.removeSource("fwi");
+            };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [map]);
 
-    // Añade/renueva la capa cada vez que cambia la URL (cambio de día).
+    // Añade/renueva la capa cada vez que cambia la URL (cambio de día) ==> api/fwi-ourense/t=....
     // anadirCapaFWI ya quita la capa/fuente anteriores antes de crear las
     // nuevas, así que no hace falta lógica de limpieza aparte para ese caso.
     useEffect(() => {
-        if (ANADIR_CAPA_FWI)
-             anadirCapaFWI(map, tileUrl, BBOX_OURENSE_FWI);
-    }, [map, tileUrl]);
+        anadirCapaFWI(map, tileUrl, BBOX_OURENSE_FWI); // lib/capas-mapa
+    }, [map, tileUrl]); //si cambia la api fwi, añadir capafwi
 
     return (
         <>
@@ -96,8 +112,11 @@ export default function MapaFWI({ map, comarcas, onEntrarDetalle }: Props) {
                 </li>
             ))}
             </ul>
-            <p className="aviso">
-            Dato del día {fecha} · modelo Meteo France (~10 km) · fuente: EFFIS/Copernicus.
+            <p className="aviso"><br/>
+            <strong>Datos:</strong><br/>
+            · Fecha: {fecha}.<br/>
+            · Última actualización: {obtenerHorasDesdeMediodia()}.<br/>
+            · Modelo: Meteo France (~10 km).<br/><br/>
             Acércate para pasar al detalle de una comarca.
             </p>
         </section>

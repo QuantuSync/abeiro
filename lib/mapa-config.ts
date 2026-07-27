@@ -1,3 +1,5 @@
+// GUARDA CONSTANTES COMPARTIDAS
+
 // Configuración estática del mapa: estilo base, encuadre inicial y qué capas
 // pertenecen a cada lente (vulnerabilidad / evacuación).
 import type maplibregl from "maplibre-gl";

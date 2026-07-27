@@ -109,7 +109,7 @@ export default function ExploradorMapa({
                 <span className="comarca">Vista provincial · {PROVINCIA}</span>
             )}
             <span className="distintivo">
-                Demostrador · Datos reales <em>(IGE · OSM · Sentinel-2)</em>
+                Demostrador · Datos reales <em>(Fuente: EFFIS/Copernicus)</em>
             </span>
             </div>
         </header>

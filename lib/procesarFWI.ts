@@ -1,26 +1,34 @@
-// lib/procesarFWI.ts
-// SOLO se llama desde una Route Handler (servidor). Nunca desde un
+// SOLO se llama desde una Route Handler (route.ts en servidor). Nunca desde un
 // componente o hook "use client" — sharp no existe en el navegador.
 
-import sharp from "sharp";
+//libreria de Node.js para procesamiento de imagenes. (backend. no funciona en navegador.)
+// funciona sobre C, que es muy rapido
+import sharp from "sharp"; 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+// RECTANGULO GEOGRAFICO QUE ENGLOBA OURENSE
 import { BBOX_OURENSE_FWI as BBOX } from "@/lib/mapa-config";
+//const BBOX: [number, number, number, number] = [-8.3, 41.8, -6.5, 42.7]; // oeste, sur, este, norte
 
 //GeoJSON de data/
 const GEOJSON_CONCELLOS = "limites_concellos_ourense.geojson"
 
 const EFFIS_WMS = "https://maps.effis.emergency.copernicus.eu/effis";
 const CAPA_FWI = "mf010.fwi"; //MeteoFrance. ecmwf007.fwi daba problemas al principio
-//const BBOX: [number, number, number, number] = [-8.3, 41.8, -6.5, 42.7]; // oeste, sur, este, norte
+//Resolucion de imagen que se pide a EFFIS
 const ANCHO = 2048;
 const ALTO = 2048;
 
 function fechaValida(): string {
-  const ayer = new Date();
-  ayer.setUTCDate(ayer.getUTCDate() - 1);
-  return ayer.toISOString().slice(0, 10);
+    const ahora = new Date();
+    // EFFIS suele publicar el dato del día en curso a partir de mediodía UTC.
+    // Antes de esa hora todavía no está disponible, así que pedimos el de ayer.
+    const fecha = new Date(ahora);
+    if (ahora.getUTCHours() < 12) {
+      fecha.setUTCDate(fecha.getUTCDate() - 1);
+    }
+    return fecha.toISOString().slice(0, 10);
 }
 
 async function descargarRaster(): Promise<Buffer> {
@@ -30,8 +38,9 @@ async function descargarRaster(): Promise<Buffer> {
     SRS: "EPSG:4326", BBOX: BBOX.join(","),
     WIDTH: String(ANCHO), HEIGHT: String(ALTO),
     FORMAT: "image/png", TRANSPARENT: "true", SINGLETILE: "false",
-    TIME: fechaValida(),
+    TIME: fechaValida(), 
   });
+  //fecth de EFFIS
   const res = await fetch(`${EFFIS_WMS}?${params}`);
   const contentType = res.headers.get("content-type") ?? "";
   const bytes = Buffer.from(await res.arrayBuffer());
@@ -62,6 +71,7 @@ function anilloAPath(anillo: [number, number][]): string {
   return `M ${puntos} Z`;
 }
 
+//LEO DEL GEOjson LOS LIMITES DE OURENSE-
 async function construirMascaraSVG(): Promise<Buffer> {
   const ruta = path.join(process.cwd(), "data", GEOJSON_CONCELLOS);
   const fc = JSON.parse(await readFile(ruta, "utf-8"));
@@ -77,9 +87,11 @@ async function construirMascaraSVG(): Promise<Buffer> {
   });
 
   const svg = `<svg width="${ANCHO}" height="${ALTO}" xmlns="http://www.w3.org/2000/svg">${paths.join("")}</svg>`;
-  return sharp(Buffer.from(svg)).png().toBuffer();
+
+  return sharp(Buffer.from(svg)).png().toBuffer(); // DEVUELVE IMAGEN DONDE BLANCO = OURENSE, NEGRO/TRANSPARENTE = FUERA
 }
 
+// export de funcion de descarga + recorte.
 export async function obtenerFWIRecortado(): Promise<Buffer> {
   const [raster, mascara] = await Promise.all([descargarRaster(), construirMascaraSVG()]);
 

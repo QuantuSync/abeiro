@@ -1,5 +1,6 @@
 
 //DONDE??? pipeline de Valdeorras, alimenta nucleos.json
+
 // =============================================================================
 // ABEIRO · Fase 1 — Edad real de los 9 concellos del piloto en el IV
 // =============================================================================
